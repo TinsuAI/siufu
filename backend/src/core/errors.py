@@ -92,6 +92,26 @@ class DocumentAIException(CustomException):
         )
 
 
+class OpenRouterException(CustomException):
+    """Exception for OpenRouter API errors"""
+    def __init__(
+        self,
+        detail: str,
+        api_status_code: Optional[int] = None,
+        original_error: Optional[Exception] = None,
+        retry_count: int = 0
+    ):
+        self.api_status_code = api_status_code
+        self.original_error = original_error
+        self.retry_count = retry_count
+        super().__init__(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=detail,
+            error_type="/errors/openrouter-error",
+            title="OpenRouter API Error"
+        )
+
+
 async def custom_exception_handler(request: Request, exc: CustomException) -> JSONResponse:
     """Handler for custom application exceptions"""
     return JSONResponse(

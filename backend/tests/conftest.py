@@ -15,13 +15,8 @@ from tests.fixtures.google_document_ai import (
     mock_ocr_certificate_of_origin_response,
     mock_ocr_error_response
 )
-from tests.fixtures.openrouter import (
-    mock_llm_extraction_response,
-    mock_llm_hs_code_classification_response,
-    mock_llm_validation_response,
-    mock_llm_streaming_response,
-    mock_llm_error_response
-)
+# OpenRouter fixtures are pytest fixtures and don't need to be imported here
+# They are auto-discovered by pytest from tests/fixtures/openrouter.py
 
 
 # Database configuration for tests
@@ -109,38 +104,5 @@ def google_ocr_error_mock():
     return mock_ocr_error_response()
 
 
-# OpenRouter LLM mock fixtures
-@pytest.fixture
-def llm_extraction_mock():
-    """Fixture for mocked OpenRouter extraction response."""
-    return mock_llm_extraction_response()
-
-
-@pytest.fixture
-def llm_hs_code_mock():
-    """Fixture for mocked OpenRouter HS code classification response."""
-    return mock_llm_hs_code_classification_response()
-
-
-@pytest.fixture
-def llm_validation_mock():
-    """Fixture for mocked OpenRouter validation response."""
-    return mock_llm_validation_response(is_valid=True)
-
-
-@pytest.fixture
-def llm_validation_error_mock():
-    """Fixture for mocked OpenRouter validation response with errors."""
-    return mock_llm_validation_response(is_valid=False)
-
-
-@pytest.fixture
-def llm_streaming_mock():
-    """Fixture for mocked OpenRouter streaming response."""
-    return mock_llm_streaming_response()
-
-
-@pytest.fixture
-def llm_error_mock():
-    """Fixture for mocked OpenRouter error response."""
-    return mock_llm_error_response()
+# OpenRouter LLM mock fixtures are now defined in tests/fixtures/openrouter.py
+# They are auto-discovered by pytest and don't need to be re-exported here
