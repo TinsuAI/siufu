@@ -1,0 +1,91 @@
+"""
+FastAPI application entry point for Customs Declaration Automation Platform
+"""
+from fastapi import FastAPI, status
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+
+from src.core.config import settings
+
+app = FastAPI(
+    title="Customs Declaration Automation API",
+    description="Backend API for automated customs declaration processing",
+    version="1.0.0",
+    docs_url="/docs",
+    redoc_url="/redoc",
+)
+
+# CORS middleware configuration - uses environment variable
+allowed_origins = settings.CORS_ORIGINS.split(",") if settings.CORS_ORIGINS else ["http://localhost:3000"]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=allowed_origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+@app.get("/")
+async def root():
+    """Root endpoint - health check"""
+    return {
+        "message": "Customs Declaration Automation API",
+        "status": "operational",
+        "version": "1.0.0",
+    }
+
+
+@app.get("/health")
+async def health_check():
+    """
+    Health check endpoint with dependency verification
+
+    Tests connectivity to critical services:
+    - Database (PostgreSQL)
+    - Cache (Redis)
+
+    Returns 200 if all services are healthy, 503 otherwise
+    """
+    import redis
+    from sqlalchemy import text
+    from sqlalchemy.ext.asyncio import create_async_engine
+
+    health_status = {
+        "status": "healthy",
+        "services": {
+            "api": "ok",
+            "database": "unknown",
+            "redis": "unknown",
+        }
+    }
+
+    # Test database connectivity
+    try:
+        engine = create_async_engine(settings.DATABASE_URL, pool_pre_ping=True)
+        async with engine.connect() as conn:
+            await conn.execute(text("SELECT 1"))
+        await engine.dispose()
+        health_status["services"]["database"] = "ok"
+    except Exception as e:
+        health_status["status"] = "unhealthy"
+        health_status["services"]["database"] = f"error: {str(e)}"
+
+    # Test Redis connectivity
+    try:
+        r = redis.from_url(settings.REDIS_URL)
+        r.ping()
+        r.close()
+        health_status["services"]["redis"] = "ok"
+    except Exception as e:
+        health_status["status"] = "unhealthy"
+        health_status["services"]["redis"] = f"error: {str(e)}"
+
+    # Return 503 if any service is unhealthy
+    if health_status["status"] == "unhealthy":
+        return JSONResponse(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            content=health_status
+        )
+
+    return health_status

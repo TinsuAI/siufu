@@ -1,0 +1,125 @@
+version: '3.8'
+
+services:
+  # PostgreSQL 18.0 Database
+  postgres:
+    image: postgres:18.0-alpine
+    container_name: logai-postgres
+    environment:
+      POSTGRES_DB: customs_db
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    ports:
+      - "8881:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - logai-network
+
+  # Redis 7.4.1 Cache & Message Broker
+  redis:
+    image: redis:7.4.1-alpine
+    container_name: logai-redis
+    volumes:
+      - redis-data:/data
+    ports:
+      - "8882:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - logai-network
+
+  # FastAPI Backend
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: logai-backend
+    ports:
+      - "8880:8000"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://postgres:${POSTGRES_PASSWORD}@postgres:5432/customs_db
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/0
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
+      GOOGLE_CLOUD_PROJECT_ID: ${GOOGLE_CLOUD_PROJECT_ID}
+      SENTRY_DSN: ${SENTRY_DSN:-}
+    volumes:
+      - uploaded-files:/app/data/uploads
+      - exports:/app/data/exports
+      - ./secrets/gcp-sa-key.json:/app/secrets/gcp-sa-key.json:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - logai-network
+
+  # Celery Worker
+  celery-worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: logai-celery-worker
+    command: celery -A src.workers.celery_app worker --loglevel=info
+    environment:
+      DATABASE_URL: postgresql+asyncpg://postgres:${POSTGRES_PASSWORD}@postgres:5432/customs_db
+      CELERY_BROKER_URL: redis://redis:6379/0
+      REDIS_URL: redis://redis:6379/0
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
+      GOOGLE_CLOUD_PROJECT_ID: ${GOOGLE_CLOUD_PROJECT_ID}
+      SENTRY_DSN: ${SENTRY_DSN:-}
+    volumes:
+      - uploaded-files:/app/data/uploads
+      - exports:/app/data/exports
+      - ./secrets/gcp-sa-key.json:/app/secrets/gcp-sa-key.json:ro
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - logai-network
+
+  # Next.js Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: logai-frontend
+    ports:
+      - "8879:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://backend:8000
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - logai-network
+
+volumes:
+  postgres-data:
+    driver: local
+  redis-data:
+    driver: local
+  uploaded-files:
+    driver: local
+  exports:
+    driver: local
+
+networks:
+  logai-network:
+    driver: bridge

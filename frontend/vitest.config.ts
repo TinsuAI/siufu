@@ -21,10 +21,12 @@ export default defineConfig({
         'src/app/**',  // Next.js app dir (mostly routing)
         'src/mocks/**'
       ],
-      statements: 60,
-      branches: 60,
-      functions: 60,
-      lines: 60
+      thresholds: {
+        statements: 60,
+        branches: 60,
+        functions: 60,
+        lines: 60
+      }
     }
   },
   resolve: {
