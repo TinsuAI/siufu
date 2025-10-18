@@ -25,6 +25,8 @@ class Settings(BaseSettings):
     # External APIs
     OPENROUTER_API_KEY: str = ""
     GOOGLE_CLOUD_PROJECT_ID: str = ""
+    GOOGLE_CLOUD_LOCATION: str = "us"
+    GOOGLE_CLOUD_PROCESSOR_ID: str = ""
 
     # Monitoring
     SENTRY_DSN: str = ""

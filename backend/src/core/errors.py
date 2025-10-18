@@ -80,6 +80,18 @@ class ForbiddenException(CustomException):
         )
 
 
+class DocumentAIException(CustomException):
+    """Exception for Document AI API errors"""
+    def __init__(self, detail: str, original_error: Optional[Exception] = None):
+        self.original_error = original_error
+        super().__init__(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=detail,
+            error_type="/errors/document-ai-error",
+            title="Document AI Error"
+        )
+
+
 async def custom_exception_handler(request: Request, exc: CustomException) -> JSONResponse:
     """Handler for custom application exceptions"""
     return JSONResponse(
