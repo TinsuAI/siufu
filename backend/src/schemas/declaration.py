@@ -12,6 +12,8 @@ class DeclarationStatus(str, Enum):
     """Declaration status enumeration"""
     UPLOADED = "UPLOADED"
     PROCESSING = "PROCESSING"
+    PROCESSING_OCR = "PROCESSING_OCR"
+    PROCESSING_LLM = "PROCESSING_LLM"
     VALIDATING = "VALIDATING"
     READY_FOR_REVIEW = "READY_FOR_REVIEW"
     APPROVED = "APPROVED"
@@ -35,6 +37,28 @@ class DeclarationUpdate(BaseModel):
     draft_data: Dict[str, Any] = Field(description="Partial updates to draft data (will be merged)")
 
 
+class DeclarationStatusResponse(BaseModel):
+    """Schema for declaration status polling response"""
+    id: UUID
+    status: DeclarationStatus
+    progress: float = Field(ge=0.0, le=1.0, description="Processing progress from 0.0 to 1.0")
+    processing_error: Optional[str] = None
+    celery_task_id: Optional[str] = None
+
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_schema_extra={
+            "example": {
+                "id": "123e4567-e89b-12d3-a456-426614174000",
+                "status": "PROCESSING_LLM",
+                "progress": 0.4,
+                "processing_error": None,
+                "celery_task_id": "abc123-def456-ghi789"
+            }
+        }
+    )
+
+
 class DeclarationResponse(DeclarationBase):
     """Schema for declaration response"""
     id: UUID
@@ -45,6 +69,7 @@ class DeclarationResponse(DeclarationBase):
     confidence_scores: Optional[Dict[str, float]] = None
     processing_progress: Optional[float] = None
     processing_error: Optional[str] = None
+    celery_task_id: Optional[str] = None
     approved_by_user_id: Optional[UUID] = None
     approved_at: Optional[datetime] = None
     organization_id: UUID

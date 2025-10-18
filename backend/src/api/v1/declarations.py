@@ -1,10 +1,13 @@
 """
 Declaration API endpoints
 """
-from fastapi import APIRouter, Depends
+from uuid import UUID
+from fastapi import APIRouter, Depends, HTTPException, status, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.database import get_db
+from src.repositories.declaration_repository import DeclarationRepository
+from src.schemas.declaration import DeclarationStatusResponse
 
 router = APIRouter()
 
@@ -30,23 +33,117 @@ async def upload_declaration(db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/{declaration_id}/process")
-async def process_declaration(declaration_id: str, db: AsyncSession = Depends(get_db)):
+async def process_declaration(
+    declaration_id: UUID,
+    db: AsyncSession = Depends(get_db)
+):
     """
     Trigger async AI processing for declaration
 
-    Starts background Celery task for OCR + LLM extraction
+    Starts background Celery task for OCR + LLM extraction.
+    Returns immediately with task ID and initial status.
+    Client should poll GET /declarations/{id}/status for progress.
+
+    Args:
+        declaration_id: UUID of declaration to process
+        db: Database session
+
+    Returns:
+        dict with declaration_id, task_id, and initial status
+
+    Raises:
+        HTTPException 404: If declaration not found
+        HTTPException 400: If declaration already processing or completed
     """
-    return {"message": f"Process declaration {declaration_id} endpoint - to be implemented"}
+    from src.workers.declaration_processor import process_declaration_task
+
+    repo = DeclarationRepository(db)
+    declaration = await repo.get_by_id(declaration_id)
+
+    if not declaration:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Declaration {declaration_id} not found"
+        )
+
+    # Check if already processing
+    if declaration.status in [
+        "PROCESSING_OCR",
+        "PROCESSING_LLM",
+        "VALIDATING",
+        "READY_FOR_REVIEW",
+        "APPROVED"
+    ]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Declaration already processed or in progress (status: {declaration.status})"
+        )
+
+    # Trigger Celery task
+    task = process_declaration_task.delay(str(declaration_id))
+
+    # Store task ID in database
+    declaration.celery_task_id = task.id
+    declaration.status = "PROCESSING"
+    declaration.processing_progress = 0.0
+    await db.commit()
+
+    return {
+        "declaration_id": str(declaration_id),
+        "task_id": task.id,
+        "status": "PENDING",
+        "message": "Processing started. Poll /declarations/{id}/status for progress."
+    }
 
 
-@router.get("/{declaration_id}/status")
-async def get_declaration_status(declaration_id: str, db: AsyncSession = Depends(get_db)):
+@router.get("/{declaration_id}/status", response_model=DeclarationStatusResponse)
+async def get_declaration_status(
+    declaration_id: UUID,
+    response: Response,
+    db: AsyncSession = Depends(get_db)
+) -> DeclarationStatusResponse:
     """
     Get processing status and progress for declaration
 
-    Returns: status, progress percentage, errors if any
+    Used for polling task progress during async processing.
+    Frontend should poll this endpoint to display real-time progress.
+
+    Args:
+        declaration_id: UUID of declaration
+        response: FastAPI Response object for setting headers
+        db: Database session
+
+    Returns:
+        DeclarationStatusResponse with current status, progress, and task ID
+
+    Raises:
+        HTTPException 404: If declaration not found
+
+    Response Headers:
+        Cache-Control: no-store (status changes frequently, don't cache)
     """
-    return {"message": f"Get declaration {declaration_id} status endpoint - to be implemented"}
+    # Set Cache-Control header to prevent caching (status changes frequently)
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+
+    repo = DeclarationRepository(db)
+    declaration = await repo.get_by_id(declaration_id)
+
+    if not declaration:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Declaration {declaration_id} not found"
+        )
+
+    # Build response with current status and progress
+    return DeclarationStatusResponse(
+        id=declaration.id,
+        status=declaration.status,
+        progress=declaration.processing_progress or 0.0,
+        processing_error=declaration.processing_error,
+        celery_task_id=declaration.celery_task_id
+    )
 
 
 @router.get("/{declaration_id}")

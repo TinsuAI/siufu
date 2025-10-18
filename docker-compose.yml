@@ -71,7 +71,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: logai-celery-worker
-    command: celery -A src.workers.celery_app worker --loglevel=info
+    command: celery -A src.core.celery_app worker --loglevel=info
     env_file:
       - .env
     environment:
@@ -87,6 +87,14 @@ services:
         condition: service_healthy
       postgres:
         condition: service_healthy
+      backend:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A src.core.celery_app inspect ping -d celery@$$HOSTNAME"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
     restart: unless-stopped
     networks:
       - logai-network

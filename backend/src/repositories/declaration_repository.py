@@ -96,3 +96,35 @@ class DeclarationRepository(BaseRepository[Declaration]):
             .limit(limit)
         )
         return list(result.scalars().all())
+
+    async def update_status_and_progress(
+        self,
+        declaration_id: UUID,
+        status: DeclarationStatus,
+        progress: float,
+        error_message: Optional[str] = None
+    ) -> Optional[Declaration]:
+        """
+        Update declaration status and progress (for Celery task tracking)
+
+        Args:
+            declaration_id: UUID of declaration
+            status: New status
+            progress: Progress value 0.0 to 1.0
+            error_message: Optional error message if status is FAILED
+
+        Returns:
+            Updated declaration or None if not found
+        """
+        declaration = await self.get_by_id(declaration_id)
+        if not declaration:
+            return None
+
+        declaration.status = status
+        declaration.processing_progress = progress
+        if error_message:
+            declaration.processing_error = error_message
+
+        await self.db.commit()
+        await self.db.refresh(declaration)
+        return declaration
