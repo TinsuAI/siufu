@@ -1,2 +1,285 @@
+# BMAD Core and Claude Code
 .bmad-core/
 .claude/
+
+# ================================
+# Python / Backend
+# ================================
+
+# Virtual environments
+backend/venv/
+backend/.venv/
+backend/env/
+backend/ENV/
+
+# Python compiled files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Distribution / packaging
+backend/dist/
+backend/build/
+backend/eggs/
+backend/.eggs/
+backend/*.egg-info/
+backend/*.egg
+
+# Testing
+backend/.pytest_cache/
+backend/.coverage
+backend/htmlcov/
+backend/.tox/
+backend/.nox/
+backend/coverage.xml
+backend/*.cover
+backend/.hypothesis/
+
+# MyPy type checker
+backend/.mypy_cache/
+backend/.dmypy.json
+backend/dmypy.json
+
+# Ruff cache
+backend/.ruff_cache/
+
+# Environment variables
+backend/.env
+backend/.env.local
+backend/.env.*.local
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+backend/logs/
+backend/*.log
+
+# ================================
+# Node.js / Frontend
+# ================================
+
+# Dependencies
+frontend/node_modules/
+node_modules/
+
+# Next.js
+frontend/.next/
+frontend/out/
+
+# Production builds
+frontend/build/
+frontend/dist/
+
+# Testing
+frontend/coverage/
+frontend/.vitest/
+
+# Environment variables
+frontend/.env
+frontend/.env.local
+frontend/.env.development.local
+frontend/.env.test.local
+frontend/.env.production.local
+
+# Debug logs
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+
+# Vercel
+frontend/.vercel
+
+# TypeScript
+frontend/*.tsbuildinfo
+frontend/next-env.d.ts
+
+# ================================
+# Playwright E2E
+# ================================
+
+# Test results
+tests/e2e-results/
+playwright-report/
+test-results/
+
+# Playwright browsers (installed via npx playwright install)
+playwright/.cache/
+
+# Playwright screenshots/videos (if not wanted in repo)
+tests/e2e/screenshots/
+tests/e2e/videos/
+
+# ================================
+# IDEs and Editors
+# ================================
+
+# VSCode
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+
+# JetBrains IDEs (PyCharm, WebStorm, etc.)
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Vim
+*.swp
+*.swo
+*~
+
+# Emacs
+*~
+\#*\#
+.\#*
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# ================================
+# Operating Systems
+# ================================
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*~
+.directory
+
+# ================================
+# Docker
+# ================================
+
+# Docker volumes (when using local volumes)
+docker-volumes/
+.docker/
+
+# ================================
+# Temporary Files
+# ================================
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.backup
+
+# ================================
+# Logs and Debugging
+# ================================
+
+# Application logs
+logs/
+*.log
+
+# Debug files
+.ai/debug-log.md
+
+# ================================
+# Secrets and Sensitive Data
+# ================================
+
+# Environment files (actual secrets, not examples)
+.env
+.env.local
+.env.*.local
+!.env.example
+!.env.test.example
+
+# Service account keys
+*.pem
+*.key
+*-key.json
+service-account*.json
+
+# SSL certificates
+*.crt
+*.cer
+*.p12
+
+# ================================
+# Build Artifacts
+# ================================
+
+# Compiled output
+/dist
+/build
+*.js.map
+
+# ================================
+# Test Fixtures (Optional)
+# ================================
+
+# Uncomment if you don't want to commit actual test fixture files
+# tests/e2e/fixtures/*.pdf
+# tests/e2e/fixtures/*.xlsx
+# tests/e2e/fixtures/*.xls
+
+# But DO commit the README
+!tests/e2e/fixtures/README.md
+
+# ================================
+# Package Manager Locks
+# ================================
+
+# Keep package-lock.json and yarn.lock for reproducible builds
+# Uncomment if you prefer not to commit them:
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml
+
+# ================================
+# Coverage Reports (Optional)
+# ================================
+
+# Uncomment if you don't want coverage reports in repo
+# coverage/
+# htmlcov/
+# .coverage
+
+# ================================
+# Miscellaneous
+# ================================
+
+# Husky (git hooks are committed, but runtime files are not)
+.husky/_
+
+# Python local settings
+local_settings.py
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# pyenv
+.python-version
+
+# pipenv
+Pipfile.lock
+
+# Poetry
+poetry.lock
