@@ -2,12 +2,15 @@
 Declaration API endpoints
 """
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, status, Response
+from typing import Optional
+from fastapi import APIRouter, Depends, HTTPException, status, Response, File, UploadFile, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.database import get_db
 from src.repositories.declaration_repository import DeclarationRepository
-from src.schemas.declaration import DeclarationStatusResponse
+from src.schemas.declaration import DeclarationStatusResponse, DeclarationUploadResponse, UploadedFileMetadata
+from src.services.file_validation_service import FileValidationService, FileValidationError, FileSizeLimitExceeded
+from src.services.file_storage_service import FileStorageService
 
 router = APIRouter()
 
@@ -22,14 +25,188 @@ async def list_declarations(db: AsyncSession = Depends(get_db)):
     return {"message": "List declarations endpoint - to be implemented"}
 
 
-@router.post("/upload")
-async def upload_declaration(db: AsyncSession = Depends(get_db)):
+@router.post("/upload", response_model=DeclarationUploadResponse, status_code=status.HTTP_201_CREATED)
+async def upload_declaration(
+    arrival_notice: UploadFile = File(..., description="Arrival Notice PDF"),
+    bill_of_lading: UploadFile = File(..., description="Bill of Lading PDF"),
+    certificate_of_origin: UploadFile = File(..., description="Certificate of Origin PDF"),
+    invoice: UploadFile = File(..., description="Invoice (PDF, JPG, or PNG)"),
+    good_list: UploadFile = File(..., description="Good List Excel file"),
+    tariff: UploadFile = File(..., description="Tariff Excel file"),
+    auto_process: bool = Query(
+        default=False,
+        description="Automatically trigger processing after upload"
+    ),
+    db: AsyncSession = Depends(get_db)
+) -> DeclarationUploadResponse:
     """
     Upload 6 declaration files to create new declaration
 
-    Files: invoice, packing_list, contract, transport_doc, insurance, other
+    Accepts multipart/form-data with 6 required files:
+    - arrival_notice: Arrival Notice (AN.pdf) - PDF only
+    - bill_of_lading: Bill of Lading (BOL.pdf) - PDF only
+    - certificate_of_origin: Certificate of Origin (CO.pdf) - PDF only
+    - invoice: Invoice - PDF, JPG, or PNG
+    - good_list: Good List - Excel (.xls or .xlsx)
+    - tariff: Tariff - Excel (.xls or .xlsx)
+
+    File size limits:
+    - PDFs: Max 10MB
+    - Images: Max 5MB
+    - Excel files: Max 2MB
+
+    Returns:
+        DeclarationUploadResponse with declaration_id, status, and file metadata
+
+    Raises:
+        HTTPException 400: Validation failed (missing files, wrong types)
+        HTTPException 413: File size exceeded
+        HTTPException 507: Insufficient storage space
     """
-    return {"message": "Upload declaration endpoint - to be implemented"}
+    # Initialize services
+    validation_service = FileValidationService()
+    storage_service = FileStorageService()
+
+    # Collect all files
+    files = {
+        "arrival_notice": arrival_notice,
+        "bill_of_lading": bill_of_lading,
+        "certificate_of_origin": certificate_of_origin,
+        "invoice": invoice,
+        "good_list": good_list,
+        "tariff": tariff
+    }
+
+    try:
+        # Validate all files (type and size)
+        await validation_service.validate_all_files(files)
+
+    except FileValidationError as e:
+        # Return 400 Bad Request with detailed validation errors
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                "error": "file_validation_failed",
+                "message": "File validation failed",
+                "errors": e.errors
+            }
+        )
+
+    except FileSizeLimitExceeded as e:
+        # Return 413 Payload Too Large with size details
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail={
+                "error": "file_too_large",
+                "message": "File size limit exceeded",
+                "file": e.file_field,
+                "size": e.size,
+                "max_size": e.max_size
+            }
+        )
+
+    # Create declaration record
+    repo = DeclarationRepository(db)
+
+    # TODO: Get from JWT token when auth is implemented
+    # For now, use placeholder UUIDs
+    from uuid import uuid4
+    organization_id = uuid4()
+    created_by_user_id = uuid4()
+
+    try:
+        # Create declaration with UPLOADED status
+        declaration = await repo.create(
+            organization_id=organization_id,
+            created_by_user_id=created_by_user_id,
+            status="UPLOADED"
+        )
+
+        # Save files to storage
+        file_metadata = await storage_service.save_declaration_files(
+            declaration.id,
+            files
+        )
+
+        # Update declaration with file metadata
+        declaration.uploaded_files = file_metadata
+        declaration.processing_progress = 0.0
+        await db.commit()
+        await db.refresh(declaration)
+
+        # Optionally trigger Celery processing task
+        celery_task_id = None
+        message = "Declaration uploaded successfully. Ready for processing."
+
+        if auto_process:
+            from src.workers.declaration_processor import process_declaration_task
+
+            # Trigger Celery task
+            task = process_declaration_task.delay(str(declaration.id))
+            celery_task_id = task.id
+
+            # Update declaration with task ID
+            declaration.celery_task_id = celery_task_id
+            declaration.status = "PROCESSING"
+            await db.commit()
+
+            message = "Declaration uploaded successfully. Processing started."
+
+        # Build response
+        uploaded_files_response = [
+            UploadedFileMetadata(
+                file_type=metadata["file_type"],
+                filename=metadata["filename"],
+                size=metadata["size"]
+            )
+            for metadata in file_metadata
+        ]
+
+        return DeclarationUploadResponse(
+            declaration_id=declaration.id,
+            status=declaration.status,
+            uploaded_files=uploaded_files_response,
+            celery_task_id=celery_task_id,
+            message=message
+        )
+
+    except OSError as e:
+        # Handle disk full errors
+        await db.rollback()
+        if "Insufficient storage" in str(e):
+            raise HTTPException(
+                status_code=status.HTTP_507_INSUFFICIENT_STORAGE,
+                detail={
+                    "error": "insufficient_storage",
+                    "message": "Insufficient storage space available"
+                }
+            )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={
+                "error": "file_storage_error",
+                "message": "Failed to store uploaded files"
+            }
+        )
+
+    except Exception as e:
+        # Rollback database transaction
+        await db.rollback()
+
+        # Clean up any saved files
+        if 'declaration' in locals():
+            await storage_service.cleanup_declaration_files(declaration.id)
+
+        # Log error to Sentry (if configured)
+        # TODO: Add Sentry logging
+
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={
+                "error": "upload_failed",
+                "message": "Failed to upload declaration files"
+            }
+        )
 
 
 @router.post("/{declaration_id}/process")

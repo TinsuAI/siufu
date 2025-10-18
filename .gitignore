@@ -176,6 +176,14 @@ docker-volumes/
 .docker/
 
 # ================================
+# Application Data
+# ================================
+
+# Uploaded declaration files (stored in Docker volume)
+data/uploads/
+data/exports/
+
+# ================================
 # Temporary Files
 # ================================
 

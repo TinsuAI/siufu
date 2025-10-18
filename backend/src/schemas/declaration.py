@@ -59,6 +59,54 @@ class DeclarationStatusResponse(BaseModel):
     )
 
 
+class UploadedFileMetadata(BaseModel):
+    """Schema for uploaded file metadata"""
+    file_type: str = Field(description="Type of file (AN, BOL, CO, INVOICE, GOODLIST, TARIFF)")
+    filename: str = Field(description="Original filename")
+    size: int = Field(description="File size in bytes")
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "file_type": "AN",
+                "filename": "AN.pdf",
+                "size": 2048576
+            }
+        }
+    )
+
+
+class DeclarationUploadResponse(BaseModel):
+    """Schema for declaration upload response"""
+    declaration_id: UUID = Field(description="Unique identifier for the declaration")
+    status: DeclarationStatus = Field(description="Initial status (UPLOADED)")
+    uploaded_files: List[UploadedFileMetadata] = Field(description="List of uploaded file metadata")
+    celery_task_id: Optional[str] = Field(
+        default=None,
+        description="Celery task ID if auto_process=true"
+    )
+    message: str = Field(description="Success message")
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "declaration_id": "123e4567-e89b-12d3-a456-426614174000",
+                "status": "UPLOADED",
+                "uploaded_files": [
+                    {"file_type": "AN", "filename": "AN.pdf", "size": 2048576},
+                    {"file_type": "BOL", "filename": "BOL.pdf", "size": 1536000},
+                    {"file_type": "CO", "filename": "CO.pdf", "size": 1843200},
+                    {"file_type": "INVOICE", "filename": "INVOICE.pdf", "size": 3145728},
+                    {"file_type": "GOODLIST", "filename": "goodlist1.xls", "size": 102400},
+                    {"file_type": "TARIFF", "filename": "EXIM-Tariff.xlsx", "size": 204800}
+                ],
+                "celery_task_id": None,
+                "message": "Declaration uploaded successfully. Ready for processing."
+            }
+        }
+    )
+
+
 class DeclarationResponse(DeclarationBase):
     """Schema for declaration response"""
     id: UUID

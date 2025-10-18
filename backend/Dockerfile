@@ -11,11 +11,12 @@ ENV PYTHONUNBUFFERED=1 \
 FROM base AS deps
 WORKDIR /app
 
-# Install build dependencies
+# Install build dependencies and libmagic
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     gcc \
     g++ \
+    libmagic1 \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements
@@ -28,6 +29,12 @@ RUN pip install --upgrade pip && \
 # Production image
 FROM base AS runner
 WORKDIR /app
+
+# Install runtime dependencies (libmagic)
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    libmagic1 \
+    && rm -rf /var/lib/apt/lists/*
 
 # Create non-root user
 RUN useradd --create-home --shell /bin/bash appuser
