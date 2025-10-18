@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sess
 from sqlalchemy.pool import NullPool
 
 # Import Base from models
-from src.models.user import Base
+from src.models.base import Base
 
 # Mock fixtures
 from tests.fixtures.google_document_ai import (
@@ -25,7 +25,9 @@ from tests.fixtures.openrouter import (
 
 
 # Database configuration for tests
-TEST_DATABASE_URL = "postgresql+asyncpg://test:test@localhost:5432/logai_test"
+# Use same Postgres instance but different database for tests
+# When running inside Docker, use service name 'postgres' instead of localhost
+TEST_DATABASE_URL = "postgresql+asyncpg://postgres:test_password_123@postgres:5432/customs_db_test"
 
 
 @pytest.fixture(scope="session")

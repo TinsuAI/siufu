@@ -1,34 +1,73 @@
-"""User database model."""
-
+"""
+User database model
+"""
 from datetime import datetime
-from sqlalchemy import String, DateTime
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+import enum
+import uuid
+
+from sqlalchemy import String, Boolean, DateTime, ForeignKey, Enum as SQLEnum, func
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.dialects.postgresql import UUID
+
+from src.models.base import Base
 
 
-class Base(DeclarativeBase):
-    """Base class for all database models."""
-    pass
+class UserRole(str, enum.Enum):
+    """User role enumeration"""
+    processor = "processor"
+    admin = "admin"
 
 
 class User(Base):
-    """User model for authentication and authorization."""
+    """User model for authentication and authorization"""
 
     __tablename__ = "users"
 
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    email: Mapped[str] = mapped_column(
+        String(255), unique=True, nullable=False, index=True
+    )
     hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
-    full_name: Mapped[str] = mapped_column(String(255), nullable=True)
-    is_active: Mapped[bool] = mapped_column(default=True, nullable=False)
-    is_superuser: Mapped[bool] = mapped_column(default=False, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+    full_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    role: Mapped[UserRole] = mapped_column(
+        SQLEnum(UserRole), nullable=False, default=UserRole.processor
+    )
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    organization_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("organizations.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime,
-        default=datetime.utcnow,
-        onupdate=datetime.utcnow,
-        nullable=False
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+    # Relationships
+    organization: Mapped["Organization"] = relationship(
+        "Organization", back_populates="users"
+    )
+    created_declarations: Mapped[list["Declaration"]] = relationship(
+        "Declaration",
+        foreign_keys="Declaration.created_by_user_id",
+        back_populates="created_by_user"
+    )
+    approved_declarations: Mapped[list["Declaration"]] = relationship(
+        "Declaration",
+        foreign_keys="Declaration.approved_by_user_id",
+        back_populates="approved_by_user"
+    )
+    corrections: Mapped[list["Correction"]] = relationship(
+        "Correction", back_populates="user"
+    )
+    uploaded_knowledge_bases: Mapped[list["KnowledgeBaseVersion"]] = relationship(
+        "KnowledgeBaseVersion", back_populates="uploaded_by_user"
     )
 
     def __repr__(self) -> str:
-        """String representation of User."""
-        return f"<User(id={self.id}, email='{self.email}', is_active={self.is_active})>"
+        return f"<User(id={self.id}, email='{self.email}', role={self.role})>"

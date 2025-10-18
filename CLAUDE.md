@@ -1,0 +1,1 @@
+- always use tailscale domain for development: tinxudev.airplane-manta.ts.net

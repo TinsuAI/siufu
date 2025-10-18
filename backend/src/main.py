@@ -1,18 +1,62 @@
 """
 FastAPI application entry point for Customs Declaration Automation Platform
 """
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.exceptions import RequestValidationError
 
 from src.core.config import settings
+from src.core.database import test_db_connection
+from src.core.errors import (
+    CustomException,
+    custom_exception_handler,
+    validation_exception_handler,
+    generic_exception_handler,
+)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Application lifespan events"""
+    # Startup
+    print("Testing database connection...")
+    db_connected = await test_db_connection()
+    if db_connected:
+        print("✓ Database connection successful")
+    else:
+        print("✗ Database connection failed")
+
+    # Initialize Sentry if DSN is provided
+    if settings.SENTRY_DSN:
+        import sentry_sdk
+        from sentry_sdk.integrations.fastapi import FastAPIIntegration
+        from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
+
+        sentry_sdk.init(
+            dsn=settings.SENTRY_DSN,
+            traces_sample_rate=0.1,  # 10% of transactions
+            integrations=[
+                FastAPIIntegration(),
+                SqlalchemyIntegration(),
+            ],
+            environment="development",
+        )
+        print("✓ Sentry initialized")
+
+    yield
+    # Shutdown
+    print("Shutting down application...")
+
 
 app = FastAPI(
-    title="Customs Declaration Automation API",
-    description="Backend API for automated customs declaration processing",
+    title="Customs Declaration Automation Platform API",
+    description="Backend API for automated customs declaration processing with AI-powered document extraction",
     version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
+    lifespan=lifespan,
 )
 
 # CORS middleware configuration - uses environment variable
@@ -24,6 +68,15 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Exception handlers for RFC 7807 error responses
+app.add_exception_handler(CustomException, custom_exception_handler)
+app.add_exception_handler(RequestValidationError, validation_exception_handler)
+app.add_exception_handler(Exception, generic_exception_handler)
+
+# Mount API v1 router
+from src.api.v1 import api_router
+app.include_router(api_router, prefix="/api/v1")
 
 
 @app.get("/")

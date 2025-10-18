@@ -19,9 +19,14 @@ if config.config_file_name is not None:
 
 # add your model's MetaData object here
 # for 'autogenerate' support
-# from myapp import mymodel
-# target_metadata = mymodel.Base.metadata
-target_metadata = None
+import sys
+from pathlib import Path
+
+# Add src directory to path for model imports
+sys.path.append(str(Path(__file__).parent.parent / "src"))
+
+from src.models import Base  # noqa: E402
+target_metadata = Base.metadata
 
 # Get database URL from environment variable if available
 database_url = os.getenv("DATABASE_URL")
