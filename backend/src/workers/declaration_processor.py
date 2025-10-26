@@ -31,8 +31,19 @@ from src.services.llm_service import LLMService
 logger = logging.getLogger(__name__)
 
 # Create async database engine for Celery tasks
-engine = create_async_engine(settings.DATABASE_URL, echo=False)
-AsyncSessionLocal = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+# Use NullPool to avoid connection pooling issues in forked processes
+from sqlalchemy.pool import NullPool
+
+engine = create_async_engine(
+    settings.DATABASE_URL,
+    echo=False,
+    poolclass=NullPool  # Disable pooling for celery workers to avoid connection sharing
+)
+AsyncSessionLocal = async_sessionmaker(
+    engine,
+    class_=AsyncSession,
+    expire_on_commit=False
+)
 
 
 class DeclarationProcessingTask(Task):
@@ -88,17 +99,32 @@ def process_declaration_task(self, declaration_id: str) -> Dict[str, Any]:
         # Run async processing
         result = asyncio.run(_process_declaration_async(declaration_id))
 
-        # Log successful completion
-        duration = time.time() - task_start_time
+        # Log successful completion with performance metrics
+        total_duration = time.time() - task_start_time
         logger.info(
             f"Declaration processing completed successfully",
             extra={
                 "declaration_id": declaration_id,
-                "duration_seconds": duration,
+                "total_duration_seconds": total_duration,
+                "ocr_duration_seconds": result.get("ocr_duration", 0),
+                "llm_duration_seconds": result.get("llm_duration", 0),
+                "storage_duration_seconds": result.get("storage_duration", 0),
                 "status": result["status"]
             }
         )
-        sentry_sdk.set_measurement("task_duration_seconds", duration)
+
+        # Log performance metrics to Sentry
+        sentry_sdk.set_measurement("task_total_duration_seconds", total_duration)
+        sentry_sdk.set_measurement("task_ocr_duration_seconds", result.get("ocr_duration", 0))
+        sentry_sdk.set_measurement("task_llm_duration_seconds", result.get("llm_duration", 0))
+        sentry_sdk.set_measurement("task_storage_duration_seconds", result.get("storage_duration", 0))
+
+        # Alert if processing exceeds 90 seconds (NFR1 violation)
+        if total_duration > 90:
+            sentry_sdk.capture_message(
+                f"Processing duration exceeded 90s target: {total_duration:.1f}s",
+                level="warning"
+            )
 
         return result
 
@@ -136,10 +162,17 @@ def process_declaration_task(self, declaration_id: str) -> Dict[str, Any]:
                 }
             )
 
-            # Update declaration status to FAILED
-            asyncio.run(_mark_declaration_failed(declaration_id, str(exc)))
+            # Log the failure (database update will be handled by Celery retry/failure handlers)
+            logger.error(
+                f"Marking declaration as FAILED due to permanent error",
+                extra={
+                    "declaration_id": declaration_id,
+                    "error_message": str(exc)
+                }
+            )
 
             sentry_sdk.capture_exception(exc)
+            # Let Celery handle the task failure
             raise
 
     except Exception as exc:
@@ -149,12 +182,17 @@ def process_declaration_task(self, declaration_id: str) -> Dict[str, Any]:
             extra={"declaration_id": declaration_id}
         )
 
-        asyncio.run(_mark_declaration_failed(
-            declaration_id,
-            f"Unexpected error: {type(exc).__name__}: {str(exc)}"
-        ))
+        # Log unexpected error
+        logger.error(
+            f"Marking declaration as FAILED due to unexpected error",
+            extra={
+                "declaration_id": declaration_id,
+                "error_message": f"{type(exc).__name__}: {str(exc)}"
+            }
+        )
 
         sentry_sdk.capture_exception(exc)
+        # Let Celery handle the task failure
         raise
 
 
@@ -166,9 +204,9 @@ async def _process_declaration_async(declaration_id: str) -> Dict[str, Any]:
         declaration_id: UUID string of declaration
 
     Returns:
-        dict with status and declaration_id
+        dict with status, declaration_id, and timing metrics
     """
-    stage_start = time.time()
+    ocr_start = time.time()
 
     async with AsyncSessionLocal() as db:
         repo = DeclarationRepository(db)
@@ -182,7 +220,21 @@ async def _process_declaration_async(declaration_id: str) -> Dict[str, Any]:
         if not declaration.uploaded_files:
             raise ValueError("No uploaded files found in declaration")
 
-        uploaded_files = declaration.uploaded_files
+        # Convert uploaded_files list to dict keyed by file_type
+        uploaded_files_list = declaration.uploaded_files
+        uploaded_files = {}
+
+        # Handle both list format (from Story 1.6) and dict format
+        if isinstance(uploaded_files_list, list):
+            for file_metadata in uploaded_files_list:
+                file_type = file_metadata.get("file_type")
+                if file_type:
+                    uploaded_files[file_type] = file_metadata
+        elif isinstance(uploaded_files_list, dict):
+            uploaded_files = uploaded_files_list
+        else:
+            raise ValueError(f"Invalid uploaded_files structure: {type(uploaded_files_list)}")
+
         required_docs = ["AN", "BOL", "CO", "INVOICE"]
 
         # Stage 1: Update to PROCESSING_OCR status
@@ -190,9 +242,12 @@ async def _process_declaration_async(declaration_id: str) -> Dict[str, Any]:
         await repo.update_status_and_progress(
             UUID(declaration_id),
             DeclarationStatus.PROCESSING_OCR,
-            0.1
+            0.2
         )
         sentry_sdk.set_tag("processing_stage", "PROCESSING_OCR")
+
+        # Track OCR stage start time
+        stage_start = time.time()
 
         # Process all 4 PDFs through OCR in parallel
         ocr_service = OCRService()
@@ -256,32 +311,24 @@ async def _process_declaration_async(declaration_id: str) -> Dict[str, Any]:
             }
         )
 
-        # Stage 3: Update to VALIDATING status
+        # Stage 3: Store extracted data in database
         stage_start = time.time()
-        logger.info(f"Stage 3: Validating data", extra={"declaration_id": declaration_id})
-        await repo.update_status_and_progress(
-            UUID(declaration_id),
-            DeclarationStatus.VALIDATING,
-            0.7
-        )
-        sentry_sdk.set_tag("processing_stage", "VALIDATING")
+        logger.info(f"Stage 3: Storing extracted data", extra={"declaration_id": declaration_id})
 
-        # Store extracted data in declaration
+        # Store extracted data and confidence scores in declaration
         declaration = await repo.get_by_id(UUID(declaration_id))
         declaration.extracted_data = extracted_data.model_dump()
-        declaration.confidence_scores = {
-            "overall": extracted_data.overall_confidence,
-            "shipper": extracted_data.shipper.confidence if extracted_data.shipper else 0.0,
-            "consignee": extracted_data.consignee.confidence if extracted_data.consignee else 0.0,
-        }
+        declaration.confidence_scores = extracted_data.confidence_scores
         await db.commit()
 
-        validation_duration = time.time() - stage_start
+        storage_duration = time.time() - stage_start
         logger.info(
-            f"Validation complete",
+            f"Data storage complete",
             extra={
                 "declaration_id": declaration_id,
-                "duration_seconds": validation_duration
+                "duration_seconds": storage_duration,
+                "overall_confidence": extracted_data.overall_confidence,
+                "product_count": len(extracted_data.products)
             }
         )
 
@@ -294,15 +341,59 @@ async def _process_declaration_async(declaration_id: str) -> Dict[str, Any]:
         )
         sentry_sdk.set_tag("processing_stage", "READY_FOR_REVIEW")
 
+        # Store performance metrics in declaration metadata for analytics
+        performance_metadata = {
+            "ocr_duration_seconds": ocr_duration,
+            "llm_duration_seconds": llm_duration,
+            "storage_duration_seconds": storage_duration,
+            "total_duration_seconds": ocr_duration + llm_duration + storage_duration
+        }
+
+        # Update declaration with performance metadata
+        declaration = await repo.get_by_id(UUID(declaration_id))
+        if not declaration.extracted_data:
+            declaration.extracted_data = {}
+        declaration.extracted_data["_performance_metrics"] = performance_metadata
+        await db.commit()
+
         return {
             "status": "READY_FOR_REVIEW",
-            "declaration_id": declaration_id
+            "declaration_id": declaration_id,
+            "ocr_duration": ocr_duration,
+            "llm_duration": llm_duration,
+            "storage_duration": storage_duration
         }
+
+
+def _mark_declaration_failed_sync(declaration_id: str, error_message: str) -> None:
+    """
+    Mark declaration as FAILED with error message (synchronous version for Celery error handlers)
+
+    Args:
+        declaration_id: UUID string
+        error_message: Error description
+    """
+    async def _do_mark_failed():
+        async with AsyncSessionLocal() as db:
+            repo = DeclarationRepository(db)
+            await repo.update_status_and_progress(
+                UUID(declaration_id),
+                DeclarationStatus.FAILED,
+                0.0,
+                error_message=error_message
+            )
+
+    # Run in a new event loop (safe for Celery tasks)
+    loop = asyncio.new_event_loop()
+    try:
+        loop.run_until_complete(_do_mark_failed())
+    finally:
+        loop.close()
 
 
 async def _mark_declaration_failed(declaration_id: str, error_message: str) -> None:
     """
-    Mark declaration as FAILED with error message
+    Mark declaration as FAILED with error message (async version)
 
     Args:
         declaration_id: UUID string

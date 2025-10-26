@@ -293,3 +293,5 @@ Pipfile.lock
 poetry.lock
 
 temp-dev/
+
+resources/

@@ -4,14 +4,14 @@ services:
   # PostgreSQL 18.0 Database
   postgres:
     image: postgres:18.0-alpine
-    container_name: logai-postgres
+    container_name: logai-focus-postgres
     environment:
       POSTGRES_DB: customs_db
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - postgres-data:/var/lib/postgresql/data
     ports:
-      - "8881:5432"
+      - "8781:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
@@ -24,11 +24,11 @@ services:
   # Redis 7.4.1 Cache & Message Broker
   redis:
     image: redis:7.4.1-alpine
-    container_name: logai-redis
+    container_name: logai-focus-redis
     volumes:
       - redis-data:/data
     ports:
-      - "8882:6379"
+      - "8782:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -43,9 +43,9 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: logai-backend
+    container_name: logai-focus-backend
     ports:
-      - "8880:8000"
+      - "8780:8000"
     env_file:
       - .env
     environment:
@@ -70,7 +70,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: logai-celery-worker
+    container_name: logai-focus-celery-worker
     command: celery -A src.core.celery_app worker --loglevel=info
     env_file:
       - .env
@@ -104,9 +104,9 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: logai-frontend
+    container_name: logai-focus-frontend
     ports:
-      - "8879:3000"
+      - "8779:3000"
     environment:
       NEXT_PUBLIC_API_URL: http://backend:8000
     depends_on:

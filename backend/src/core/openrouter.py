@@ -2,6 +2,7 @@
 OpenRouter API Client for GPT-5 LLM Integration
 """
 import httpx
+import json
 from typing import List, Dict, Any
 from tenacity import (
     retry,
@@ -50,7 +51,7 @@ class OpenRouterClient:
                 "X-Title": "LogAI Customs Declaration Platform",  # Application identifier
                 "Content-Type": "application/json"
             },
-            timeout=60.0  # 60 second timeout for LLM responses
+            timeout=240.0  # 240 second (4 minute) timeout for LLM responses - GPT-5 can be slow for large extractions
         )
 
     async def chat_completion(
@@ -140,7 +141,26 @@ class OpenRouterClient:
                 }
             )
             response.raise_for_status()
-            return response.json()
+
+            # Try to parse JSON response
+            try:
+                return response.json()
+            except json.JSONDecodeError as e:
+                # Log the raw response for debugging
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(
+                    f"OpenRouter API returned invalid JSON. "
+                    f"Status code: {response.status_code}, "
+                    f"Response length: {len(response.text)}, "
+                    f"First 1000 chars: {response.text[:1000]}, "
+                    f"Last 500 chars: {response.text[-500:]}, "
+                    f"JSON error: {str(e)}"
+                )
+                raise OpenRouterException(
+                    detail=f"OpenRouter API returned invalid JSON: {str(e)}. Response: {response.text[:200]}",
+                    original_error=e
+                )
 
         except httpx.HTTPStatusError as e:
             # Handle specific HTTP errors

@@ -1,1 +1,2 @@
 - always use tailscale domain for development: tinxudev.airplane-manta.ts.net
+- always us docker compose down, and docker compose up -d --build to pickup the latest code changes

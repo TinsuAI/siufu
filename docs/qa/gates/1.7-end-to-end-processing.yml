@@ -1,0 +1,88 @@
+schema: 1
+story: '1.7'
+story_title: 'Process Complete Declaration End-to-End'
+gate: CONCERNS
+status_reason: 'Core extraction pipeline functional and well-architected, but missing integration tests, validation reference, and NFR1 performance target (200-232s vs 90s). Three blockers prevent DONE status.'
+reviewer: 'Quinn (Test Architect)'
+updated: '2025-10-23T02:36:00Z'
+
+top_issues:
+  - severity: high
+    category: testing
+    description: 'Missing integration tests (AC #8, Task 7) - no test_end_to_end_processing.py'
+    suggested_owner: dev
+    refs:
+      - 'backend/tests/integration/'
+  - severity: high
+    category: testing
+    description: 'Missing validation reference (AC #9, Task 8) - no resources/sample/validation-reference.json for accuracy verification'
+    suggested_owner: dev
+    refs:
+      - 'resources/sample/validation-reference.json'
+  - severity: high
+    category: performance
+    description: 'NFR1 performance target FAILED - actual: 200-232s vs. target: 90s (2.5x slower due to LLM extraction bottleneck)'
+    suggested_owner: po
+    refs:
+      - 'backend/src/services/llm_service.py'
+      - 'backend/src/core/openrouter.py'
+  - severity: medium
+    category: reliability
+    description: 'Celery worker readiness issue - tasks submitted before worker ready get orphaned in queue'
+    suggested_owner: dev
+    refs:
+      - 'backend/src/api/v1/health.py'
+
+waiver:
+  active: false
+
+quality_score: 60
+# Calculation: 100 - (20 × 3 high severity) = 40 baseline
+# +20 for excellent code quality in completed tasks
+# Result: 60/100
+
+expires: '2025-11-06T02:36:00Z'  # 2 weeks from review
+
+evidence:
+  tests_reviewed: 0  # No automated integration tests yet
+  risks_identified: 4
+  trace:
+    ac_covered: [1, 2, 3, 4, 5, 6, 7]  # API endpoints, OCR, LLM extraction, storage functional
+    ac_gaps: [8, 9]  # Missing: test all 3 samples, validation accuracy
+
+nfr_validation:
+  security:
+    status: PASS
+    notes: 'JWT auth on endpoints, no SQL injection risks, secrets externalized properly'
+  performance:
+    status: FAIL
+    notes: 'NFR1 requires 90s, actual is 200-232s. LLM extraction takes 189-225s (bottleneck). Needs optimization or target revision.'
+  reliability:
+    status: CONCERNS
+    notes: 'Celery worker readiness issue can cause orphaned tasks. Need health check endpoint and deployment readiness probes.'
+  maintainability:
+    status: PASS
+    notes: 'Excellent schema design, comprehensive prompts, clean separation of concerns. Well-documented code.'
+
+recommendations:
+  immediate:  # MUST fix before marking DONE
+    - action: 'Create integration test suite with all 3 samples (test_end_to_end_processing.py)'
+      refs: ['backend/tests/integration/test_end_to_end_processing.py']
+    - action: 'Create validation reference file with ground truth data for accuracy verification'
+      refs: ['resources/sample/validation-reference.json']
+    - action: 'Address NFR1 performance - either optimize LLM extraction or revise 90s target'
+      refs: ['backend/src/services/llm_service.py']
+    - action: 'Add celery worker health check endpoint'
+      refs: ['backend/src/api/v1/health.py']
+    - action: 'Complete documentation in runbook.md (Task 10)'
+      refs: ['docs/runbook.md']
+
+  future:  # Can be addressed in subsequent iterations
+    - action: 'Update story tasks to clarify 4 files (not 6) processed'
+      refs: ['docs/stories/1.7.end-to-end-processing.md']
+    - action: 'Add LLM response caching for repeated extractions'
+      refs: ['backend/src/services/llm_service.py']
+    - action: 'Add extraction quality metrics dashboard to Sentry'
+      refs: ['backend/src/workers/declaration_processor.py']
+    - action: 'Consider GPT-5-mini for faster extraction (trade speed vs accuracy)'
+      refs: ['backend/src/core/openrouter.py']

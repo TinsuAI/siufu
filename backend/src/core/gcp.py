@@ -25,6 +25,12 @@ def load_gcp_credentials() -> service_account.Credentials:
             "See docs/setup-google-cloud.md for instructions."
         )
 
+    if os.path.isdir(secret_path):
+        raise IsADirectoryError(
+            f"GCP service account key path is a directory, not a file: {secret_path}. "
+            "Check docker-compose.yml volume mount - it should mount the JSON file directly, not the directory."
+        )
+
     with open(secret_path, 'r') as f:
         credentials_info = json.load(f)
 

@@ -9,7 +9,12 @@ import sentry_sdk
 from ..core.openrouter import OpenRouterClient
 from ..schemas.ocr import OCRResult
 from ..schemas.extraction import ExtractedData
+from ..schemas.vietnamese_declaration import VietnameseDeclarationData
 from .prompts import SYSTEM_PROMPT, get_extraction_user_prompt
+from .vietnamese_extraction_prompt import (
+    VIETNAMESE_DECLARATION_SYSTEM_PROMPT,
+    get_vietnamese_extraction_prompt
+)
 
 
 # Model tier constants
@@ -103,22 +108,29 @@ class LLMService:
         ocr_co: OCRResult | None = None,
         ocr_invoice: OCRResult | None = None,
         model: str = MODEL_FLAGSHIP
-    ) -> ExtractedData:
+    ) -> VietnameseDeclarationData:
         """
-        Extract structured data from multiple customs documents
+        Extract structured data from multiple customs documents (77 fields Vietnamese format)
+
+        This method extracts ALL 77 fields required for Vietnamese customs declaration
+        as specified in docs/stories/1.7-field-mapping.md
 
         Args:
             ocr_an: OCR result from Arrival Notice
             ocr_bol: OCR result from Bill of Lading
             ocr_co: OCR result from Certificate of Origin
             ocr_invoice: OCR result from Commercial Invoice
-            model: Model tier to use
+            model: Model tier to use (default: GPT-5 Flagship)
 
         Returns:
-            ExtractedData combining information from all documents
+            VietnameseDeclarationData with all 77 extracted fields
+
+        Raises:
+            OpenRouterException: If API call fails
+            ValidationError: If LLM response doesn't match schema
         """
-        # Format all OCR results into single prompt
-        user_prompt = get_extraction_user_prompt(
+        # Format all OCR results into comprehensive prompt
+        user_prompt = get_vietnamese_extraction_prompt(
             ocr_text_an=self._format_ocr_result(ocr_an) if ocr_an else "",
             ocr_text_bol=self._format_ocr_result(ocr_bol) if ocr_bol else "",
             ocr_text_co=self._format_ocr_result(ocr_co) if ocr_co else "",
@@ -126,23 +138,26 @@ class LLMService:
         )
 
         messages = [
-            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "system", "content": VIETNAMESE_DECLARATION_SYSTEM_PROMPT},
             {"role": "user", "content": user_prompt}
         ]
 
         response = await self.client.chat_completion(
             messages=messages,
             model=model,
-            temperature=0.1,
-            max_tokens=4096
+            temperature=0.1,  # Deterministic extraction
+            max_tokens=16384  # Increased for 77 fields + confidence scores (doubled to fix truncation)
         )
 
         llm_response_text = response["choices"][0]["message"]["content"]
         parsed_json = self._parse_llm_response(llm_response_text)
-        extracted_data = ExtractedData.model_validate(parsed_json)
 
+        # Validate against Vietnamese declaration schema
+        extracted_data = VietnameseDeclarationData.model_validate(parsed_json)
+
+        # Calculate overall confidence if not provided by LLM
         if extracted_data.overall_confidence == 0.0:
-            extracted_data.overall_confidence = self._calculate_overall_confidence(extracted_data)
+            extracted_data.overall_confidence = self._calculate_vietnamese_confidence(extracted_data)
 
         self._log_token_usage(response, model)
 
@@ -222,7 +237,17 @@ class LLMService:
         if match:
             try:
                 return json.loads(match.group(0))
-            except json.JSONDecodeError:
+            except json.JSONDecodeError as e:
+                # Log JSON decode error with context
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(
+                    f"JSON decode error: {str(e)}. "
+                    f"Response length: {len(response_text)}, "
+                    f"Extracted JSON length: {len(match.group(0))}, "
+                    f"First 500 chars: {response_text[:500]}, "
+                    f"Last 500 chars: {response_text[-500:]}"
+                )
                 pass
 
         # Log raw response for debugging
@@ -268,6 +293,23 @@ class LLMService:
 
         # Return average, or 0.0 if no confidences found
         return sum(confidences) / len(confidences) if confidences else 0.0
+
+    def _calculate_vietnamese_confidence(self, extracted_data: VietnameseDeclarationData) -> float:
+        """
+        Calculate overall confidence score for Vietnamese declaration (77 fields)
+
+        Uses confidence_scores dict with all field-level confidence scores
+
+        Args:
+            extracted_data: Vietnamese declaration data with per-field confidence scores
+
+        Returns:
+            Average confidence score (0.0-1.0)
+        """
+        if extracted_data.confidence_scores:
+            confidences = list(extracted_data.confidence_scores.values())
+            return sum(confidences) / len(confidences) if confidences else 0.0
+        return 0.0
 
     def _log_token_usage(self, response: Dict[str, Any], model: str) -> None:
         """

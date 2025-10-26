@@ -1,0 +1,563 @@
+#!/usr/bin/env python3
+"""
+General Sample Validation Tool
+Validates extraction results against ground truth from CD.xlsx
+
+Usage:
+    python3 validate_sample.py <sample_folder_path>
+
+Example:
+    python3 validate_sample.py ../resources/sample/2
+    python3 validate_sample.py ../resources/sample/1
+"""
+
+import json
+import sys
+from pathlib import Path
+from difflib import SequenceMatcher
+from datetime import datetime
+from openpyxl import load_workbook
+
+
+def fuzzy_match(str1, str2, threshold=0.85):
+    """Check if two strings match with fuzzy matching"""
+    if str1 is None or str2 is None:
+        return str1 == str2, 0.0
+    similarity = SequenceMatcher(None, str(str1).lower().strip(), str(str2).lower().strip()).ratio()
+    return similarity >= threshold, similarity
+
+
+def numeric_tolerance_match(val1, val2, tolerance_percent=0.01):
+    """Check if two numeric values match within tolerance"""
+    if val1 is None or val2 is None:
+        return val1 == val2, 0.0
+    try:
+        val1 = float(val1)
+        val2 = float(val2)
+        diff = abs(val1 - val2)
+        avg = (val1 + val2) / 2
+        diff_percent = diff / avg if avg != 0 else 0
+        return diff_percent <= tolerance_percent, diff_percent
+    except (ValueError, TypeError):
+        return False, 1.0
+
+
+def extract_ground_truth_from_cd_xlsx(xlsx_path):
+    """Extract ground truth data from CD.xlsx"""
+    wb = load_workbook(xlsx_path)
+    ws = wb['Tờ khai nhập ']
+
+    ground_truth = {
+        "declaration_number": str(ws.cell(4, 5).value or ""),
+        "importer_tax_code": str(ws.cell(10, 8).value or ""),
+        "importer_name": str(ws.cell(11, 8).value or ""),
+        "importer_postal_code": str(ws.cell(13, 8).value or "") if ws.cell(13, 8).value else None,
+        "importer_address": str(ws.cell(14, 8).value or ""),
+        "exporter_name": str(ws.cell(23, 8).value or ""),
+        "exporter_address_line1": str(ws.cell(25, 8).value or ""),
+        "exporter_address_line2": str(ws.cell(25, 21).value or ""),
+        "exporter_address_line3": f"{ws.cell(26, 8).value or ''} {ws.cell(26, 21).value or ''}".strip(),
+        "exporter_country_code": str(ws.cell(27, 8).value or ""),
+        "warehouse_code": str(ws.cell(30, 21).value or "") if ws.cell(30, 21).value else None,
+        "warehouse_name": str(ws.cell(30, 26).value or "") if ws.cell(30, 26).value else None,
+        "representative_hs_code": str(ws.cell(6, 31).value or ""),
+    }
+
+    # Extract transport and invoice data
+    for row in range(30, 100):
+        cell_val = ws.cell(row, 3).value
+        if cell_val:
+            cell_str = str(cell_val)
+
+            # B/L number (row 31, col 4)
+            if row == 31:
+                bol_val = ws.cell(row, 4).value
+                if bol_val:
+                    # Remove date prefix if present (e.g., 270925JJCXMHPALS53751 -> JJCXMHPALS53751)
+                    bol_str = str(bol_val)
+                    if len(bol_str) > 15:
+                        ground_truth["bill_of_lading_number"] = bol_str[6:]  # Skip date prefix
+                    else:
+                        ground_truth["bill_of_lading_number"] = bol_str
+
+            # Vessel (row 34, col 26)
+            if row == 34:
+                ground_truth["vessel_name"] = str(ws.cell(row, 26).value or "")
+
+            # Arrival date (row 35, col 21)
+            if row == 35:
+                arrival = ws.cell(row, 21).value
+                if arrival:
+                    ground_truth["arrival_date"] = str(arrival)
+
+            # Total packages (row 36, col 11)
+            if row == 36:
+                packages = ws.cell(row, 11).value
+                if packages:
+                    try:
+                        ground_truth["total_packages"] = float(str(packages).replace('.', '').replace(',', '.'))
+                    except:
+                        pass
+                ground_truth["package_unit"] = str(ws.cell(row, 16).value or "")
+
+            # Gross weight (row 37, col 11)
+            if row == 37:
+                weight = ws.cell(row, 11).value
+                if weight:
+                    try:
+                        ground_truth["gross_weight_kg"] = float(str(weight).replace('.', '').replace(',', '.'))
+                    except:
+                        pass
+
+            # Container count (row 38, col 11)
+            if row == 38:
+                containers = ws.cell(row, 11).value
+                if containers:
+                    try:
+                        ground_truth["container_count"] = int(containers)
+                    except:
+                        pass
+
+            # Invoice number (row 41, col 10)
+            if row == 41:
+                inv_num = str(ws.cell(row, 10).value or "")
+                if inv_num and 'A -' in inv_num:
+                    ground_truth["invoice_number"] = inv_num.split('A -')[-1].strip()
+                elif inv_num:
+                    ground_truth["invoice_number"] = inv_num
+
+            # Invoice date (row 43, col 10)
+            if row == 43:
+                inv_date = ws.cell(row, 10).value
+                if inv_date:
+                    ground_truth["invoice_date"] = str(inv_date)
+
+            # Invoice total (row 45, col 16)
+            if row == 45:
+                inv_total = ws.cell(row, 16).value
+                if inv_total:
+                    try:
+                        ground_truth["invoice_total"] = float(str(inv_total).replace('.', '').replace(',', '.'))
+                    except:
+                        pass
+
+            # CO number (row 85 - look for "Hàng có CO form E số")
+            if "CO form E" in cell_str or "CCPIT" in cell_str:
+                # Extract CO number from note field
+                for col in range(4, 30):
+                    val = str(ws.cell(row, col).value or "")
+                    if "số:" in val or "CCPIT" in val or (val.isdigit() and len(val) > 10):
+                        # Extract number after "số:"
+                        if "số:" in val:
+                            co_num = val.split("số:")[-1].split()[0].strip()
+                            ground_truth["co_number"] = co_num
+                        elif "CCPIT" in val or (val.isdigit() and len(val) > 10):
+                            ground_truth["co_number"] = val.strip()
+
+    return ground_truth
+
+
+def generate_markdown_report(sample_path, validation_results, ground_truth, extracted, timestamp):
+    """Generate a markdown validation report"""
+
+    sample_name = Path(sample_path).name
+    report_path = Path(sample_path) / f"validation-report-{timestamp}.md"
+
+    md = []
+    md.append(f"# Validation Report - Sample {sample_name}")
+    md.append(f"")
+    md.append(f"**Generated:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    md.append(f"**Sample Path:** `{sample_path}`")
+    md.append(f"**Validation Tool:** `backend/validate_sample.py`")
+    md.append(f"")
+    md.append(f"---")
+    md.append(f"")
+
+    # Executive Summary
+    md.append(f"## Executive Summary")
+    md.append(f"")
+    md.append(f"| Metric | Value |")
+    md.append(f"|--------|-------|")
+    md.append(f"| **Total Checks** | {validation_results['total_checks']} |")
+    md.append(f"| **Passed** | {validation_results['passed_checks']:.1f} |")
+    md.append(f"| **Accuracy** | {validation_results['accuracy']:.1f}% |")
+    md.append(f"| **Overall Confidence** | {extracted.get('overall_confidence', 0):.1%} |")
+    md.append(f"| **Status** | {extracted.get('status', 'UNKNOWN')} |")
+    md.append(f"| **Verdict** | **{validation_results['verdict']}** |")
+    md.append(f"")
+
+    # Verdict explanation
+    if validation_results['verdict'] == 'PASS':
+        md.append(f"✅ **Extraction quality MEETS or EXCEEDS AC#9 requirements (≥85% accuracy)**")
+    elif validation_results['verdict'] == 'EXCELLENT':
+        md.append(f"🎉 **Extraction quality EXCEEDS requirements with exceptional accuracy (≥95%)**")
+    elif validation_results['verdict'] == 'CONCERNS':
+        md.append(f"⚠️ **Extraction quality BELOW target but may be acceptable for MVP**")
+    else:
+        md.append(f"❌ **Extraction quality INSUFFICIENT - requires improvement**")
+    md.append(f"")
+    md.append(f"---")
+    md.append(f"")
+
+    # Critical Failures
+    if validation_results['critical_failures']:
+        md.append(f"## ❌ Critical Failures ({len(validation_results['critical_failures'])})")
+        md.append(f"")
+        md.append(f"The following critical fields did not match expected values:")
+        md.append(f"")
+        for failure in validation_results['critical_failures']:
+            md.append(f"- {failure}")
+        md.append(f"")
+        md.append(f"---")
+        md.append(f"")
+
+    # Warnings
+    if validation_results['warnings']:
+        md.append(f"## ⚠️ Warnings ({len(validation_results['warnings'])})")
+        md.append(f"")
+        md.append(f"The following fields had lower similarity scores:")
+        md.append(f"")
+        for warning in validation_results['warnings']:
+            md.append(f"- {warning}")
+        md.append(f"")
+        md.append(f"---")
+        md.append(f"")
+
+    # Detailed Results
+    md.append(f"## Detailed Validation Results")
+    md.append(f"")
+
+    # Critical Fields Table
+    md.append(f"### Critical Fields (Must be 100% accurate)")
+    md.append(f"")
+    md.append(f"| Field | Expected | Actual | Match | Confidence |")
+    md.append(f"|-------|----------|--------|-------|------------|")
+
+    for detail in validation_results.get('details', {}).get('critical', []):
+        status_icon = "✅" if detail['match'] else "❌"
+        md.append(f"| {status_icon} {detail['field']} | `{detail['expected']}` | `{detail['actual']}` | {detail['similarity']:.0%} | {detail['confidence']:.0%} |")
+
+    md.append(f"")
+
+    # Important Fields Table
+    md.append(f"### Important Fields (≥85% fuzzy match threshold)")
+    md.append(f"")
+    md.append(f"| Field | Expected | Actual | Similarity |")
+    md.append(f"|-------|----------|--------|------------|")
+
+    for detail in validation_results.get('details', {}).get('important', []):
+        status_icon = "✅" if detail['match'] else "⚠️"
+        md.append(f"| {status_icon} {detail['field']} | `{detail['expected']}` | `{detail['actual']}` | {detail['similarity']:.0%} |")
+
+    md.append(f"")
+    md.append(f"---")
+    md.append(f"")
+
+    # Known Discrepancies
+    md.append(f"## 📌 Known Discrepancies")
+    md.append(f"")
+    md.append(f"These discrepancies are expected due to differences between source documents (AN, BOL, CO, INVOICE) and the processed customs declaration (CD.xlsx):")
+    md.append(f"")
+    md.append(f"1. **Declaration Number**: System-generated field, not extracted from source documents")
+    md.append(f"2. **CO Number**: CD.xlsx may show internal tracking number vs official CO document number")
+    md.append(f"3. **Arrival Date**: May differ between CO issue date and actual arrival date in AN")
+    md.append(f"4. **Address Formatting**: Vietnamese vs English, with/without diacritics")
+    md.append(f"5. **Port Names**: Different levels of specificity (port vs terminal)")
+    md.append(f"")
+    md.append(f"---")
+    md.append(f"")
+
+    # Recommendations
+    md.append(f"## Recommendations")
+    md.append(f"")
+
+    if validation_results['accuracy'] >= 85:
+        md.append(f"✅ **No immediate action required** - Extraction quality meets AC#9 requirements.")
+        md.append(f"")
+        md.append(f"Optional improvements:")
+        md.append(f"- Monitor confidence scores for fields below 70%")
+        md.append(f"- Consider prompt tuning for fields with lower similarity")
+    elif validation_results['accuracy'] >= 75:
+        md.append(f"⚠️ **Consider the following actions:**")
+        md.append(f"")
+        md.append(f"1. Review critical failures and determine if they are acceptable discrepancies")
+        md.append(f"2. If discrepancies are due to CD.xlsx post-processing, validate against source PDFs instead")
+        md.append(f"3. Consider adjusting accuracy calculation to account for semantic equivalents")
+        md.append(f"4. For MVP, current quality may be sufficient if critical business fields are accurate")
+    else:
+        md.append(f"❌ **Action required:**")
+        md.append(f"")
+        md.append(f"1. Investigate critical failures and root causes")
+        md.append(f"2. Review and improve LLM extraction prompt")
+        md.append(f"3. Verify source document quality (OCR accuracy)")
+        md.append(f"4. Consider model fine-tuning or prompt engineering")
+
+    md.append(f"")
+    md.append(f"---")
+    md.append(f"")
+
+    # Footer
+    md.append(f"## Validation Metadata")
+    md.append(f"")
+    md.append(f"- **Tool Version:** 1.0")
+    md.append(f"- **Ground Truth Source:** CD.xlsx")
+    md.append(f"- **Extraction Source:** results.json")
+    md.append(f"- **Validation Date:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    md.append(f"- **Fuzzy Match Threshold:** 85%")
+    md.append(f"- **Numeric Tolerance:** ±1%")
+    md.append(f"")
+    md.append(f"---")
+    md.append(f"")
+    md.append(f"*Generated by Quinn (Test Architect) - AC#9 Validation Tool*")
+
+    # Write report
+    with open(report_path, 'w', encoding='utf-8') as f:
+        f.write('\n'.join(md))
+
+    return report_path
+
+
+def validate_sample(sample_path):
+    """Main validation function"""
+
+    sample_path = Path(sample_path).resolve()
+
+    if not sample_path.exists():
+        print(f"❌ Error: Sample path does not exist: {sample_path}")
+        return 1
+
+    cd_xlsx_path = sample_path / "CD.xlsx"
+    results_json_path = sample_path / "results.json"
+
+    if not cd_xlsx_path.exists():
+        print(f"❌ Error: CD.xlsx not found in {sample_path}")
+        print(f"   Expected: {cd_xlsx_path}")
+        return 1
+
+    if not results_json_path.exists():
+        print(f"❌ Error: results.json not found in {sample_path}")
+        print(f"   Expected: {results_json_path}")
+        return 1
+
+    print("=" * 100)
+    print(f"SAMPLE VALIDATION - {sample_path.name}")
+    print("=" * 100)
+    print()
+
+    # Load ground truth
+    print("📋 Loading ground truth from CD.xlsx...")
+    try:
+        ground_truth = extract_ground_truth_from_cd_xlsx(cd_xlsx_path)
+        print(f"✅ Extracted {len(ground_truth)} fields from CD.xlsx")
+    except Exception as e:
+        print(f"❌ Error reading CD.xlsx: {e}")
+        return 1
+    print()
+
+    # Load extraction results
+    print("📋 Loading extraction results...")
+    try:
+        with open(results_json_path, 'r', encoding='utf-8') as f:
+            results = json.load(f)
+        extracted = results['extracted_data']
+        confidence_scores = results['confidence_scores']
+        print(f"✅ Loaded extraction results (status: {results['status']})")
+        print(f"   Overall confidence: {extracted.get('overall_confidence', 0):.1%}")
+    except Exception as e:
+        print(f"❌ Error reading results.json: {e}")
+        return 1
+    print()
+
+    # Validation tracking
+    total = 0
+    passed = 0
+    critical_failures = []
+    important_warnings = []
+    critical_details = []
+    important_details = []
+
+    # === CRITICAL FIELDS ===
+    print("=" * 100)
+    print("CRITICAL FIELDS VALIDATION")
+    print("=" * 100)
+    print()
+
+    critical_checks = [
+        ("Declaration Number", ground_truth.get('declaration_number'),
+         extracted.get('declaration_header', {}).get('declaration_number'), 'declaration_header.declaration_number'),
+        ("Importer Tax Code", ground_truth.get('importer_tax_code'),
+         extracted.get('importer', {}).get('tax_code'), 'importer.tax_code'),
+        ("Invoice Number", ground_truth.get('invoice_number'),
+         extracted.get('invoice', {}).get('invoice_number'), 'invoice.invoice_number'),
+        ("Invoice Total", ground_truth.get('invoice_total'),
+         extracted.get('invoice', {}).get('invoice_total'), 'invoice.invoice_total'),
+        ("Bill of Lading", ground_truth.get('bill_of_lading_number'),
+         extracted.get('shipping_transport', {}).get('bill_of_lading_number'), 'shipping_transport.bill_of_lading_number'),
+        ("Representative HS Code", ground_truth.get('representative_hs_code'),
+         extracted.get('declaration_header', {}).get('representative_hs_code'), 'declaration_header.representative_hs_code'),
+    ]
+
+    for field_name, expected, actual, conf_key in critical_checks:
+        total += 1
+        conf = confidence_scores.get(conf_key, 0.0)
+
+        if isinstance(expected, (int, float)) and isinstance(actual, (int, float)):
+            matches, diff = numeric_tolerance_match(expected, actual, tolerance_percent=0.001)
+            similarity = 1.0 - diff
+        else:
+            if expected is None and actual is None:
+                matches, similarity = True, 1.0
+            elif expected is None or actual is None:
+                matches = (str(expected).strip() == str(actual).strip())
+                similarity = 1.0 if matches else 0.0
+            else:
+                matches = (str(expected).strip() == str(actual).strip())
+                _, similarity = fuzzy_match(expected, actual, threshold=0.99)
+
+        status = "✅ PASS" if matches else "❌ FAIL"
+        print(f"{status} {field_name}")
+        print(f"   Expected: {expected}")
+        print(f"   Actual:   {actual}")
+        print(f"   Confidence: {conf:.0%} | Similarity: {similarity:.0%}")
+        print()
+
+        critical_details.append({
+            'field': field_name,
+            'expected': expected,
+            'actual': actual,
+            'match': matches,
+            'confidence': conf,
+            'similarity': similarity
+        })
+
+        if matches:
+            passed += 1
+        else:
+            critical_failures.append(field_name)
+
+    # === IMPORTANT FIELDS ===
+    print("=" * 100)
+    print("IMPORTANT FIELDS VALIDATION")
+    print("=" * 100)
+    print()
+
+    important_checks = [
+        ("Importer Name", ground_truth.get('importer_name'), extracted.get('importer', {}).get('name')),
+        ("Importer Address", ground_truth.get('importer_address'), extracted.get('importer', {}).get('address')),
+        ("Exporter Name", ground_truth.get('exporter_name'), extracted.get('exporter', {}).get('name')),
+        ("Vessel Name", ground_truth.get('vessel_name'), extracted.get('shipping_transport', {}).get('vessel_name')),
+        ("Warehouse Name", ground_truth.get('warehouse_name'), extracted.get('shipping_transport', {}).get('warehouse_name')),
+        ("Invoice Date", ground_truth.get('invoice_date'), extracted.get('invoice', {}).get('invoice_date')),
+        ("Arrival Date", ground_truth.get('arrival_date'), extracted.get('shipping_transport', {}).get('arrival_date')),
+        ("Total Packages", ground_truth.get('total_packages'), extracted.get('package_container', {}).get('total_packages')),
+        ("Gross Weight", ground_truth.get('gross_weight_kg'), extracted.get('package_container', {}).get('gross_weight_kg')),
+    ]
+
+    for field_name, expected, actual in important_checks:
+        total += 1
+
+        if isinstance(expected, (int, float)) and isinstance(actual, (int, float)):
+            matches, diff = numeric_tolerance_match(expected, actual, tolerance_percent=0.01)
+            similarity = 1.0 - diff
+        else:
+            matches, similarity = fuzzy_match(expected, actual, threshold=0.85)
+
+        status = "✅ PASS" if matches else "⚠️ WARN"
+        print(f"{status} {field_name} (similarity: {similarity:.0%})")
+        print(f"   Expected: {expected}")
+        print(f"   Actual:   {actual}")
+        print()
+
+        important_details.append({
+            'field': field_name,
+            'expected': expected,
+            'actual': actual,
+            'match': matches,
+            'similarity': similarity
+        })
+
+        if matches:
+            passed += 1
+        elif similarity >= 0.70:
+            important_warnings.append(f"{field_name} ({similarity:.0%})")
+            passed += 0.7
+        else:
+            important_warnings.append(f"{field_name} ({similarity:.0%})")
+
+    # === SUMMARY ===
+    print("=" * 100)
+    print("VALIDATION SUMMARY")
+    print("=" * 100)
+    print()
+    print(f"📊 Total Checks: {total}")
+    print(f"✅ Passed: {passed:.1f} / {total}")
+    print(f"📈 Accuracy: {(passed/total)*100:.1f}%")
+    print()
+
+    if critical_failures:
+        print(f"❌ CRITICAL FAILURES ({len(critical_failures)}):")
+        for failure in critical_failures:
+            print(f"   - {failure}")
+        print()
+
+    if important_warnings:
+        print(f"⚠️ WARNINGS ({len(important_warnings)}):")
+        for warning in important_warnings:
+            print(f"   - {warning}")
+        print()
+
+    # Final verdict
+    accuracy = (passed/total)*100
+    if accuracy >= 95 and not critical_failures:
+        verdict = "EXCELLENT"
+        print("🎉 ✅ EXCELLENT - Extraction quality EXCEEDS requirements")
+    elif accuracy >= 85:
+        verdict = "PASS"
+        print("✅ PASS - Extraction quality MEETS AC#9 requirements")
+    elif accuracy >= 75:
+        verdict = "CONCERNS"
+        print("⚠️ CONCERNS - Extraction quality BELOW target but may be acceptable for MVP")
+    else:
+        verdict = "FAIL"
+        print("❌ FAIL - Extraction quality INSUFFICIENT")
+
+    print(f"   Accuracy: {accuracy:.1f}% (Target: ≥85%)")
+    print()
+    print("=" * 100)
+    print()
+
+    # Generate markdown report
+    validation_results = {
+        'total_checks': total,
+        'passed_checks': passed,
+        'accuracy': accuracy,
+        'critical_failures': critical_failures,
+        'warnings': important_warnings,
+        'verdict': verdict,
+        'details': {
+            'critical': critical_details,
+            'important': important_details
+        }
+    }
+
+    timestamp = datetime.now().strftime('%Y%m%d-%H%M%S')
+    report_path = generate_markdown_report(sample_path, validation_results, ground_truth, extracted, timestamp)
+
+    print(f"📄 Validation report saved to:")
+    print(f"   {report_path}")
+    print()
+
+    return 0
+
+
+if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        print("Usage: python3 validate_sample.py <sample_folder_path>")
+        print()
+        print("Example:")
+        print("  python3 validate_sample.py ../resources/sample/2")
+        sys.exit(1)
+
+    sample_path = sys.argv[1]
+    exit_code = validate_sample(sample_path)
+    sys.exit(exit_code)

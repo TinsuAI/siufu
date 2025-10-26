@@ -115,9 +115,10 @@ class FileStorageService:
         final_path = declaration_dir / filename
         temp_path = declaration_dir / f"{filename}.tmp"
 
-        # Get file size
-        await file.seek(0, 2)
-        file_size = await file.tell()
+        # Get file size by reading content
+        await file.seek(0)
+        content_preview = await file.read()
+        file_size = len(content_preview)
         await file.seek(0)
 
         try:

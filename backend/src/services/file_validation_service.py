@@ -31,7 +31,7 @@ class FileValidationService:
     Service for validating uploaded declaration files
 
     Validates:
-    - All 6 required files are present
+    - All 4 required files are present
     - File types match expected MIME types using magic bytes
     - File sizes are within limits
     """
@@ -39,16 +39,13 @@ class FileValidationService:
     # File size limits in bytes
     PDF_MAX_SIZE = 10 * 1024 * 1024  # 10MB
     IMAGE_MAX_SIZE = 5 * 1024 * 1024  # 5MB
-    EXCEL_MAX_SIZE = 2 * 1024 * 1024  # 2MB
 
-    # Required file fields
+    # Required file fields (4 input documents)
     REQUIRED_FIELDS = [
         "arrival_notice",
         "bill_of_lading",
         "certificate_of_origin",
-        "invoice",
-        "good_list",
-        "tariff"
+        "invoice"
     ]
 
     # Allowed MIME types for each file
@@ -56,15 +53,7 @@ class FileValidationService:
         "arrival_notice": ["application/pdf"],
         "bill_of_lading": ["application/pdf"],
         "certificate_of_origin": ["application/pdf"],
-        "invoice": ["application/pdf", "image/jpeg", "image/png"],
-        "good_list": [
-            "application/vnd.ms-excel",
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        ],
-        "tariff": [
-            "application/vnd.ms-excel",
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        ]
+        "invoice": ["application/pdf", "image/jpeg", "image/png"]
     }
 
     # Friendly names for error messages
@@ -72,9 +61,7 @@ class FileValidationService:
         "arrival_notice": "Arrival Notice (AN.pdf)",
         "bill_of_lading": "Bill of Lading (BOL.pdf)",
         "certificate_of_origin": "Certificate of Origin (CO.pdf)",
-        "invoice": "Invoice",
-        "good_list": "Good List",
-        "tariff": "Tariff"
+        "invoice": "Invoice"
     }
 
     def __init__(self):
@@ -85,7 +72,7 @@ class FileValidationService:
         files: Dict[str, Optional[UploadFile]]
     ) -> List[Dict[str, str]]:
         """
-        Validate that all 6 required files are present
+        Validate that all 4 required files are present
 
         Args:
             files: Dictionary mapping file field names to UploadFile objects
@@ -156,10 +143,11 @@ class FileValidationService:
         Raises:
             FileSizeLimitExceeded: If file size exceeds limit
         """
-        # Get file size
-        await file.seek(0, 2)  # Seek to end
-        file_size = await file.tell()
-        await file.seek(0)  # Reset to beginning
+        # Get file size by reading the entire file
+        await file.seek(0)
+        content = await file.read()
+        file_size = len(content)
+        await file.seek(0)  # Reset to beginning for later processing
 
         # Determine max size based on file type
         max_size = self._get_max_size(field_name, file)
@@ -233,8 +221,6 @@ class FileValidationService:
                 return self.IMAGE_MAX_SIZE
             else:
                 return self.PDF_MAX_SIZE
-        elif field_name in ["good_list", "tariff"]:
-            return self.EXCEL_MAX_SIZE
         else:
             return self.PDF_MAX_SIZE  # Default to PDF limit
 

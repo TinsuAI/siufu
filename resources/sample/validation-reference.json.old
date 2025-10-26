@@ -1,0 +1,187 @@
+{
+  "description": "Ground truth validation data for Story 1.7 end-to-end processing tests",
+  "created_date": "2025-10-22",
+  "note": "These values represent manually verified data from sample PDFs. Used to validate LLM extraction accuracy.",
+
+  "sample_1": {
+    "description": "First sample declaration - Adult diapers from China",
+    "critical_fields": {
+      "importer_tax_code": "0104118221",
+      "invoice_number": "LA2025-068",
+      "invoice_total": 23385.2,
+      "invoice_currency": "USD",
+      "bill_of_lading_number": "JJCXMHPALS53751",
+      "co_number": "CCPIT42102250011455",
+      "products": [
+        {
+          "hs_code": "96190000",
+          "quantity_1": 307700.0,
+          "quantity_unit_1": "PCE",
+          "invoice_unit_price": 0.076
+        }
+      ]
+    },
+    "important_fields": {
+      "importer_name": "CONG TY TNHH SAN XUAT DỊCH VỤ VÀ THUONG MAI THINH LINH",
+      "exporter_name": "QUANZHOU YOULI SANITARY PRODUCTS CO.,LTD",
+      "exporter_country_code": "CN",
+      "invoice_date": "26/09/2025",
+      "arrival_date": "30/09/2025",
+      "co_date": "30/09/2025",
+      "vessel_name": "GLORY SHANGHAI 2538S",
+      "port_of_loading_code": "CNXMN",
+      "port_of_discharge_code": "VNHPH",
+      "total_packages": 3077.0,
+      "package_unit": "PK",
+      "gross_weight_kg": 19480.1,
+      "container_count": 2
+    },
+    "calculated_fields": {
+      "total_taxable_value_vnd_range": [615000000, 625000000],
+      "total_tax_amount_vnd_range": [48000000, 51000000]
+    },
+    "metadata": {
+      "total_line_items": 1,
+      "minimum_confidence_for_critical_fields": 0.85
+    }
+  },
+
+  "sample_2": {
+    "description": "Second sample declaration - Same product as sample_1",
+    "critical_fields": {
+      "importer_tax_code": "0104118221",
+      "invoice_number": "LA2025-068",
+      "invoice_total": 23385.2,
+      "invoice_currency": "USD",
+      "bill_of_lading_number": "JJCXMHPALS53751",
+      "co_number": "CCPIT42102250011455",
+      "products": [
+        {
+          "hs_code": "96190000",
+          "quantity_1": 307700.0,
+          "quantity_unit_1": "PCE",
+          "invoice_unit_price": 0.076
+        }
+      ]
+    },
+    "important_fields": {
+      "importer_name": "CONG TY TNHH SAN XUAT DỊCH VỤ VÀ THUONG MAI THINH LINH",
+      "exporter_name": "QUANZHOU YOULI SANITARY PRODUCTS CO.,LTD",
+      "exporter_country_code": "CN",
+      "invoice_date": "26/09/2025",
+      "arrival_date": "30/09/2025",
+      "co_date": "30/09/2025",
+      "vessel_name": "GLORY SHANGHAI 2538S",
+      "port_of_loading_code": "CNXMN",
+      "port_of_discharge_code": "VNHPH",
+      "total_packages": 3077.0,
+      "package_unit": "PK",
+      "gross_weight_kg": 19480.1,
+      "container_count": 2
+    },
+    "calculated_fields": {
+      "total_taxable_value_vnd_range": [615000000, 625000000],
+      "total_tax_amount_vnd_range": [48000000, 51000000]
+    },
+    "metadata": {
+      "total_line_items": 1,
+      "minimum_confidence_for_critical_fields": 0.85
+    }
+  },
+
+  "sample_3": {
+    "description": "Third sample declaration - Same product as sample_1",
+    "critical_fields": {
+      "importer_tax_code": "0104118221",
+      "invoice_number": "LA2025-068",
+      "invoice_total": 23385.2,
+      "invoice_currency": "USD",
+      "bill_of_lading_number": "JJCXMHPALS53751",
+      "co_number": "CCPIT42102250011455",
+      "products": [
+        {
+          "hs_code": "96190000",
+          "quantity_1": 307700.0,
+          "quantity_unit_1": "PCE",
+          "invoice_unit_price": 0.076
+        }
+      ]
+    },
+    "important_fields": {
+      "importer_name": "CONG TY TNHH SAN XUAT DỊCH VỤ VÀ THUONG MAI THINH LINH",
+      "exporter_name": "QUANZHOU YOULI SANITARY PRODUCTS CO.,LTD",
+      "exporter_country_code": "CN",
+      "invoice_date": "26/09/2025",
+      "arrival_date": "30/09/2025",
+      "co_date": "30/09/2025",
+      "vessel_name": "GLORY SHANGHAI 2538S",
+      "port_of_loading_code": "CNXMN",
+      "port_of_discharge_code": "VNHPH",
+      "total_packages": 3077.0,
+      "package_unit": "PK",
+      "gross_weight_kg": 19480.1,
+      "container_count": 2
+    },
+    "calculated_fields": {
+      "total_taxable_value_vnd_range": [615000000, 625000000],
+      "total_tax_amount_vnd_range": [48000000, 51000000]
+    },
+    "metadata": {
+      "total_line_items": 1,
+      "minimum_confidence_for_critical_fields": 0.85
+    }
+  },
+
+  "accuracy_thresholds": {
+    "critical_fields": {
+      "description": "Fields that must be 100% accurate",
+      "match_type": "exact",
+      "required_accuracy": 1.0,
+      "fields": [
+        "importer.tax_code",
+        "invoice.invoice_number",
+        "invoice.invoice_total",
+        "products[].hs_code",
+        "products[].quantity_1",
+        "products[].invoice_unit_price",
+        "shipping_transport.bill_of_lading_number",
+        "certificate_of_origin.co_number"
+      ]
+    },
+    "important_fields": {
+      "description": "Fields that should be 90% accurate with fuzzy matching",
+      "match_type": "fuzzy",
+      "required_accuracy": 0.9,
+      "fuzzy_threshold": 0.85,
+      "fields": [
+        "importer.name",
+        "importer.address",
+        "exporter.name",
+        "exporter.address_line1",
+        "exporter.address_line2",
+        "exporter.address_line3",
+        "shipping_transport.vessel_name",
+        "products[].product_description"
+      ]
+    },
+    "optional_fields": {
+      "description": "Fields that are nice to have with 70% accuracy",
+      "match_type": "fuzzy",
+      "required_accuracy": 0.7,
+      "fields": [
+        "importer.phone",
+        "products[].brand_name",
+        "package_container.package_marks"
+      ]
+    },
+    "calculated_fields": {
+      "description": "Calculated fields with tolerance for exchange rate variations",
+      "match_type": "numeric_tolerance",
+      "tolerance_percent": 0.01,
+      "fields": [
+        "invoice.total_taxable_value_vnd",
+        "tax_summary.total_tax_amount_vnd"
+      ]
+    }
+  }
+}
