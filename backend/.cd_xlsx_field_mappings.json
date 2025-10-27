@@ -1,0 +1,81 @@
+{
+  "description": "Field mappings for extracting data from CD.xlsx files (Vietnamese Customs Declarations)",
+  "created_date": "2025-10-26",
+  "formats": {
+    "TKN": {
+      "description": "TKN sheet format - used by Sample 1 and Sample 3",
+      "main_sheet_name": "TKN",
+      "product_sheet_name": "HANG",
+      "header_fields": {
+        "declaration_number": {"row": 4, "col": 5},
+        "importer_tax_code": {"row": 10, "col": 8},
+        "importer_name": {"row": 8, "col": 7},
+        "importer_address": {"row": 11, "col": 7},
+        "exporter_name": {"row": 16, "col": 7},
+        "exporter_country_code": {"row": 17, "col": 7},
+        "exporter_address_line1": {"row": 18, "col": 7},
+        "exporter_address_line2": {"row": 19, "col": 7},
+        "bill_of_lading_number": {"row": 31, "col": 4},
+        "vessel_name": {"row": 32, "col": 4},
+        "port_of_discharge_code": {"row": 33, "col": 4},
+        "warehouse_code": {"row": 34, "col": 4},
+        "arrival_date": {"row": 35, "col": 4},
+        "total_packages": {"row": 37, "col": 4},
+        "package_unit": {"row": 37, "col": 12},
+        "gross_weight_kg": {"row": 39, "col": 4},
+        "gross_weight_unit": {"row": 39, "col": 12},
+        "invoice_number": {"row": 41, "col": 10},
+        "invoice_date": {"row": 43, "col": 10},
+        "invoice_incoterm": {"row": 44, "col": 10},
+        "invoice_total": {"row": 45, "col": 16},
+        "invoice_currency": {"row": 45, "col": 21},
+        "payment_method_code": {"row": 46, "col": 16},
+        "representative_hs_code": {"row": 6, "col": 31}
+      },
+      "tax_section": {
+        "vat_section_start": {"row": 68, "col": 4, "keyword": "Thuế GTGT"}
+      },
+      "product_structure": {
+        "note": "Products are in TKN sheet, NOT in HANG sheet. HANG sheet is just a template.",
+        "detection_method": "Search for 8-digit HS codes in column 7, starting from row 100+",
+        "example_product_start_rows": [143, 196],
+        "field_offsets_from_product_start": {
+          "hs_code": {"row_offset": 0, "col": 7},
+          "product_description": {"row_offset": 1, "col": 7},
+          "quantity_1": {"row_offset": 4, "col": 22},
+          "quantity_unit_1": {"row_offset": 4, "col": 31},
+          "quantity_2": {"row_offset": 5, "col": 22},
+          "quantity_unit_2": {"row_offset": 5, "col": 31},
+          "invoice_line_total": {"row_offset": 6, "col": 9},
+          "invoice_unit_price": {"row_offset": 6, "col": 22},
+          "invoice_currency": {"row_offset": 6, "col": 29},
+          "invoice_unit": {"row_offset": 6, "col": 31},
+          "taxable_value_vnd": {"row_offset": 8, "col": 9},
+          "unit_price_vnd": {"row_offset": 9, "col": 22},
+          "import_duty_rate": {"row_offset": 10, "col": 9},
+          "import_duty_rate_type": {"row_offset": 10, "col": 8},
+          "import_duty_amount": {"row_offset": 11, "col": 9},
+          "country_of_origin_code": {"row_offset": 11, "col": 24},
+          "country_of_origin_name": {"row_offset": 11, "col": 26},
+          "vat_name": {"row_offset": 18, "col": 8},
+          "vat_rate_code": {"row_offset": 18, "col": 23},
+          "vat_taxable_value": {"row_offset": 19, "col": 9},
+          "vat_rate": {"row_offset": 20, "col": 9},
+          "vat_amount": {"row_offset": 21, "col": 9}
+        }
+      }
+    },
+    "Tờ khai nhập": {
+      "description": "Tờ khai nhập format - used by Sample 2",
+      "main_sheet_name": "Tờ khai nhập ",
+      "product_sheet_name": "HANG_NK",
+      "note": "Cell positions may be similar to TKN format but need verification"
+    }
+  },
+  "notes": {
+    "products_location": "Products are in the MAIN sheet (TKN), not the second sheet (HANG/HANG_NK). The HANG sheets are templates.",
+    "hs_code_detection": "Search for 'Mã số hàng hóa' label in column 3, then HS code is 3-4 columns to the right in column 7",
+    "product_spacing": "Products are approximately 53 rows apart (143, 196, potentially 249+)",
+    "tax_info_per_product": "Each product has its own import duty and VAT information embedded in the product section"
+  }
+}

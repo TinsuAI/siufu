@@ -89,160 +89,523 @@ def load_validation_reference(sample_path):
     return None
 
 
+def validate_extracted_data(ground_truth):
+    """
+    Validate extracted ground truth data for completeness and correctness.
+
+    Returns:
+        List[str]: List of validation warnings
+    """
+    warnings = []
+
+    # Helper to safely convert to float
+    def safe_float(val):
+        if val is None:
+            return None
+        try:
+            return float(val)
+        except:
+            return None
+
+    # Validate numeric fields (non-negative, reasonable ranges)
+    invoice_total = safe_float(ground_truth.get('invoice', {}).get('invoice_total'))
+    if invoice_total is not None and invoice_total <= 0:
+        warnings.append("Invoice total is zero or negative")
+
+    gross_weight = safe_float(ground_truth.get('package_container', {}).get('gross_weight_kg'))
+    if gross_weight is not None and gross_weight <= 0:
+        warnings.append("Gross weight is zero or negative")
+
+    exchange_rate = safe_float(ground_truth.get('invoice', {}).get('exchange_rate'))
+    if exchange_rate is not None:
+        if exchange_rate <= 0:
+            warnings.append("Exchange rate is zero or negative")
+        elif exchange_rate < 10000 or exchange_rate > 50000:
+            warnings.append(f"Exchange rate {exchange_rate} seems unusual (expected 20000-30000 VND/USD)")
+
+    # Validate date fields (DD/MM/YYYY format, reasonable dates)
+    import re
+    date_fields = [
+        ('invoice_date', ground_truth.get('invoice', {}).get('invoice_date')),
+        ('arrival_date', ground_truth.get('shipping_transport', {}).get('arrival_date')),
+        ('co_date', ground_truth.get('certificate_of_origin', {}).get('co_date')),
+    ]
+
+    date_pattern = re.compile(r'^\d{1,2}/\d{1,2}/\d{4}$')
+    for field_name, date_val in date_fields:
+        if date_val:
+            if not date_pattern.match(str(date_val)):
+                warnings.append(f"{field_name}: Invalid date format '{date_val}' (expected DD/MM/YYYY)")
+            else:
+                # Check year is reasonable (2020-2030)
+                try:
+                    parts = str(date_val).split('/')
+                    year = int(parts[2])
+                    if year < 2020 or year > 2030:
+                        warnings.append(f"{field_name}: Year {year} seems unusual")
+                except:
+                    pass
+
+    # Validate code fields
+    tax_code = ground_truth.get('importer', {}).get('tax_code')
+    if tax_code:
+        tax_code_str = str(tax_code).strip()
+        if len(tax_code_str) != 10 or not tax_code_str.isdigit():
+            warnings.append(f"Importer tax code '{tax_code}' should be 10 digits")
+
+    country_code = ground_truth.get('exporter', {}).get('country_code')
+    if country_code:
+        country_code_str = str(country_code).strip()
+        if len(country_code_str) != 2:
+            warnings.append(f"Exporter country code '{country_code}' should be 2 characters")
+
+    invoice_currency = ground_truth.get('invoice', {}).get('invoice_currency')
+    if invoice_currency:
+        currency_str = str(invoice_currency).strip()
+        if len(currency_str) != 3:
+            warnings.append(f"Invoice currency '{invoice_currency}' should be 3 characters (e.g., USD, EUR)")
+
+    # Validate products
+    products = ground_truth.get('products', [])
+    if not products:
+        warnings.append("No products extracted - products array is empty")
+    else:
+        for i, product in enumerate(products, 1):
+            # HS code validation
+            hs_code = product.get('hs_code')
+            if not hs_code:
+                warnings.append(f"Product {i}: Missing HS code")
+            elif len(str(hs_code)) != 8 or not str(hs_code).isdigit():
+                warnings.append(f"Product {i}: HS code '{hs_code}' should be 8 digits")
+
+            # Quantity validation
+            qty1 = product.get('quantity_1')
+            if qty1 is None or qty1 <= 0:
+                warnings.append(f"Product {i} (HS {hs_code}): quantity_1 is zero or missing")
+
+            # Price validation
+            unit_price = product.get('invoice_unit_price')
+            if unit_price is None or unit_price <= 0:
+                warnings.append(f"Product {i} (HS {hs_code}): invoice_unit_price is zero or missing")
+
+            # Product consistency validation
+            line_total = product.get('invoice_line_total')
+            if line_total and unit_price and qty1:
+                # Check if line_total ≈ quantity × unit_price (within 1% tolerance)
+                expected_total = qty1 * unit_price
+                if abs(line_total - expected_total) / expected_total > 0.01:
+                    warnings.append(
+                        f"Product {i} (HS {hs_code}): invoice_line_total ({line_total:.2f}) "
+                        f"does not match quantity × unit_price ({expected_total:.2f})"
+                    )
+
+        # Validate sum of product line totals ≈ invoice total (within 1% tolerance)
+        if invoice_total:
+            product_totals_sum = sum(p.get('invoice_line_total', 0) or 0 for p in products)
+            if product_totals_sum > 0:
+                diff_pct = abs(invoice_total - product_totals_sum) / invoice_total
+                if diff_pct > 0.01:
+                    warnings.append(
+                        f"Sum of product line totals ({product_totals_sum:.2f}) "
+                        f"does not match invoice total ({invoice_total:.2f}) - difference: {diff_pct*100:.1f}%"
+                    )
+
+    return warnings
+
+
 def extract_ground_truth_from_cd_xlsx(xlsx_path):
-    """Extract comprehensive ground truth data from CD.xlsx"""
+    """
+    Extract comprehensive ground truth data from CD.xlsx (Vietnamese Customs Declaration).
+
+    This function extracts ALL fields from CD.xlsx matching the structure in expected-fields.json:
+    - declarationHeader with all nested objects (importer, exporter, transportDetails, invoiceDetails, taxSummary, etc.)
+    - items array with complete product details including tax structures
+
+    The output structure matches the Vietnamese Customs Declaration JSON format exactly.
+
+    Args:
+        xlsx_path: Path to CD.xlsx file
+
+    Returns:
+        dict: Complete ground truth data matching expected-fields.json structure
+    """
     wb = load_workbook(xlsx_path)
 
-    # Use the first sheet (sheet names vary: 'TKN', 'Tờ khai nhập ', etc.)
-    ws = wb[wb.sheetnames[0]]
+    # Format auto-detection
+    main_sheet_name = wb.sheetnames[0]
+    cd_format = "TKN" if "TKN" in main_sheet_name else "Tờ khai nhập"
+    ws = wb[main_sheet_name]
 
-    print(f"   Using sheet: '{wb.sheetnames[0]}'")
+    print(f"   Using sheet: '{main_sheet_name}' (detected format: {cd_format})")
 
     ground_truth = {}
+    warnings = []
 
-    # Declaration Header
-    ground_truth['declaration_header'] = {
-        'declaration_number': str(ws.cell(4, 5).value or "") if ws.cell(4, 5).value else None,
-        'representative_hs_code': str(ws.cell(6, 31).value or "") if ws.cell(6, 31).value else None,
-    }
+    # Helper function to safely get cell value
+    def get_cell(row, col, default=None):
+        val = ws.cell(row, col).value
+        return val if val is not None else default
 
-    # Importer Information
-    ground_truth['importer'] = {
-        'tax_code': str(ws.cell(10, 8).value or "") if ws.cell(10, 8).value else None,
-        'name': str(ws.cell(11, 8).value or "") if ws.cell(11, 8).value else None,
-        'postal_code': str(ws.cell(13, 8).value or "") if ws.cell(13, 8).value else None,
-        'address': str(ws.cell(14, 8).value or "") if ws.cell(14, 8).value else None,
-    }
+    # Helper function to convert to string or None
+    def to_str(val):
+        return str(val).strip() if val is not None and str(val).strip() else None
 
-    # Exporter Information
-    ground_truth['exporter'] = {
-        'name': str(ws.cell(23, 8).value or "") if ws.cell(23, 8).value else None,
-        'address_line1': str(ws.cell(25, 8).value or "") if ws.cell(25, 8).value else None,
-        'address_line2': str(ws.cell(25, 21).value or "") if ws.cell(25, 21).value else None,
-        'address_line3': f"{ws.cell(26, 8).value or ''} {ws.cell(26, 21).value or ''}".strip() or None,
-        'country_code': str(ws.cell(27, 8).value or "") if ws.cell(27, 8).value else None,
-    }
-
-    # Shipping/Transport
-    bol_val = ws.cell(31, 4).value
-    bol_number = None
-    if bol_val:
-        bol_str = str(bol_val)
-        # Remove date prefix if present (e.g., 270925JJCXMHPALS53751 -> JJCXMHPALS53751)
-        bol_number = bol_str[6:] if len(bol_str) > 15 else bol_str
-
-    ground_truth['shipping_transport'] = {
-        'warehouse_code': str(ws.cell(30, 21).value or "") if ws.cell(30, 21).value else None,
-        'warehouse_name': str(ws.cell(30, 26).value or "") if ws.cell(30, 26).value else None,
-        'bill_of_lading_number': bol_number,
-        'vessel_name': str(ws.cell(34, 26).value or "") if ws.cell(34, 26).value else None,
-        'arrival_date': str(ws.cell(35, 21).value or "") if ws.cell(35, 21).value else None,
-        'port_of_loading_code': str(ws.cell(32, 8).value or "") if ws.cell(32, 8).value else None,
-        'port_of_loading_name': str(ws.cell(33, 8).value or "") if ws.cell(33, 8).value else None,
-        'port_of_discharge_code': str(ws.cell(32, 21).value or "") if ws.cell(32, 21).value else None,
-        'port_of_discharge_name': str(ws.cell(30, 26).value or "") if ws.cell(30, 26).value else None,
-    }
-
-    # Package/Container
-    packages_val = ws.cell(36, 11).value
-    total_packages = None
-    if packages_val:
+    # Helper function to parse numeric values
+    def parse_num(val):
+        if val is None:
+            return None
         try:
-            total_packages = float(str(packages_val).replace('.', '').replace(',', '.'))
+            # Handle European format: "12.144,8" -> 12144.8
+            return float(str(val).replace('.', '').replace(',', '.'))
         except:
-            pass
+            return None
 
-    gross_weight_val = ws.cell(37, 11).value
-    gross_weight = None
-    if gross_weight_val:
-        try:
-            gross_weight = float(str(gross_weight_val).replace('.', '').replace(',', '.'))
-        except:
-            pass
+    # ==================== DECLARATION HEADER ====================
+    # Extract comprehensive declaration header matching expected-fields.json structure
 
-    ground_truth['package_container'] = {
-        'total_packages': total_packages,
-        'package_unit': str(ws.cell(36, 21).value or "") if ws.cell(36, 21).value else None,
-        'gross_weight_kg': gross_weight,
-        'gross_weight_unit': str(ws.cell(37, 21).value or "") if ws.cell(37, 21).value else None,
-        'container_count': ws.cell(38, 11).value if ws.cell(38, 11).value else None,
+    declaration_header = {
+        'title': to_str(get_cell(2, 5)),  # Usually "Tờ khai hàng hóa nhập khẩu"
+        'declarationNumber': to_str(get_cell(4, 5)),
+        'correspondingTempImportExportDeclNo': to_str(get_cell(5, 5)),
+        'inspectionClassificationCode': to_str(get_cell(6, 5)),
+        'firstDeclarationNumber': to_str(get_cell(7, 5)),
+        'receivingCustomsAgencyName': to_str(get_cell(8, 8)),
+        'typeCode': to_str(get_cell(5, 31)),
+        'representativeHScode': to_str(get_cell(6, 31)),
+        'processingDivisionCode': to_str(get_cell(7, 31)),
+        'registrationDate': to_str(get_cell(8, 31)),
+        'registrationChangeDate': to_str(get_cell(9, 31)),
+        'reimportExportDeadline': to_str(get_cell(9, 5)),
+
+        # Importer (nested object)
+        'importer': {
+            'code': to_str(get_cell(10, 8)),
+            'name': to_str(get_cell(11, 8)),
+            'postalCode': to_str(get_cell(13, 8)),
+            'address': to_str(get_cell(14, 8)),
+            'phone': to_str(get_cell(15, 8)),
+        },
+
+        # Import Trustor (nested object)
+        'importTrustor': {
+            'code': to_str(get_cell(17, 8)),
+            'name': to_str(get_cell(18, 8)),
+        },
+
+        # Exporter (nested object)
+        'exporter': {
+            'code': to_str(get_cell(21, 8)),
+            'name': to_str(get_cell(23, 8)),
+            'postalCode': to_str(get_cell(24, 8)),
+            'address': ' '.join(filter(None, [
+                to_str(get_cell(25, 8)),
+                to_str(get_cell(25, 21)),
+                to_str(get_cell(26, 8)),
+                to_str(get_cell(26, 21))
+            ])) or None,
+            'countryCode': to_str(get_cell(27, 8)),
+        },
+
+        # Export Trustor (nested object)
+        'exportTrustor': {
+            'name': to_str(get_cell(29, 8)),
+        },
+
+        # Customs Agent (nested object)
+        'customsAgent': {
+            'name': to_str(get_cell(20, 8)),
+        },
+
+        # Transport Details (nested object)
+        'transportDetails': {
+            'billOfLadingNumbers': [to_str(get_cell(31, 4))] if get_cell(31, 4) else [],
+            'quantityPackages': parse_num(get_cell(36, 11)),
+            'quantityPackagesUnit': to_str(get_cell(36, 21)),
+            'grossWeight': parse_num(get_cell(37, 11)),
+            'grossWeightUnit': to_str(get_cell(37, 21)),
+            'containerCount': parse_num(get_cell(38, 11)),
+            'customsOfficerCode': to_str(get_cell(39, 11)),
+            'storageLocation': to_str(get_cell(30, 21)),
+            'unloadingLocationCode': to_str(get_cell(32, 21)),
+            'unloadingLocationName': to_str(get_cell(30, 26)),
+            'loadingLocationCode': to_str(get_cell(32, 8)),
+            'loadingLocationName': to_str(get_cell(33, 8)),
+            'transportationMethod': to_str(get_cell(34, 8)),
+            'vesselName': to_str(get_cell(34, 26)),
+            'arrivalDate': to_str(get_cell(35, 21)),
+            'marksAndNumbers': to_str(get_cell(36, 4)),
+            'firstWarehouseEntryDate': to_str(get_cell(35, 8)),
+        },
+
+        # Invoice Details (nested object)
+        'invoiceDetails': {
+            'invoiceNumber': to_str(get_cell(41, 10)),
+            'eInvoiceReceiptNumber': to_str(get_cell(41, 21)),
+            'issueDate': to_str(get_cell(42, 10)),
+            'paymentMethod': to_str(get_cell(44, 10)),
+            'contentInspectionResultCode': to_str(get_cell(43, 21)),
+            'incoterms': to_str(get_cell(43, 10)),
+            'currency': to_str(get_cell(45, 21)),
+            'totalInvoiceValue': parse_num(get_cell(45, 16)),
+            'totalTaxableValue': parse_num(get_cell(46, 21)),
+            'totalValueApportionmentFactor': parse_num(get_cell(45, 16)),
+            'importPermits': [
+                to_str(get_cell(47, 10)),
+                to_str(get_cell(48, 10)),
+                to_str(get_cell(52, 10)),
+                to_str(get_cell(53, 10)),
+                to_str(get_cell(54, 10)),
+            ],
+            'valuationClassificationCode': to_str(get_cell(51, 10)),
+            'consolidatedValuation': to_str(get_cell(55, 10)),
+            'adjustments': {
+                'transportationFee': parse_num(get_cell(56, 10)),
+                'insuranceFee': parse_num(get_cell(57, 10)),
+            },
+            'otherLegalDocuments': [
+                to_str(get_cell(58, 10)),
+                to_str(get_cell(59, 10)),
+                to_str(get_cell(60, 10)),
+                to_str(get_cell(61, 10)),
+                to_str(get_cell(62, 10)),
+            ],
+            'valuationDetailsFields': {
+                'codeName': to_str(get_cell(63, 10)),
+                'classificationCode': to_str(get_cell(63, 21)),
+                'adjustmentValue': parse_num(get_cell(64, 10)),
+                'totalApportionmentFactor': parse_num(get_cell(64, 21)),
+            },
+            'valuationDetailsNote': to_str(get_cell(65, 10)),
+        },
+
+        # Tax Summary (nested object)
+        'taxSummary': {
+            'taxItems': [],  # Populated below
+            'totalTax': parse_num(get_cell(70, 16)),
+            'totalTaxCurrency': to_str(get_cell(70, 21)),
+            'totalTaxPayable': parse_num(get_cell(71, 16)),
+            'totalTaxPayableCurrency': to_str(get_cell(71, 21)),
+            'guaranteeAmount': parse_num(get_cell(72, 16)),
+            'taxExchangeRate': parse_num(get_cell(46, 10)),
+            'taxExchangeRateCurrency': to_str(get_cell(46, 21)),
+            'taxPaymentDeadlineCode': to_str(get_cell(73, 10)),
+            'bpRequestReasonCode': to_str(get_cell(74, 10)),
+        },
+
+        # Taxpayer (nested object)
+        'taxpayer': {
+            'code': to_str(get_cell(75, 10)),
+            'classification': to_str(get_cell(76, 10)),
+            'name': to_str(get_cell(77, 10)),
+        },
+
+        # Declaration Meta (nested object)
+        'declarationMeta': {
+            'totalPages': parse_num(get_cell(78, 31)),
+            'totalItems': parse_num(get_cell(79, 31)),
+        },
+
+        # E-Attachments (nested object)
+        'eAttachments': {
+            'count': to_str(get_cell(80, 10)),
+            'references': [
+                to_str(get_cell(81, 10)),
+                to_str(get_cell(82, 10)),
+                to_str(get_cell(83, 10)),
+            ],
+        },
+
+        # Additional fields
+        'notes': to_str(get_cell(85, 10)),
+        'internalManagementNumber': to_str(get_cell(86, 10)),
+        'userManagementNumber': to_str(get_cell(87, 10)),
+        'customsInstructions': [],  # Will be populated if found
+        'customsNotifications': to_str(get_cell(89, 10)),
+        'taxPaymentDeclarationDate': to_str(get_cell(90, 10)),
+        'totalLatePaymentInterest': to_str(get_cell(91, 10)),
+
+        # Bonded Transport (nested object)
+        'bondedTransport': {
+            'deadline': to_str(get_cell(92, 10)),
+            'destination': to_str(get_cell(93, 10)),
+            'transitInfo': [],  # Will be populated if found
+        },
     }
 
-    # Invoice
-    invoice_num_val = ws.cell(41, 10).value
-    invoice_number = None
-    if invoice_num_val:
-        # Extract invoice number (e.g., "A - LA2025-068" -> "LA2025-068")
-        invoice_str = str(invoice_num_val)
-        if ' - ' in invoice_str:
-            invoice_number = invoice_str.split(' - ')[-1].strip()
-        else:
-            invoice_number = invoice_str.strip()
+    # Populate taxItems array (search for tax items in rows 66-70)
+    # Format: col3=id, col4=name, col8=amount, col12=currency
+    # Example: "1" | "V Thuế GTGT" | "48.617.794" | "VND"
+    tax_items = []
+    for row in range(66, 71):
+        tax_id = to_str(get_cell(row, 3))
+        tax_name = to_str(get_cell(row, 4))
+        tax_amount = get_cell(row, 8)
+        tax_currency = to_str(get_cell(row, 12))
 
-    invoice_total_val = ws.cell(45, 16).value
-    invoice_total = None
-    if invoice_total_val:
-        try:
-            # Handle European number format: "23.385,2" -> 23385.2
-            total_str = str(invoice_total_val).replace('.', '').replace(',', '.')
-            invoice_total = float(total_str)
-        except:
-            pass
+        if tax_id and tax_name and tax_amount is not None:
+            # Format amount as string with currency
+            if tax_currency:
+                amount_str = f"{tax_amount} {tax_currency}"
+            else:
+                amount_str = str(tax_amount)
 
-    ground_truth['invoice'] = {
-        'invoice_number': invoice_number,
-        'invoice_date': str(ws.cell(42, 10).value or "") if ws.cell(42, 10).value else None,
-        'invoice_total': invoice_total,
-        'invoice_currency': str(ws.cell(45, 21).value or "") if ws.cell(45, 21).value else None,
-        'invoice_incoterm': str(ws.cell(43, 10).value or "") if ws.cell(43, 10).value else None,
-        'payment_method_code': str(ws.cell(44, 10).value or "") if ws.cell(44, 10).value else None,
-        'exchange_rate': ws.cell(46, 10).value if ws.cell(46, 10).value else None,
-    }
+            tax_items.append({
+                'id': tax_id,
+                'name': tax_name,
+                'amount': amount_str,
+            })
 
-    # Certificate of Origin
-    co_number_val = ws.cell(85, 10).value
-    ground_truth['certificate_of_origin'] = {
-        'co_number': str(co_number_val) if co_number_val else None,
-        'co_date': str(ws.cell(50, 10).value or "") if ws.cell(50, 10).value else None,
-        'co_form_type': str(ws.cell(49, 10).value or "") if ws.cell(49, 10).value else None,
-    }
+    if tax_items:
+        declaration_header['taxSummary']['taxItems'] = tax_items
 
-    # Products - Extract from second sheet (sheet names vary: 'HANG', 'HANG_NK', etc.)
-    products = []
+    ground_truth['declarationHeader'] = declaration_header
+
+    # ==================== ITEMS (PRODUCTS) ====================
+    # Extract comprehensive product/item details matching expected-fields.json structure
+    # Products are in the TKN/main sheet, NOT in HANG/HANG_NK sheet (which is just a template)
+
+    items = []
+    print(f"   Searching for products in main sheet (starting from row 100)...")
+
+    # Parse rate percentage (e.g., "0%" -> "0%", "8%" -> "8%")
+    def parse_rate_str(val):
+        if val is None:
+            return None
+        rate_str = str(val).strip()
+        if not rate_str.endswith('%'):
+            rate_str = rate_str + '%' if rate_str else None
+        return rate_str
+
     try:
-        # Use the second sheet for products (if it exists)
-        if len(wb.sheetnames) > 1:
-            ws_products = wb[wb.sheetnames[1]]
-            print(f"   Using products sheet: '{wb.sheetnames[1]}'")
-        else:
-            raise Exception("No second sheet found for products")
+        # Search for 8-digit HS codes in column 7, starting from row 100
+        for row in range(100, min(ws.max_row + 1, 500)):
+            hs_code_cell = ws.cell(row, 7).value
 
-        # Products typically start around row 40+
-        for row in range(40, min(ws_products.max_row + 1, 200)):
-            hs_code_cell = ws_products.cell(row, 3).value
-            if hs_code_cell and len(str(hs_code_cell)) == 8 and str(hs_code_cell).isdigit():
-                product = {
-                    'item_number': len(products) + 1,
-                    'hs_code': str(hs_code_cell),
-                    'product_description': str(ws_products.cell(row + 1, 3).value or "") if ws_products.cell(row + 1, 3).value else None,
-                    'quantity_1': ws_products.cell(row + 3, 19).value if ws_products.cell(row + 3, 19).value else None,
-                    'quantity_unit_1': str(ws_products.cell(row + 3, 21).value or "") if ws_products.cell(row + 3, 21).value else None,
-                    'quantity_2': ws_products.cell(row + 4, 19).value if ws_products.cell(row + 4, 19).value else None,
-                    'quantity_unit_2': str(ws_products.cell(row + 4, 21).value or "") if ws_products.cell(row + 4, 21).value else None,
-                    'invoice_unit_price': ws_products.cell(row + 5, 19).value if ws_products.cell(row + 5, 19).value else None,
-                    'country_of_origin_code': str(ws_products.cell(row + 2, 3).value or "") if ws_products.cell(row + 2, 3).value else None,
-                }
-                products.append(product)
+            # Check if this is an 8-digit HS code
+            if hs_code_cell and isinstance(hs_code_cell, (int, str)):
+                hs_str = str(hs_code_cell).strip()
+                if hs_str.isdigit() and len(hs_str) == 8:
+                    print(f"     Found product HS code {hs_str} at row {row}")
+
+                    try:
+                        # Build complete item structure matching expected-fields.json
+                        item = {
+                            'itemNumber': f"{len(items) + 1:02d}",
+                            'hsCode': hs_str,
+                            'privateManagementCode': to_str(get_cell(row, 10)),
+                            'priceRecheckClassificationCode': to_str(get_cell(row + 7, 8)),
+                            'description': to_str(get_cell(row + 1, 7)),
+
+                            # Quantities
+                            'quantity1': parse_num(get_cell(row + 4, 22)),
+                            'unit1': to_str(get_cell(row + 4, 31)),
+                            'quantity2': parse_num(get_cell(row + 5, 22)),
+                            'unit2': to_str(get_cell(row + 5, 31)),
+
+                            'adjustmentItemNumber': to_str(get_cell(row + 5, 10)),
+
+                            # Invoice values
+                            'invoiceValue': parse_num(get_cell(row + 6, 9)),
+                            'invoiceUnitPrice': parse_num(get_cell(row + 6, 22)),
+                            'invoiceUnitPriceCurrency': to_str(get_cell(row + 6, 29)),
+                            'invoiceUnitPriceUnit': to_str(get_cell(row + 6, 31)),
+
+                            # Taxable values
+                            'taxableValue': parse_num(get_cell(row + 8, 9)),
+                            'taxableValueCurrency': to_str(get_cell(row + 8, 21)),
+                            'taxableQuantity': parse_num(get_cell(row + 9, 9)),
+                            'taxableUnitPrice': parse_num(get_cell(row + 9, 22)),
+                            'taxableUnitPriceCurrency': to_str(get_cell(row + 9, 29)),
+                            'taxableUnitPriceUnit': to_str(get_cell(row + 9, 31)),
+
+                            # Origin
+                            'originCountryCode': to_str(get_cell(row + 11, 24)),
+                            'originCountryName': to_str(get_cell(row + 11, 26)),
+
+                            'offQuotaCode': to_str(get_cell(row + 12, 24)),
+                            'tempImportExportLineNumber': to_str(get_cell(row + 13, 24)),
+
+                            # Import Tax (nested object)
+                            'importTax': {
+                                'exemptionCategory': to_str(get_cell(row + 10, 4)),
+                                'exemptionReductionStatus': to_str(get_cell(row + 10, 6)),
+                                'taxRateCode': to_str(get_cell(row + 10, 8)),
+                                'taxRate': parse_rate_str(get_cell(row + 10, 9)),
+                                'absoluteTaxCode': to_str(get_cell(row + 11, 22)),
+                                'taxAmount': parse_num(get_cell(row + 11, 9)),
+                                'taxAmountCurrency': to_str(get_cell(row + 11, 21)),
+                                'exemptionAmount': parse_num(get_cell(row + 12, 9)),
+                                'exemptionAmountCurrency': to_str(get_cell(row + 12, 21)),
+                            },
+
+                            # Other Taxes (array of tax objects)
+                            'otherTaxes': []
+                        }
+
+                        # Extract VAT (other taxes) - typically starts around row+18
+                        vat_name = to_str(get_cell(row + 18, 8))
+                        if vat_name:
+                            vat_tax = {
+                                'name': vat_name,
+                                'rateApplicationCode': to_str(get_cell(row + 18, 23)),
+                                'taxableValue': parse_num(get_cell(row + 19, 9)),
+                                'taxableValueCurrency': to_str(get_cell(row + 19, 21)),
+                                'taxRate': parse_rate_str(get_cell(row + 20, 9)),
+                                'taxableQuantity': parse_num(get_cell(row + 20, 22)),
+                                'exemptionStatus': to_str(get_cell(row + 20, 31)),
+                                'taxAmount': parse_num(get_cell(row + 21, 9)),
+                                'taxAmountCurrency': to_str(get_cell(row + 21, 21)),
+                                'exemptionAmount': parse_num(get_cell(row + 22, 9)),
+                                'exemptionAmountCurrency': to_str(get_cell(row + 22, 21)),
+                            }
+                            item['otherTaxes'].append(vat_tax)
+
+                        items.append(item)
+
+                        # Validate product data
+                        if item['quantity1'] is None or item['quantity1'] <= 0:
+                            warnings.append(f"Item {len(items)}: quantity1 is zero or missing")
+                        if item['invoiceUnitPrice'] is None or item['invoiceUnitPrice'] <= 0:
+                            warnings.append(f"Item {len(items)}: invoiceUnitPrice is zero or missing")
+
+                    except Exception as e:
+                        warnings.append(f"Error extracting item at row {row}: {e}")
+                        print(f"⚠️  Warning: Error extracting item at row {row}: {e}")
+
     except Exception as e:
-        print(f"⚠️  Warning: Could not extract product data from HANG_NK sheet: {e}")
+        warnings.append(f"Error during item extraction: {e}")
+        print(f"⚠️  Warning: Error during item extraction: {e}")
 
-    ground_truth['products'] = products
+    ground_truth['items'] = items
+    print(f"   Extracted {len(items)} items")
+
+    # Store metadata for debugging
+    ground_truth['_metadata'] = {
+        'cd_format': cd_format,
+        'extraction_warnings': warnings,
+        'total_items_found': len(items),
+        'extraction_date': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+    }
+
+    # Print validation summary
+    if warnings:
+        print(f"   ⚠️  {len(warnings)} extraction warnings:")
+        for warning in warnings[:5]:  # Show first 5
+            print(f"      - {warning}")
+        if len(warnings) > 5:
+            print(f"      ... and {len(warnings) - 5} more")
 
     return ground_truth
 
 
 def generate_validation_reference_json(sample_path, cd_xlsx_path):
-    """Generate validation-reference.json file from CD.xlsx"""
+    """
+    Generate validation-reference.json file from CD.xlsx.
+
+    The output structure matches expected-fields.json exactly with:
+    - declarationHeader (complete nested structure)
+    - items array (complete product details with tax structures)
+    """
 
     sample_name = Path(sample_path).name
 
@@ -258,97 +621,53 @@ def generate_validation_reference_json(sample_path, cd_xlsx_path):
         traceback.print_exc()
         return None
 
-    # Build validation reference structure
-    validation_ref = {
+    # Build validation reference structure matching expected-fields.json format exactly
+    # This is an array containing a single customs declaration object
+    validation_ref = [{
+        "declarationHeader": ground_truth_data.get('declarationHeader', {}),
+        "items": ground_truth_data.get('items', []),
+    }]
+
+    # Add metadata comment at the beginning (as a separate file for documentation)
+    metadata = {
         "description": f"Ground truth validation data for Sample {sample_name} extracted from CD.xlsx (Vietnamese Customs Declaration)",
         "created_date": datetime.now().strftime('%Y-%m-%d'),
-        "source": str(cd_xlsx_path.relative_to(Path(sample_path).parent.parent)),
-        "note": "These values represent the ACTUAL declared data in the official customs form CD.xlsx. Used to validate LLM extraction accuracy.",
-
-        f"sample_{sample_name}_ground_truth": {
-            "critical_fields": {
-                "note": "Must be 100% accurate - these are compliance-critical",
-                "declaration_number": ground_truth_data.get('declaration_header', {}).get('declaration_number'),
-                "importer_tax_code": ground_truth_data.get('importer', {}).get('tax_code'),
-                "invoice_number": ground_truth_data.get('invoice', {}).get('invoice_number'),
-                "invoice_total": ground_truth_data.get('invoice', {}).get('invoice_total'),
-                "invoice_currency": ground_truth_data.get('invoice', {}).get('invoice_currency'),
-                "bill_of_lading_number": ground_truth_data.get('shipping_transport', {}).get('bill_of_lading_number'),
-                "co_number": ground_truth_data.get('certificate_of_origin', {}).get('co_number'),
-                "products": []
-            },
-
-            "important_fields": {
-                "note": "Should be ≥90% accurate with fuzzy matching allowed",
-                "importer_name": ground_truth_data.get('importer', {}).get('name'),
-                "importer_postal_code": ground_truth_data.get('importer', {}).get('postal_code'),
-                "importer_address": ground_truth_data.get('importer', {}).get('address'),
-                "exporter_name": ground_truth_data.get('exporter', {}).get('name'),
-                "exporter_country_code": ground_truth_data.get('exporter', {}).get('country_code'),
-                "exporter_address_line1": ground_truth_data.get('exporter', {}).get('address_line1'),
-                "exporter_address_line2": ground_truth_data.get('exporter', {}).get('address_line2'),
-                "exporter_address_line3": ground_truth_data.get('exporter', {}).get('address_line3'),
-                "invoice_date": ground_truth_data.get('invoice', {}).get('invoice_date'),
-                "invoice_incoterm": ground_truth_data.get('invoice', {}).get('invoice_incoterm'),
-                "payment_method_code": ground_truth_data.get('invoice', {}).get('payment_method_code'),
-                "arrival_date": ground_truth_data.get('shipping_transport', {}).get('arrival_date'),
-                "vessel_name": ground_truth_data.get('shipping_transport', {}).get('vessel_name'),
-                "port_of_loading_code": ground_truth_data.get('shipping_transport', {}).get('port_of_loading_code'),
-                "port_of_loading_name": ground_truth_data.get('shipping_transport', {}).get('port_of_loading_name'),
-                "port_of_discharge_code": ground_truth_data.get('shipping_transport', {}).get('port_of_discharge_code'),
-                "port_of_discharge_name": ground_truth_data.get('shipping_transport', {}).get('port_of_discharge_name'),
-                "warehouse_code": ground_truth_data.get('shipping_transport', {}).get('warehouse_code'),
-                "warehouse_name": ground_truth_data.get('shipping_transport', {}).get('warehouse_name'),
-                "total_packages": ground_truth_data.get('package_container', {}).get('total_packages'),
-                "package_unit": ground_truth_data.get('package_container', {}).get('package_unit'),
-                "gross_weight_kg": ground_truth_data.get('package_container', {}).get('gross_weight_kg'),
-                "gross_weight_unit": ground_truth_data.get('package_container', {}).get('gross_weight_unit'),
-                "container_count": ground_truth_data.get('package_container', {}).get('container_count'),
-                "co_date": ground_truth_data.get('certificate_of_origin', {}).get('co_date'),
-                "co_form_type": ground_truth_data.get('certificate_of_origin', {}).get('co_form_type'),
-                "representative_hs_code": ground_truth_data.get('declaration_header', {}).get('representative_hs_code'),
-            }
-        },
-
-        "known_discrepancies": {
-            "note": "These are expected differences between source documents and CD.xlsx",
-            "declaration_number": "System-generated field, not extracted from source documents",
-            "arrival_date": "May differ between CO issue date and actual arrival date",
-            "co_number": "CD.xlsx may show internal tracking number vs official CO document number",
-            "bol_number": "CD.xlsx may include date prefix that source BOL does not have"
-        }
+        "source": str(cd_xlsx_path.relative_to(Path(sample_path).parent.parent)) if cd_xlsx_path.is_relative_to(Path(sample_path).parent.parent) else str(cd_xlsx_path),
+        "note": "This structure matches the Vietnamese Customs Declaration JSON format exactly as shown in expected-fields.json",
+        "cd_format": ground_truth_data.get('_metadata', {}).get('cd_format'),
+        "total_items": ground_truth_data.get('_metadata', {}).get('total_items_found'),
+        "extraction_date": ground_truth_data.get('_metadata', {}).get('extraction_date'),
+        "extraction_warnings": ground_truth_data.get('_metadata', {}).get('extraction_warnings', []),
     }
 
-    # Add products to critical fields
-    products = ground_truth_data.get('products', [])
-    if products:
-        for product in products:
-            validation_ref[f"sample_{sample_name}_ground_truth"]["critical_fields"]["products"].append({
-                "item_number": product.get('item_number'),
-                "hs_code": product.get('hs_code'),
-                "quantity_1": product.get('quantity_1'),
-                "quantity_unit_1": product.get('quantity_unit_1'),
-                "quantity_2": product.get('quantity_2'),
-                "quantity_unit_2": product.get('quantity_unit_2'),
-                "invoice_unit_price": product.get('invoice_unit_price'),
-                "country_of_origin_code": product.get('country_of_origin_code'),
-            })
-
-    # Save to validation-reference.json
+    # Save main validation reference JSON
     output_path = Path(sample_path) / "validation-reference.json"
-
     with open(output_path, 'w', encoding='utf-8') as f:
         json.dump(validation_ref, f, indent=2, ensure_ascii=False)
 
+    # Save metadata separately
+    metadata_path = Path(sample_path) / "validation-reference-metadata.json"
+    with open(metadata_path, 'w', encoding='utf-8') as f:
+        json.dump(metadata, f, indent=2, ensure_ascii=False)
+
     print(f"✅ Generated: {output_path}")
+    print(f"✅ Generated: {metadata_path}")
     print()
     print("Summary of extracted data:")
-    print(f"  • Declaration Number: {validation_ref[f'sample_{sample_name}_ground_truth']['critical_fields']['declaration_number']}")
-    print(f"  • Importer Tax Code: {validation_ref[f'sample_{sample_name}_ground_truth']['critical_fields']['importer_tax_code']}")
-    print(f"  • Invoice Number: {validation_ref[f'sample_{sample_name}_ground_truth']['critical_fields']['invoice_number']}")
-    print(f"  • Invoice Total: {validation_ref[f'sample_{sample_name}_ground_truth']['critical_fields']['invoice_total']}")
-    print(f"  • Bill of Lading: {validation_ref[f'sample_{sample_name}_ground_truth']['critical_fields']['bill_of_lading_number']}")
-    print(f"  • Products: {len(products)} item(s)")
+
+    decl_header = ground_truth_data.get('declarationHeader', {})
+    items = ground_truth_data.get('items', [])
+
+    print(f"  • Declaration Number: {decl_header.get('declarationNumber')}")
+    print(f"  • Importer Tax Code: {decl_header.get('importer', {}).get('code')}")
+    print(f"  • Invoice Number: {decl_header.get('invoiceDetails', {}).get('invoiceNumber')}")
+    print(f"  • Invoice Total: {decl_header.get('invoiceDetails', {}).get('totalInvoiceValue')}")
+    print(f"  • Bill of Lading: {decl_header.get('transportDetails', {}).get('billOfLadingNumbers')}")
+    print(f"  • Items: {len(items)} item(s)")
+
+    if items:
+        for item in items:
+            print(f"    - Item {item.get('itemNumber')}: HS {item.get('hsCode')}, Qty: {item.get('quantity1')} {item.get('unit1')}")
     print()
 
     return output_path

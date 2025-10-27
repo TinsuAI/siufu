@@ -1,0 +1,255 @@
+[
+  {
+    "declarationHeader": {
+      "title": "Tờ khai hàng hóa nhập khẩu (thông báo kết quả phân luồng)",
+      "declarationNumber": "107551029460",
+      "correspondingTempImportExportDeclNo": null,
+      "inspectionClassificationCode": "2",
+      "firstDeclarationNumber": "107551029460",
+      "receivingCustomsAgencyName": "HOHOALAC",
+      "typeCode": "A11",
+      "representativeHScode": "9619",
+      "processingDivisionCode": "00",
+      "registrationDate": "23/09/2025 09:39:34",
+      "registrationChangeDate": null,
+      "reimportExportDeadline": null,
+      "importer": {
+        "code": "0104118221",
+        "name": "Công ty TNHH sản xuất dịch vụ và thương mại Thịnh Linh",
+        "postalCode": "100000",
+        "address": "Tràng An, phường Chương Mỹ, Thành Phố Hà Nội, Việt Nam",
+        "phone": "+24"
+      },
+      "importTrustor": {
+        "code": null,
+        "name": null
+      },
+      "exporter": {
+        "code": null,
+        "name": "QUANZHOU YOULI SANITARY PRODUCTS CO.,LTD",
+        "postalCode": null,
+        "address": "ROOM A10-219, NO 936-1 LUOBAI ROAD QUANZHOU, FUJIAN\nYUTOU VILLAGE, LUOYANG TOWN, HUIAN CHINA",
+        "countryCode": "CN"
+      },
+      "exportTrustor": {
+        "name": null
+      },
+      "customsAgent": {
+        "name": null
+      },
+      "transportDetails": {
+        "billOfLadingNumbers": [
+          "130925EGLV 146500902564"
+        ],
+        "quantityPackages": 2520,
+        "quantityPackagesUnit": "PK",
+        "grossWeight": 16844.4,
+        "grossWeightUnit": "KGM",
+        "containerCount": 2,
+        "customsOfficerCode": null,
+        "storageLocation": "03TGS10",
+        "unloadingLocationCode": "VNCXP",
+        "unloadingLocationName": "CTY CP CANG XANH VIP CANG XANH VIP",
+        "loadingLocationCode": "CNXMN",
+        "loadingLocationName": "XIAMEN",
+        "transportationMethod": "9999",
+        "vesselName": "EVER CLEVER 0118-0785",
+        "arrivalDate": "22/09/2025",
+        "marksAndNumbers": null,
+        "firstWarehouseEntryDate": null
+      },
+      "invoiceDetails": {
+        "invoiceNumber": "A 54-2025/TP-CM",
+        "eInvoiceReceiptNumber": null,
+        "issueDate": "09/09/2025",
+        "paymentMethod": "KC",
+        "contentInspectionResultCode": "A",
+        "incoterms": "C&F",
+        "currency": "USD",
+        "totalInvoiceValue": 23208.8,
+        "totalTaxableValue": 607722428,
+        "totalValueApportionmentFactor": 23208.8,
+        "importPermits": [
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "valuationClassificationCode": "6",
+        "consolidatedValuation": null,
+        "adjustments": {
+          "transportationFee": null,
+          "insuranceFee": null
+        },
+        "otherLegalDocuments": [
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "valuationDetailsFields": {
+          "codeName": null,
+          "classificationCode": "D",
+          "adjustmentValue": null,
+          "totalApportionmentFactor": null
+        },
+        "valuationDetailsNote": "13092025#& FTTT KC TT, PCE mễng. Dòng hàng 2: 270600 PCE đóng gói 50 măng/gói 6 gói/kiện, 6000 PCE đóng gói 25 miếng/gói 12 gói/kiện."
+      },
+      "taxSummary": {
+        "taxItems": [
+          {
+            "id": "1",
+            "name": "V Thuế GTGT",
+            "amount": "48.617.794 VND"
+          }
+        ],
+        "totalTax": 48617794,
+        "totalTaxCurrency": "VND",
+        "totalTaxPayable": 48617794,
+        "totalTaxPayableCurrency": "VND",
+        "guaranteeAmount": null,
+        "taxExchangeRate": 26185,
+        "taxExchangeRateCurrency": "USD",
+        "taxPaymentDeadlineCode": "D",
+        "bpRequestReasonCode": null
+      },
+      "taxpayer": {
+        "code": "1",
+        "classification": "A",
+        "name": null
+      },
+      "declarationMeta": {
+        "totalPages": 4,
+        "totalItems": 2
+      },
+      "eAttachments": {
+        "count": "1",
+        "references": [
+          "ETC 722438697760",
+          null,
+          null
+        ]
+      },
+      "notes": "Hàng có CO form E 5: 02251414210007991 ngày 16/09/2025",
+      "internalManagementNumber": null,
+      "userManagementNumber": "00074",
+      "customsInstructions": [],
+      "customsNotifications": null,
+      "taxPaymentDeclarationDate": "/",
+      "totalLatePaymentInterest": "/",
+      "bondedTransport": {
+        "deadline": "/",
+        "destination": null,
+        "transitInfo": []
+      }
+    },
+    "items": [
+      {
+        "itemNumber": "01",
+        "hsCode": "96190014",
+        "privateManagementCode": null,
+        "priceRecheckClassificationCode": null,
+        "description": "Bỉm quần dành cho người\ngià, hiệu: Ipaly, bề mặt làm bằng giấy size M-XL, dùng 1 lần, 10 miếng/gói x 10 gói/kiện.\nNSX: FUJIAN LIAO PAPER CO., LTD. 100%",
+        "quantity1": 159800,
+        "unit1": "PCE",
+        "quantity2": 156900,
+        "unit2": "PCE",
+        "adjustmentItemNumber": null,
+        "invoiceValue": 12144.8,
+        "invoiceUnitPrice": 0.076,
+        "invoiceUnitPriceCurrency": "USD",
+        "invoiceUnitPriceUnit": "PCE",
+        "taxableValue": 318011588,
+        "taxableValueCurrency": "VND",
+        "taxableQuantity": null,
+        "taxableUnitPrice": 1990.06,
+        "taxableUnitPriceCurrency": "VND",
+        "taxableUnitPriceUnit": "PCE",
+        "originCountryCode": "CN",
+        "originCountryName": "CHINA 805",
+        "offQuotaCode": null,
+        "tempImportExportLineNumber": null,
+        "importTax": {
+          "exemptionCategory": null,
+          "exemptionReductionStatus": null,
+          "taxRateCode": "C",
+          "taxRate": "08",
+          "absoluteTaxCode": null,
+          "taxAmount": null,
+          "taxAmountCurrency": "VND",
+          "exemptionAmount": null,
+          "exemptionAmountCurrency": "VND"
+        },
+        "otherTaxes": [
+          {
+            "name": "Thuế GTGT",
+            "rateApplicationCode": "VB245",
+            "taxableValue": 318011588,
+            "taxableValueCurrency": "VND",
+            "taxRate": "8%",
+            "taxableQuantity": null,
+            "exemptionStatus": null,
+            "taxAmount": 25440927.04,
+            "taxAmountCurrency": "VND",
+            "exemptionAmount": null,
+            "exemptionAmountCurrency": "VND"
+          }
+        ]
+      },
+      {
+        "itemNumber": "02",
+        "hsCode": "96190014",
+        "privateManagementCode": null,
+        "priceRecheckClassificationCode": null,
+        "description": "Băng vệ sinh dạng quần\ncho phụ nữ, hiệu ENJOYQEEN, bề mặt làm bằng giấy, dùng 1 lần. NSX: FUJIAN LIAO PAPER CO.,\nLTD. MỚI 100%",
+        "quantity1": 276600,
+        "unit1": "PCE",
+        "quantity2": 273600,
+        "unit2": "PCE",
+        "adjustmentItemNumber": null,
+        "invoiceValue": 11064,
+        "invoiceUnitPrice": 0.04,
+        "invoiceUnitPriceCurrency": "USD",
+        "invoiceUnitPriceUnit": "PCE",
+        "taxableValue": 289710840,
+        "taxableValueCurrency": "VND",
+        "taxableQuantity": null,
+        "taxableUnitPrice": 1047.4,
+        "taxableUnitPriceCurrency": "VND",
+        "taxableUnitPriceUnit": "PCE",
+        "originCountryCode": "CN",
+        "originCountryName": "CHINA B05",
+        "offQuotaCode": null,
+        "tempImportExportLineNumber": null,
+        "importTax": {
+          "exemptionCategory": null,
+          "exemptionReductionStatus": null,
+          "taxRateCode": "C",
+          "taxRate": "0%",
+          "absoluteTaxCode": null,
+          "taxAmount": null,
+          "taxAmountCurrency": "VND",
+          "exemptionAmount": null,
+          "exemptionAmountCurrency": "VND"
+        },
+        "otherTaxes": [
+          {
+            "name": "Thuế GTGT",
+            "rateApplicationCode": "VB245",
+            "taxableValue": 289710840,
+            "taxableValueCurrency": "VND",
+            "taxRate": "8%",
+            "taxableQuantity": null,
+            "exemptionStatus": null,
+            "taxAmount": 23176867.2,
+            "taxAmountCurrency": "VND",
+            "exemptionAmount": null,
+            "exemptionAmountCurrency": "VND"
+          }
+        ]
+      }
+    ]
+  }
+]

@@ -1,154 +1,203 @@
-{
-  "description": "Ground truth validation data for Sample 2 extracted from CD.xlsx (Vietnamese Customs Declaration)",
-  "created_date": "2025-10-23",
-  "source": "resources/sample/2/CD.xlsx",
-  "note": "These values represent the ACTUAL declared data in the official customs form CD.xlsx. Used to validate LLM extraction accuracy.",
-
-  "sample_2_ground_truth": {
-    "description": "Adult diapers from China - Single product shipment",
-
-    "critical_fields": {
-      "note": "Must be 100% accurate - these are compliance-critical",
-      "declaration_number": "107578627220",
-      "importer_tax_code": "0104118221",
-      "invoice_number": "LA2025-068",
-      "invoice_total": 23385.2,
-      "invoice_currency": "USD",
-      "bill_of_lading_number": "JJCXMHPALS53751",
-      "co_number": "02251414210008653",
-      "products": [
-        {
-          "item_number": 1,
-          "hs_code": "96190000",
-          "quantity_1": 307700.0,
-          "quantity_unit_1": "PCE",
-          "quantity_2": 3077.0,
-          "quantity_unit_2": "PK",
-          "invoice_unit_price": 0.076
-        }
-      ]
+[
+  {
+    "declarationHeader": {
+      "title": null,
+      "declarationNumber": "107578627220",
+      "correspondingTempImportExportDeclNo": null,
+      "inspectionClassificationCode": null,
+      "firstDeclarationNumber": null,
+      "receivingCustomsAgencyName": null,
+      "typeCode": null,
+      "representativeHScode": "9619",
+      "processingDivisionCode": "00",
+      "registrationDate": "/    /",
+      "registrationChangeDate": null,
+      "reimportExportDeadline": null,
+      "importer": {
+        "code": "0104118221",
+        "name": "Công ty TNHH sản xuất dịch vụ và thương mại Thịnh Linh",
+        "postalCode": "100000",
+        "address": "Tràng An, phường Chương Mỹ, Thành Phố Hà Nội, Việt Nam",
+        "phone": null
+      },
+      "importTrustor": {
+        "code": null,
+        "name": null
+      },
+      "exporter": {
+        "code": null,
+        "name": "QUANZHOU YOULI SANITARY PRODUCTS CO .,LTD",
+        "postalCode": null,
+        "address": "ROOM A10-219, NO 936-1 LUOBAI ROAD YUTOU VILLAGE,LUOYANG TOWN, HUIAN QUANZHOU, FUJIAN CHINA",
+        "countryCode": "CN"
+      },
+      "exportTrustor": {
+        "name": null
+      },
+      "customsAgent": {
+        "name": null
+      },
+      "transportDetails": {
+        "billOfLadingNumbers": [
+          "270925JJCXMHPALS53751"
+        ],
+        "quantityPackages": 3077.0,
+        "quantityPackagesUnit": null,
+        "grossWeight": 19480.1,
+        "grossWeightUnit": null,
+        "containerCount": 2.0,
+        "customsOfficerCode": null,
+        "storageLocation": "03CES11",
+        "unloadingLocationCode": "CNXMN",
+        "unloadingLocationName": "CANG NAM DINH VU",
+        "loadingLocationCode": null,
+        "loadingLocationName": null,
+        "transportationMethod": null,
+        "vesselName": "GLORY SHANGHAI 2538S",
+        "arrivalDate": "01/10/2025",
+        "marksAndNumbers": null,
+        "firstWarehouseEntryDate": null
+      },
+      "invoiceDetails": {
+        "invoiceNumber": "A - LA2025-068",
+        "eInvoiceReceiptNumber": null,
+        "issueDate": null,
+        "paymentMethod": "KC",
+        "contentInspectionResultCode": null,
+        "incoterms": "26/09/2025",
+        "currency": null,
+        "totalInvoiceValue": 23385.2,
+        "totalTaxableValue": null,
+        "totalValueApportionmentFactor": 23385.2,
+        "importPermits": [
+          "23.385,2",
+          null,
+          null,
+          null,
+          null
+        ],
+        "valuationClassificationCode": null,
+        "consolidatedValuation": null,
+        "adjustments": {
+          "transportationFee": null,
+          "insuranceFee": null
+        },
+        "otherLegalDocuments": [
+          "-",
+          "-",
+          "-",
+          "-",
+          "-"
+        ],
+        "valuationDetailsFields": {
+          "codeName": null,
+          "classificationCode": null,
+          "adjustmentValue": null,
+          "totalApportionmentFactor": null
+        },
+        "valuationDetailsNote": null
+      },
+      "taxSummary": {
+        "taxItems": [
+          {
+            "id": "1",
+            "name": "V  Thuế GTGT",
+            "amount": "49.071.504 VND"
+          }
+        ],
+        "totalTax": null,
+        "totalTaxCurrency": null,
+        "totalTaxPayable": null,
+        "totalTaxPayableCurrency": null,
+        "guaranteeAmount": null,
+        "taxExchangeRate": 613393796.0,
+        "taxExchangeRateCurrency": null,
+        "taxPaymentDeadlineCode": null,
+        "bpRequestReasonCode": null
+      },
+      "taxpayer": {
+        "code": null,
+        "classification": null,
+        "name": null
+      },
+      "declarationMeta": {
+        "totalPages": null,
+        "totalItems": null
+      },
+      "eAttachments": {
+        "count": null,
+        "references": [
+          null,
+          null,
+          null
+        ]
+      },
+      "notes": null,
+      "internalManagementNumber": null,
+      "userManagementNumber": null,
+      "customsInstructions": [],
+      "customsNotifications": null,
+      "taxPaymentDeclarationDate": null,
+      "totalLatePaymentInterest": null,
+      "bondedTransport": {
+        "deadline": null,
+        "destination": null,
+        "transitInfo": []
+      }
     },
-
-    "important_fields": {
-      "note": "Should be ≥90% accurate with fuzzy matching allowed",
-      "importer_name": "Công ty TNHH sản xuất dịch vụ và thương mại Thịnh Linh",
-      "importer_postal_code": "100000",
-      "importer_address": "Tràng An, phường Chương Mỹ, Thành Phố Hà Nội, Việt Nam",
-      "exporter_name": "QUANZHOU YOULI SANITARY PRODUCTS CO .,LTD",
-      "exporter_country_code": "CN",
-      "exporter_address_line1": "ROOM A10-219, NO 936-1 LUOBAI ROAD",
-      "exporter_address_line2": "YUTOU VILLAGE,LUOYANG TOWN, HUIAN",
-      "exporter_address_line3": "QUANZHOU, FUJIAN CHINA",
-      "invoice_date": "26/09/2025",
-      "invoice_incoterm": "C&F",
-      "payment_method_code": "KC",
-      "arrival_date": "01/10/2025",
-      "vessel_name": "GLORY SHANGHAI 2538S",
-      "port_of_loading_code": "CNXMN",
-      "port_of_loading_name": "XIAMEN",
-      "port_of_discharge_code": "VNDVN",
-      "port_of_discharge_name": "CANG NAM DINH VU",
-      "warehouse_code": "03CES11",
-      "warehouse_name": "CANG NAM DINH VU",
-      "total_packages": 3077.0,
-      "package_unit": "PK",
-      "gross_weight_kg": 19480.1,
-      "gross_weight_unit": "KGM",
-      "container_count": 2,
-      "co_date": "30/09/2025",
-      "co_form_type": "Form E",
-      "representative_hs_code": "9619",
-      "total_line_items": 1,
-      "total_pages": 3
-    },
-
-    "calculated_fields": {
-      "note": "Allow ±1% tolerance for exchange rate variations",
-      "exchange_rate": 26230.0,
-      "total_taxable_value_vnd_range": [610000000, 620000000],
-      "vat_amount_vnd_range": [48000000, 50000000],
-      "total_tax_amount_vnd_range": [48000000, 50000000]
-    },
-
-    "metadata": {
-      "total_line_items": 1,
-      "total_pages": 3,
-      "minimum_confidence_for_critical_fields": 0.85,
-      "document_types_processed": ["AN", "BOL", "CO", "INVOICE"]
-    }
-  },
-
-  "accuracy_thresholds": {
-    "critical_fields": {
-      "description": "Fields that must be 100% accurate for customs compliance",
-      "match_type": "exact",
-      "required_accuracy": 1.0,
-      "fields": [
-        "declaration_number",
-        "importer.tax_code",
-        "invoice.invoice_number",
-        "invoice.invoice_total",
-        "products[].hs_code",
-        "products[].quantity_1",
-        "products[].invoice_unit_price",
-        "shipping_transport.bill_of_lading_number",
-        "certificate_of_origin.co_number"
-      ]
-    },
-    "important_fields": {
-      "description": "Fields that should be 90% accurate with fuzzy matching",
-      "match_type": "fuzzy",
-      "required_accuracy": 0.9,
-      "fuzzy_threshold": 0.85,
-      "fields": [
-        "importer.name",
-        "importer.address",
-        "exporter.name",
-        "exporter.address_line1",
-        "exporter.address_line2",
-        "exporter.address_line3",
-        "shipping_transport.vessel_name",
-        "shipping_transport.port_of_discharge_name",
-        "products[].product_description"
-      ]
-    },
-    "optional_fields": {
-      "description": "Fields that are nice to have with 70% accuracy",
-      "match_type": "fuzzy",
-      "required_accuracy": 0.7,
-      "fields": [
-        "importer.phone",
-        "products[].brand_name",
-        "package_container.package_marks"
-      ]
-    },
-    "calculated_fields": {
-      "description": "Calculated fields with tolerance for exchange rate variations",
-      "match_type": "numeric_tolerance",
-      "tolerance_percent": 0.01,
-      "fields": [
-        "invoice.total_taxable_value_vnd",
-        "tax_summary.total_tax_amount_vnd"
-      ]
-    }
-  },
-
-  "known_discrepancies": {
-    "note": "These are expected differences between source documents and CD.xlsx",
-    "arrival_date": {
-      "cd_xlsx": "01/10/2025",
-      "source_document": "CO shows 30/09/2025",
-      "reason": "Arrival Notice may show different date than CO issue date"
-    },
-    "bol_number": {
-      "cd_xlsx_full": "270925JJCXMHPALS53751",
-      "bol_document": "JJCXMHPALS53751",
-      "reason": "CD.xlsx includes date prefix (270925), source BOL does not"
-    },
-    "co_number": {
-      "cd_xlsx": "02251414210008653",
-      "co_document": "CCPIT42102250011455",
-      "reason": "CD.xlsx may show internal tracking number, CO document shows official CO number"
-    }
+    "items": [
+      {
+        "itemNumber": "01",
+        "hsCode": "96190014",
+        "privateManagementCode": null,
+        "priceRecheckClassificationCode": null,
+        "description": "Bỉm quần dành cho người già, hiệu: Ipaly, bề mặt làm bằng giấy size M-XL, dùng 1 lần, 10 miếng/gói x 10 gói/kiện. NSX: FUJIAN LIAO PAPER CO., LTD. Mới 100%",
+        "quantity1": 307700.0,
+        "unit1": "PCE",
+        "quantity2": 307700.0,
+        "unit2": "PCE",
+        "adjustmentItemNumber": null,
+        "invoiceValue": 23385.2,
+        "invoiceUnitPrice": 0.076,
+        "invoiceUnitPriceCurrency": "USD",
+        "invoiceUnitPriceUnit": "PCE",
+        "taxableValue": 613393796.0,
+        "taxableValueCurrency": null,
+        "taxableQuantity": null,
+        "taxableUnitPrice": 1993.48,
+        "taxableUnitPriceCurrency": "VND",
+        "taxableUnitPriceUnit": "PCE",
+        "originCountryCode": "CN",
+        "originCountryName": "CHINA",
+        "offQuotaCode": null,
+        "tempImportExportLineNumber": null,
+        "importTax": {
+          "exemptionCategory": "Thuế suất",
+          "exemptionReductionStatus": null,
+          "taxRateCode": "C",
+          "taxRate": "0%",
+          "absoluteTaxCode": null,
+          "taxAmount": null,
+          "taxAmountCurrency": null,
+          "exemptionAmount": null,
+          "exemptionAmountCurrency": null
+        },
+        "otherTaxes": [
+          {
+            "name": "Thuế GTGT",
+            "rateApplicationCode": "VB245",
+            "taxableValue": 613393796.0,
+            "taxableValueCurrency": null,
+            "taxRate": "8%",
+            "taxableQuantity": null,
+            "exemptionStatus": null,
+            "taxAmount": 49071503.68,
+            "taxAmountCurrency": null,
+            "exemptionAmount": null,
+            "exemptionAmountCurrency": null
+          }
+        ]
+      }
+    ]
   }
-}
+]
