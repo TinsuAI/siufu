@@ -1,19 +1,38 @@
 #!/usr/bin/env python3
 """
+⚠️ ARCHIVED SCRIPT ⚠️
+
+This script was created for Story 1.7.1 v1 (Extract validation data FROM CD.xlsx).
+That approach was incorrect - CD.xlsx is the OUTPUT (generated in Story 2.5), not ground truth.
+
+CURRENT USE:
+- Kept for reference in Story 2.5 (Excel generation validation)
+- May be useful for reverse validation (does generated CD.xlsx match expected-results.json?)
+
+FOR EXTRACTION VALIDATION, USE:
+- backend/validate_extraction_results.py (validates results.json vs expected-results.json)
+
+Last Updated: 2025-10-27
+Archived By: Product Manager (John) via Sprint Change Proposal
+
+================================================================================
+ORIGINAL DOCUMENTATION BELOW
+================================================================================
+
 Comprehensive Sample Validation Tool
 Validates ALL extraction results from results.json against ground truth from CD.xlsx
 Can also generate validation-reference.json files from CD.xlsx
 
 Usage:
     # Validate extraction results
-    python3 validate_sample.py <sample_folder_path>
+    python3 validate_sample_cd_xlsx.py <sample_folder_path>
 
     # Generate validation-reference.json from CD.xlsx
-    python3 validate_sample.py <sample_folder_path> --generate-reference
+    python3 validate_sample_cd_xlsx.py <sample_folder_path> --generate-reference
 
 Examples:
-    python3 validate_sample.py ../resources/sample/2
-    python3 validate_sample.py ../resources/sample/1 --generate-reference
+    python3 validate_sample_cd_xlsx.py ../resources/sample/2
+    python3 validate_sample_cd_xlsx.py ../resources/sample/1 --generate-reference
 """
 
 import json
