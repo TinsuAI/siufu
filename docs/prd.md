@@ -22,7 +22,7 @@
 
 ### Background Context
 
-The Customs Declaration Automation Platform addresses a critical bottleneck in logistics operations: manual customs declaration processing. Vietnamese logistics companies currently spend 30-60 minutes per declaration extracting data from six source files (Arrival Notice, Bill of Lading, Certificate of Origin, Invoice, Good List, EXIM Tariff) and manually populating complex Excel templates. This tedious process costs our first client 500-1,000 staff hours monthly, creates 3-5% error rates, and limits their ability to scale operations.
+The Customs Declaration Automation Platform addresses a critical bottleneck in logistics operations: manual customs declaration processing. Vietnamese logistics companies currently spend 30-60 minutes per declaration extracting data from source documents (Arrival Notice, Bill of Lading, Certificate of Origin, Invoice) and cross-referencing knowledge base files (Good List, EXIM Tariff) to manually populate complex Excel templates. This tedious process costs our first client 500-1,000 staff hours monthly, creates 3-5% error rates, and limits their ability to scale operations.
 
 Our comprehensive brainstorming session (2025-10-17) analyzed actual sample declaration files and identified that a hybrid AI approach—combining Google Document AI OCR, GPT-5 LLM extraction, and spaCy NLP validation—can achieve 85%+ accuracy immediately with a clear path to 95%+ through continuous learning. By implementing a Human-in-the-Loop review interface, we maintain accuracy while building a learning dataset that improves the system over time. The MVP focuses on delivering a complete end-to-end workflow running on Docker for on-premise deployment, meeting client data sovereignty requirements while leveraging cloud AI APIs for maximum accuracy.
 
@@ -32,6 +32,7 @@ Our comprehensive brainstorming session (2025-10-17) analyzed actual sample decl
 |------|---------|-------------|--------|
 | 2025-10-17 | 1.0 | Initial PRD created from Project Brief | John (PM) |
 | 2025-10-17 | 1.1 | Added Stories 1.0, 1.0.5, 4.6 per PO validation recommendations | Sarah (PO) |
+| 2025-10-30 | 1.2 | Updated Stories 1.6 & 3.3: Good List/EXIM Tariff now knowledge base only (not uploaded per declaration), CO accepts multiple files, all file sizes increased to 20MB | John (PM) |
 
 ---
 
@@ -41,7 +42,7 @@ Our comprehensive brainstorming session (2025-10-17) analyzed actual sample decl
 
 **Document Processing:**
 
-- **FR1:** System shall accept upload of 6 files per declaration (AN.pdf, BOL.pdf, CO.pdf, INVOICE.pdf/jpg, goodlist.xls, tariff.xlsx) via drag-and-drop interface with file type and count validation
+- **FR1:** System shall accept upload of 4 required source documents per declaration (AN.pdf, BOL.pdf, CO.pdf [multiple files accepted], INVOICE.pdf/jpg) via drag-and-drop interface with file type and count validation (max 20MB per file). Good List and EXIM Tariff are managed as knowledge base data, not uploaded per declaration.
 - **FR2:** System shall process document PDFs/images using Google Document AI Form Parser to extract text, tables, and key-value pairs with confidence scores
 - **FR3:** System shall use GPT-5 to extract structured data from OCR results including product descriptions, quantities, prices, HS codes, company names, and dates, returning JSON with per-field confidence scores
 - **FR4:** System shall fuzzy match extracted product descriptions against Good List database using rapidfuzz with 85% threshold to suggest HS codes
@@ -168,10 +169,10 @@ The platform UX prioritizes **speed and trust** for customs processing specialis
 - Clear error messages for failed login
 
 **Upload Screen:**
-- Drag-and-drop zone for all 6 files
-- Visual checklist showing which files uploaded (AN ✓, BOL ✓, CO ✗, etc.)
+- Drag-and-drop zone for all 4 required source documents (AN, BOL, CO [multiple], INVOICE)
+- Visual checklist showing which files uploaded (AN ✓, BOL ✓, CO ✓×2, INVOICE ✓)
 - File type validation with helpful error messages ("Expected .pdf, got .docx")
-- "Process Declaration" button disabled until all 6 files uploaded
+- "Process Declaration" button disabled until all 4 required file types uploaded (at least 1 CO required)
 
 **Processing Status Screen:**
 - Real-time progress indicator showing current step (OCR → Extraction → Validation → Generation)
@@ -388,7 +389,7 @@ The system follows a **pragmatic monolith** architecture for MVP with strategic 
 ## Epic List
 
 ### Epic 1: Foundation & Document Processing Pipeline (9 Stories)
-**Goal:** Establish project infrastructure and core document processing capabilities, delivering a working end-to-end pipeline that can ingest 6 files, extract data via AI, and output raw JSON results.
+**Goal:** Establish project infrastructure and core document processing capabilities, delivering a working end-to-end pipeline that can ingest source documents (AN, BOL, CO, INVOICE), extract data via AI, and output raw JSON results.
 
 **Deliverable:** Developers can upload sample declaration files and receive structured JSON output with extracted data and confidence scores. Foundation enables all subsequent development.
 
@@ -427,7 +428,7 @@ The system follows a **pragmatic monolith** architecture for MVP with strategic 
 
 ### Epic 1: Foundation & Document Processing Pipeline (9 Stories)
 
-**Epic Goal:** Establish project infrastructure and core document processing capabilities, delivering a working end-to-end pipeline that can ingest 6 files, extract data via AI, and output raw JSON results. This epic lays the technical foundation while delivering the most critical capability—automated data extraction from customs documents.
+**Epic Goal:** Establish project infrastructure and core document processing capabilities, delivering a working end-to-end pipeline that can ingest source documents (AN, BOL, CO, INVOICE), extract data via AI, and output raw JSON results. This epic lays the technical foundation while delivering the most critical capability—automated data extraction from customs documents.
 
 ---
 
@@ -640,18 +641,23 @@ so that **I can continue working while the system processes documents without th
 #### Story 1.6: File Upload and Storage
 
 As a **user**,
-I want **to upload all 6 required files for a customs declaration**,
+I want **to upload all required source documents for a customs declaration**,
 so that **the system can begin processing my declaration**.
 
 **Acceptance Criteria:**
-1. API endpoint `POST /api/declarations/upload` accepts multipart form data with 6 files
-2. Validates file types: AN.pdf, BOL.pdf, CO.pdf (must be PDF), INVOICE (PDF or JPG/PNG), goodlist (XLS/XLSX), tariff (XLS/XLSX)
-3. Validates all 6 files are present before accepting upload (per FR1)
+1. API endpoint `POST /api/declarations/upload` accepts multipart form data with required files: AN (single), BOL (single), CO (multiple), INVOICE (single)
+2. Validates file types: AN.pdf, BOL.pdf, CO*.pdf (must be PDF), INVOICE (PDF or JPG/PNG)
+3. Validates all 4 required file types are present (at least 1 CO file required)
 4. Files stored in Docker volume at `./data/uploads/{declaration_id}/` with original filenames preserved
-5. Declaration record created in database with status UPLOADED and references to file paths
-6. Returns declaration ID and status to frontend for tracking
-7. File size limits enforced: PDFs max 10MB, images max 5MB, Excel files max 2MB
-8. Clear error messages returned if validation fails (missing files, wrong types, size exceeded)
+5. Multiple CO files stored with indexed filenames (e.g., CO_1.pdf, CO_2.pdf, CO_3.pdf)
+6. Declaration record created in database with status UPLOADED and references to file paths (including CO file count)
+7. Returns declaration ID, status, and uploaded file list to frontend for tracking
+8. File size limits enforced: All files max 20MB with clear error messages if exceeded
+9. Clear error messages returned if validation fails (missing files, wrong types, size exceeded)
+
+**Notes:**
+- Good List and EXIM Tariff are NOT uploaded via this endpoint—they are managed as knowledge base data in Epic 2 (Story 2.1)
+- Maximum CO files per declaration: 10 (reasonable business limit)
 
 ---
 
@@ -836,20 +842,25 @@ so that **my declarations are secure and tracked to my account** (per FR18, FR19
 #### Story 3.3: File Upload Interface
 
 As a **user**,
-I want **a drag-and-drop interface to upload all 6 required files**,
+I want **a drag-and-drop interface to upload all required source documents**,
 so that **I can easily submit documents for processing** (per FR1).
 
 **Acceptance Criteria:**
-1. Upload screen (`/upload`) displays 6 labeled drop zones: Arrival Notice (PDF), Bill of Lading (PDF), Certificate of Origin (PDF), Invoice (PDF/Image), Good List (Excel), EXIM Tariff (Excel)
+1. Upload screen (`/upload`) displays 4 labeled drop zones: Arrival Notice (PDF), Bill of Lading (PDF), Certificate of Origin (PDF, multiple files accepted), Invoice (PDF/Image)
 2. Drag-and-drop functionality works for all drop zones with visual feedback (highlight on drag-over)
-3. Alternative: Click to open file browser for each zone
-4. Visual checklist shows which files uploaded (✓ green checkmark when file added)
-5. File type validation on frontend before upload (show error if wrong type)
-6. File size validation (PDFs max 10MB, images max 5MB, Excel max 2MB) with clear error messages
-7. "Process Declaration" button enabled only when all 6 files uploaded
-8. Clicking "Process Declaration" uploads files to `POST /api/declarations/upload` and triggers processing
-9. After upload, user redirected to processing status screen showing declaration ID
-10. Error handling: Display clear messages if upload fails (network error, validation error)
+3. Certificate of Origin drop zone accepts multiple files (show list of uploaded files with remove option)
+4. Alternative: Click to open file browser for each zone
+5. Visual checklist shows which required files uploaded (✓ green checkmark when file added)
+6. File type validation on frontend before upload (show error if wrong type)
+7. File size validation: All files max 20MB with clear error messages if exceeded
+8. "Process Declaration" button enabled only when all 4 required files uploaded (AN, BOL, at least 1 CO, INVOICE)
+9. Clicking "Process Declaration" uploads files to `POST /api/declarations/upload` and triggers processing
+10. After upload, user redirected to processing status screen showing declaration ID
+11. Error handling: Display clear messages if upload fails (network error, validation error)
+
+**Notes:**
+- Good List and EXIM Tariff are NOT uploaded—they are managed as knowledge base data
+- CO files may include multiple certificates (e.g., Form E, Form D, general CO)
 
 ---
 
@@ -1105,7 +1116,7 @@ so that **new customs processors can learn the system independently and existing
 **Core User Guide:**
 1. User guide created as `docs/user-guide.md` (Markdown format with embedded screenshots)
 2. User guide section "Getting Started": System login, First-time setup, Navigation overview, User roles (processor vs admin)
-3. User guide section "Processing a Declaration": Step-by-step workflow with screenshots for each screen: Upload screen (drag-drop 6 files), Processing status screen (progress bar), Review screen (PDF viewer + form), Approval and export
+3. User guide section "Processing a Declaration": Step-by-step workflow with screenshots for each screen: Upload screen (drag-drop 4 required documents, multiple CO files accepted), Processing status screen (progress bar), Review screen (PDF viewer + form), Approval and export
 4. User guide section "Review Interface": How to interpret confidence colors (green/yellow/red), How to edit fields inline, How to use PDF jump navigation (click field → see source), How to handle validation warnings
 5. User guide section "Knowledge Base Management" (Admin only): How to upload updated Good List, How to upload updated EXIM Tariff, How to view version history, How to rollback to previous version
 6. User guide section "Analytics Dashboard" (Admin only): How to read correction statistics, How to identify frequently-corrected fields, How to export corrections data as CSV
