@@ -4,7 +4,7 @@
  * These tests verify TanStack Query hook behavior with MSW mocked API
  */
 
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { AllTheProviders } from '@/test-utils'
 import { useDeclarations, useDeclaration, useCreateDeclaration } from '@/hooks/use-declarations'

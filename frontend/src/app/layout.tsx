@@ -1,5 +1,10 @@
 import type { Metadata } from 'next'
+import { Inter } from 'next/font/google'
 import './globals.css'
+import { Header } from '@/components/layout/header'
+import { QueryProvider } from '@/components/providers/query-provider'
+
+const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
   title: 'Customs Declaration Automation Platform',
@@ -13,7 +18,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body className={inter.className}>
+        <QueryProvider>
+          <Header />
+          <main className="min-h-[calc(100vh-4rem)]">{children}</main>
+        </QueryProvider>
+      </body>
     </html>
   )
 }
