@@ -2,11 +2,14 @@
 User repository with user-specific queries
 """
 from typing import Optional
+from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.models.user import User
 from src.repositories.base import BaseRepository
+from src.core.security import get_password_hash
+from src.schemas.auth import RegisterRequest
 
 
 class UserRepository(BaseRepository[User]):
@@ -26,34 +29,49 @@ class UserRepository(BaseRepository[User]):
             User instance or None if not found
         """
         result = await self.db.execute(
-            select(User).where(User.email == email)
+            select(User).where(User.email == email, User.is_active == True)
         )
         return result.scalars().first()
 
-    async def create_user(self, email: str, password: str, full_name: str, organization_id, role: str = "processor") -> User:
+    async def get_by_id(self, user_id: UUID) -> Optional[User]:
+        """
+        Get user by ID
+
+        Args:
+            user_id: User UUID
+
+        Returns:
+            User instance or None if not found
+        """
+        result = await self.db.execute(
+            select(User).where(User.id == user_id, User.is_active == True)
+        )
+        return result.scalars().first()
+
+    async def create(self, user_data: RegisterRequest, organization_id: UUID) -> User:
         """
         Create new user with hashed password
 
         Args:
-            email: User email
-            password: Plain text password (will be hashed)
-            full_name: User's full name
+            user_data: RegisterRequest schema with email, password, full_name
             organization_id: UUID of organization
-            role: User role (processor or admin)
 
         Returns:
             Created user instance
         """
-        # TODO: Import and use password hashing from auth service
-        # For now, this is a placeholder - actual hashing will be in auth service
-        hashed_password = f"hashed_{password}"  # Placeholder
+        hashed_password = get_password_hash(user_data.password)
 
-        user_data = {
-            "email": email,
-            "hashed_password": hashed_password,
-            "full_name": full_name,
-            "organization_id": organization_id,
-            "role": role,
-            "is_active": True
-        }
-        return await self.create(user_data)
+        user = User(
+            email=user_data.email,
+            hashed_password=hashed_password,
+            full_name=user_data.full_name,
+            organization_id=organization_id,
+            role="processor",  # Default role
+            is_active=True
+        )
+
+        self.db.add(user)
+        await self.db.commit()
+        await self.db.refresh(user)
+
+        return user
