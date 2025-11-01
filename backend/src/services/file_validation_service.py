@@ -2,9 +2,10 @@
 File validation service for uploaded declaration files
 
 Validates file types using magic bytes and enforces size limits.
+Updated in Story 3.3.1: Certificate of Origin supports multiple files (1-20)
 """
 import magic
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, List, Tuple, Optional, Union
 from fastapi import UploadFile, HTTPException, status
 
 
@@ -31,16 +32,23 @@ class FileValidationService:
     Service for validating uploaded declaration files
 
     Validates:
-    - All 4 required files are present
+    - All 4 required file types are present
     - File types match expected MIME types using magic bytes
     - File sizes are within limits
+    - Certificate of Origin has 1-20 files
+
+    Updated in Story 3.3.1: CO is now List[UploadFile]
     """
 
     # File size limits in bytes
     PDF_MAX_SIZE = 10 * 1024 * 1024  # 10MB
     IMAGE_MAX_SIZE = 5 * 1024 * 1024  # 5MB
 
-    # Required file fields (4 input documents)
+    # C/O file count limits
+    MIN_CO_FILES = 1
+    MAX_CO_FILES = 20
+
+    # Required file fields (4 file types)
     REQUIRED_FIELDS = [
         "arrival_notice",
         "bill_of_lading",
@@ -69,13 +77,14 @@ class FileValidationService:
 
     async def validate_all_files_present(
         self,
-        files: Dict[str, Optional[UploadFile]]
+        files: Dict[str, Union[Optional[UploadFile], List[UploadFile]]]
     ) -> List[Dict[str, str]]:
         """
-        Validate that all 4 required files are present
+        Validate that all 4 required file types are present
+        Updated in Story 3.3.1: CO is a list of files
 
         Args:
-            files: Dictionary mapping file field names to UploadFile objects
+            files: Dictionary mapping file field names to UploadFile or List[UploadFile]
 
         Returns:
             List of error dictionaries (empty if all files present)
@@ -83,11 +92,31 @@ class FileValidationService:
         errors = []
 
         for field in self.REQUIRED_FIELDS:
-            if field not in files or files[field] is None:
+            if field not in files:
                 errors.append({
                     "file": field,
                     "reason": f"{self.FILE_TYPE_NAMES[field]} is required but not provided"
                 })
+            elif field == "certificate_of_origin":
+                # CO should be a list with at least 1 file
+                co_files = files[field]
+                if not isinstance(co_files, list) or len(co_files) < self.MIN_CO_FILES:
+                    errors.append({
+                        "file": field,
+                        "reason": f"{self.FILE_TYPE_NAMES[field]} requires at least {self.MIN_CO_FILES} file(s)"
+                    })
+                elif len(co_files) > self.MAX_CO_FILES:
+                    errors.append({
+                        "file": field,
+                        "reason": f"{self.FILE_TYPE_NAMES[field]} allows maximum {self.MAX_CO_FILES} files (got {len(co_files)})"
+                    })
+            else:
+                # Other files should be single UploadFile
+                if files[field] is None:
+                    errors.append({
+                        "file": field,
+                        "reason": f"{self.FILE_TYPE_NAMES[field]} is required but not provided"
+                    })
 
         return errors
 
@@ -157,13 +186,14 @@ class FileValidationService:
 
     async def validate_all_files(
         self,
-        files: Dict[str, Optional[UploadFile]]
+        files: Dict[str, Union[Optional[UploadFile], List[UploadFile]]]
     ) -> Tuple[List[Dict[str, str]], Optional[FileSizeLimitExceeded]]:
         """
         Validate all uploaded files
+        Updated in Story 3.3.1: Handles CO as List[UploadFile]
 
         Args:
-            files: Dictionary mapping file field names to UploadFile objects
+            files: Dictionary mapping file field names to UploadFile or List[UploadFile]
 
         Returns:
             Tuple of (validation_errors, size_limit_error)
@@ -181,18 +211,35 @@ class FileValidationService:
             raise FileValidationError(errors)
 
         # Step 2: Validate file sizes (do this first to avoid reading large files)
-        for field_name, file in files.items():
-            if file is not None:
+        for field_name, file_or_files in files.items():
+            if field_name == "certificate_of_origin" and isinstance(file_or_files, list):
+                # Validate each CO file
+                for idx, co_file in enumerate(file_or_files):
+                    try:
+                        await self.validate_file_size(co_file, f"{field_name}_{idx + 1}")
+                    except FileSizeLimitExceeded as e:
+                        # Re-raise size errors immediately
+                        raise e
+            elif file_or_files is not None:
+                # Single file validation
                 try:
-                    await self.validate_file_size(file, field_name)
+                    await self.validate_file_size(file_or_files, field_name)
                 except FileSizeLimitExceeded as e:
                     # Re-raise size errors immediately
                     raise e
 
         # Step 3: Validate file types using magic bytes
-        for field_name, file in files.items():
-            if file is not None:
-                error = await self.validate_file_type(file, field_name)
+        for field_name, file_or_files in files.items():
+            if field_name == "certificate_of_origin" and isinstance(file_or_files, list):
+                # Validate each CO file
+                for idx, co_file in enumerate(file_or_files):
+                    error = await self.validate_file_type(co_file, field_name)
+                    if error:
+                        error["file"] = f"{field_name}_{idx + 1}"
+                        errors.append(error)
+            elif file_or_files is not None:
+                # Single file validation
+                error = await self.validate_file_type(file_or_files, field_name)
                 if error:
                     errors.append(error)
 

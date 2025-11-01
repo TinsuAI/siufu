@@ -2,12 +2,13 @@
 File storage service for uploaded declaration files
 
 Handles saving files to Docker volume with atomic writes.
+Updated in Story 3.3.1: Supports multiple CO files
 """
 import os
 import shutil
 import uuid
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Union
 from datetime import datetime, timezone
 from fastapi import UploadFile
 import aiofiles
@@ -28,13 +29,12 @@ class FileStorageService:
     UPLOAD_BASE_DIR = Path("/app/data/uploads")
 
     # Field name to file type mapping
+    # Updated in Story 3.3.1: Removed GOODLIST and TARIFF
     FILE_TYPE_MAP = {
         "arrival_notice": "AN",
         "bill_of_lading": "BOL",
         "certificate_of_origin": "CO",
-        "invoice": "INVOICE",
-        "good_list": "GOODLIST",
-        "tariff": "TARIFF"
+        "invoice": "INVOICE"
     }
 
     def __init__(self):
@@ -45,16 +45,17 @@ class FileStorageService:
     async def save_declaration_files(
         self,
         declaration_id: uuid.UUID,
-        files: Dict[str, UploadFile]
+        files: Dict[str, Union[UploadFile, List[UploadFile]]]
     ) -> List[Dict[str, any]]:
         """
         Save all uploaded files for a declaration
+        Updated in Story 3.3.1: Handles CO as List[UploadFile]
 
         Creates directory structure: /app/data/uploads/{declaration_id}/
 
         Args:
             declaration_id: UUID of the declaration
-            files: Dictionary mapping file field names to UploadFile objects
+            files: Dictionary mapping file field names to UploadFile or List[UploadFile]
 
         Returns:
             List of file metadata dictionaries for database storage
@@ -71,12 +72,23 @@ class FileStorageService:
             # Save all files and collect metadata
             file_metadata = []
 
-            for field_name, file in files.items():
-                if file is not None:
+            for field_name, file_or_files in files.items():
+                if field_name == "certificate_of_origin" and isinstance(file_or_files, list):
+                    # Handle multiple CO files
+                    for idx, co_file in enumerate(file_or_files):
+                        metadata = await self._save_single_file(
+                            declaration_dir,
+                            field_name,
+                            co_file,
+                            file_index=idx + 1  # 1-indexed for filenames
+                        )
+                        file_metadata.append(metadata)
+                elif file_or_files is not None:
+                    # Handle single file
                     metadata = await self._save_single_file(
                         declaration_dir,
                         field_name,
-                        file
+                        file_or_files
                     )
                     file_metadata.append(metadata)
 
@@ -91,15 +103,18 @@ class FileStorageService:
         self,
         declaration_dir: Path,
         field_name: str,
-        file: UploadFile
+        file: UploadFile,
+        file_index: int = None
     ) -> Dict[str, any]:
         """
         Save a single uploaded file with atomic write
+        Updated in Story 3.3.1: Supports file_index for multiple CO files
 
         Args:
             declaration_dir: Directory to save file to
             field_name: File field name (e.g., "arrival_notice")
             file: FastAPI UploadFile object
+            file_index: Optional index for multi-file fields (e.g., CO_1, CO_2)
 
         Returns:
             File metadata dictionary
@@ -109,7 +124,18 @@ class FileStorageService:
         """
         # Get file type and original filename
         file_type = self.FILE_TYPE_MAP.get(field_name, field_name.upper())
+
+        # For multi-file fields (CO), append index to file type
+        if file_index is not None:
+            file_type = f"{file_type}_{file_index}"
+
         filename = self._sanitize_filename(file.filename)
+
+        # If this is a CO file with an index, rename it to CO_1.pdf, CO_2.pdf, etc.
+        if file_index is not None and field_name == "certificate_of_origin":
+            # Extract extension from original filename
+            ext = Path(filename).suffix or ".pdf"
+            filename = f"CO_{file_index}{ext}"
 
         # Construct file paths
         final_path = declaration_dir / filename

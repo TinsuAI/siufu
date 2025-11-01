@@ -1,28 +1,30 @@
-'use client';
+'use client'
 
-import React, { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { Loader2, AlertCircle, FileUp } from 'lucide-react';
-import { FileDropZone } from '@/components/upload/file-dropzone';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { useUploadStore } from '@/stores/upload-store';
-import { useUploadDeclaration } from '@/hooks/use-upload';
-import { useAuth } from '@/hooks/use-auth';
+import React, { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { Loader2, AlertCircle, FileUp } from 'lucide-react'
+import { FileDropZone } from '@/components/upload/file-dropzone'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
+import { useUploadStore } from '@/stores/upload-store'
+import { useUploadDeclaration } from '@/hooks/use-upload'
+import { useAuth } from '@/hooks/use-auth'
 import {
   FileType,
   ACCEPTED_FORMATS,
   FILE_TYPE_LABELS,
   FILE_NAME_PATTERNS,
-} from '@/types/upload';
+} from '@/types/upload'
 
 /**
  * Configuration for each file drop zone
+ * Updated in Story 3.3.1: Removed GOODLIST and TARIFF zones
  */
 const FILE_ZONES: Array<{
-  fileType: FileType;
-  label: string;
-  description: string;
+  fileType: FileType
+  label: string
+  description: string
+  multiple?: boolean
 }> = [
   {
     fileType: 'AN',
@@ -36,82 +38,101 @@ const FILE_ZONES: Array<{
   },
   {
     fileType: 'CO',
-    label: `${FILE_TYPE_LABELS.CO} (${FILE_NAME_PATTERNS.CO})`,
-    description: 'Certificate stating country of origin',
+    label: `${FILE_TYPE_LABELS.CO} (${FILE_NAME_PATTERNS.CO}) - Multiple files supported`,
+    description:
+      'Certificate stating country of origin (multiple files allowed)',
+    multiple: true,
   },
   {
     fileType: 'INVOICE',
     label: `${FILE_TYPE_LABELS.INVOICE} (${FILE_NAME_PATTERNS.INVOICE})`,
     description: 'Commercial invoice for goods',
   },
-  {
-    fileType: 'GOODLIST',
-    label: `${FILE_TYPE_LABELS.GOODLIST} (${FILE_NAME_PATTERNS.GOODLIST})`,
-    description: 'Detailed list of goods being imported',
-  },
-  {
-    fileType: 'TARIFF',
-    label: `${FILE_TYPE_LABELS.TARIFF} (${FILE_NAME_PATTERNS.TARIFF})`,
-    description: 'Export-Import tariff classification',
-  },
-];
+]
 
 export default function UploadPage() {
-  const router = useRouter();
-  const { isAuthenticated } = useAuth();
+  const router = useRouter()
+  const { isAuthenticated } = useAuth()
 
   // Upload store state
-  const { files, isUploading, setFile, removeFile, reset, allFilesUploaded, uploadedCount } = useUploadStore();
+  const {
+    files,
+    isUploading,
+    setFile,
+    removeFile,
+    reset,
+    allFilesUploaded,
+    uploadedCount,
+  } = useUploadStore()
 
   // Upload mutation
-  const uploadMutation = useUploadDeclaration();
+  const uploadMutation = useUploadDeclaration()
 
   // Redirect to login if not authenticated
   useEffect(() => {
     if (!isAuthenticated) {
-      router.push('/login');
+      router.push('/login')
     }
-  }, [isAuthenticated, router]);
+  }, [isAuthenticated, router])
 
   // Reset upload store when component unmounts or user navigates away
   useEffect(() => {
     return () => {
-      reset();
-    };
-  }, [reset]);
+      reset()
+    }
+  }, [reset])
 
   /**
-   * Handle file selection for a specific drop zone
+   * Handle file selection for a specific drop zone (single-file mode)
    */
   const handleFileSelect = (fileType: FileType, file: File) => {
-    setFile(fileType, file);
-  };
+    setFile(fileType, file)
+  }
 
   /**
-   * Handle file removal for a specific drop zone
+   * Handle files selection for C/O drop zone (multi-file mode)
+   */
+  const handleFilesSelect = (fileType: FileType, selectedFiles: File[]) => {
+    // For multi-file mode (C/O), update the entire files array
+    if (fileType === 'CO') {
+      // The store should handle this properly
+      // For now, we'll use a different method in the store
+      useUploadStore.getState().setCOFiles(selectedFiles)
+    }
+  }
+
+  /**
+   * Handle file removal for a specific drop zone (single-file mode)
    */
   const handleFileRemove = (fileType: FileType) => {
-    removeFile(fileType);
-  };
+    removeFile(fileType)
+  }
+
+  /**
+   * Handle individual C/O file removal (multi-file mode)
+   */
+  const handleCOFileRemove = (index: number) => {
+    useUploadStore.getState().removeCOFile(index)
+  }
 
   /**
    * Handle process declaration button click
    */
   const handleProcessDeclaration = () => {
     if (allFilesUploaded()) {
-      uploadMutation.mutate(files);
+      uploadMutation.mutate(files)
     }
-  };
+  }
 
   /**
    * Handle retry after error
    */
   const handleRetry = () => {
-    uploadMutation.reset();
+    uploadMutation.reset()
     if (allFilesUploaded()) {
-      uploadMutation.mutate(files);
+      uploadMutation.mutate(files)
     }
-  };
+  }
 
   // Show loading if authentication check is in progress
   if (!isAuthenticated) {
@@ -119,20 +140,22 @@ export default function UploadPage() {
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
       </div>
-    );
+    )
   }
 
-  const uploadCount = uploadedCount();
-  const isProcessButtonDisabled = !allFilesUploaded() || isUploading;
+  const uploadCount = uploadedCount()
+  const isProcessButtonDisabled = !allFilesUploaded() || isUploading
 
   return (
     <div className="container mx-auto px-6 py-8 max-w-7xl">
       {/* Page Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-slate-800 mb-2">Upload Declaration Documents</h1>
+        <h1 className="text-3xl font-bold text-slate-800 mb-2">
+          Upload Declaration Documents
+        </h1>
         <p className="text-slate-600">
-          Upload all 6 required files to process a new customs declaration. All files are required before
-          submission.
+          Upload all 4 required document types to process a new customs
+          declaration. Certificate of Origin supports multiple files.
         </p>
       </div>
 
@@ -142,10 +165,12 @@ export default function UploadPage() {
           <FileUp className="h-5 w-5 text-blue-600" />
           <div>
             <p className="text-sm font-medium text-blue-900">
-              Upload Progress: {uploadCount} of 6 files uploaded
+              Upload Progress: {uploadCount} of 4 required documents uploaded
             </p>
-            {uploadCount === 6 && (
-              <p className="text-xs text-blue-700 mt-0.5">All files uploaded! Ready to process.</p>
+            {uploadCount === 4 && (
+              <p className="text-xs text-blue-700 mt-0.5">
+                All documents uploaded! Ready to process.
+              </p>
             )}
           </div>
         </div>
@@ -153,13 +178,20 @@ export default function UploadPage() {
 
       {/* Error Display */}
       {uploadMutation.isError && (
-        <Card className="mb-6 p-4 bg-red-50 border-red-200" role="alert" aria-live="assertive">
+        <Card
+          className="mb-6 p-4 bg-red-50 border-red-200"
+          role="alert"
+          aria-live="assertive"
+        >
           <div className="flex items-start gap-3">
             <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
             <div className="flex-1">
-              <h3 className="text-sm font-medium text-red-900 mb-1">Upload Failed</h3>
+              <h3 className="text-sm font-medium text-red-900 mb-1">
+                Upload Failed
+              </h3>
               <p className="text-sm text-red-700">
-                {uploadMutation.error?.message || 'An error occurred while uploading files.'}
+                {uploadMutation.error?.message ||
+                  'An error occurred while uploading files.'}
               </p>
               <Button
                 onClick={handleRetry}
@@ -174,31 +206,54 @@ export default function UploadPage() {
         </Card>
       )}
 
-      {/* File Drop Zones Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8" role="group" aria-label="File upload zones">
-        {FILE_ZONES.map(({ fileType, label, description }) => {
+      {/* File Drop Zones Grid - Updated in Story 3.3.1: 2x2 grid for 4 file types */}
+      <div
+        className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8"
+        role="group"
+        aria-label="File upload zones"
+      >
+        {FILE_ZONES.map(({ fileType, label, description, multiple }) => {
           const fieldName = {
             AN: 'arrival_notice',
             BOL: 'bill_of_lading',
             CO: 'certificate_of_origin',
             INVOICE: 'invoice',
-            GOODLIST: 'good_list',
-            TARIFF: 'exim_tariff',
-          }[fileType] as keyof typeof files;
+          }[fileType] as keyof typeof files
 
+          // For C/O (multi-file mode), use different props
+          if (multiple && fileType === 'CO') {
+            return (
+              <div key={fileType} title={description}>
+                <FileDropZone
+                  label={label}
+                  fileType={fileType}
+                  acceptedFormats={ACCEPTED_FORMATS[fileType]}
+                  multiple={true}
+                  files={files[fieldName] as File[]}
+                  onFilesSelect={(selectedFiles) =>
+                    handleFilesSelect(fileType, selectedFiles)
+                  }
+                  onRemoveFile={handleCOFileRemove}
+                  disabled={isUploading}
+                />
+              </div>
+            )
+          }
+
+          // For other file types (single-file mode)
           return (
             <div key={fileType} title={description}>
               <FileDropZone
                 label={label}
                 fileType={fileType}
                 acceptedFormats={ACCEPTED_FORMATS[fileType]}
-                file={files[fieldName]}
+                file={files[fieldName] as File | null}
                 onFileSelect={(file) => handleFileSelect(fileType, file)}
                 onRemove={() => handleFileRemove(fileType)}
                 disabled={isUploading}
               />
             </div>
-          );
+          )
         })}
       </div>
 
@@ -223,7 +278,7 @@ export default function UploadPage() {
 
         {!allFilesUploaded() && !isUploading && (
           <p className="text-sm text-slate-500" aria-live="polite">
-            Please upload all 6 required files to continue
+            Please upload all 4 required document types to continue
           </p>
         )}
       </div>
@@ -234,7 +289,17 @@ export default function UploadPage() {
         <ul className="text-sm text-slate-600 space-y-2">
           <li className="flex items-start gap-2">
             <span className="text-slate-400">•</span>
-            <span>You can drag and drop files directly onto each zone or click to browse</span>
+            <span>
+              You can drag and drop files directly onto each zone or click to
+              browse
+            </span>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="text-slate-400">•</span>
+            <span>
+              Certificate of Origin supports multiple files - add as many as
+              needed
+            </span>
           </li>
           <li className="flex items-start gap-2">
             <span className="text-slate-400">•</span>
@@ -242,14 +307,17 @@ export default function UploadPage() {
           </li>
           <li className="flex items-start gap-2">
             <span className="text-slate-400">•</span>
-            <span>Maximum file sizes: PDFs (10 MB), Images (5 MB), Excel files (2 MB)</span>
+            <span>Maximum file sizes: PDFs (10 MB), Images (5 MB)</span>
           </li>
           <li className="flex items-start gap-2">
             <span className="text-slate-400">•</span>
-            <span>All files must be uploaded before processing can begin</span>
+            <span>
+              All required documents must be uploaded before processing can
+              begin
+            </span>
           </li>
         </ul>
       </Card>
     </div>
-  );
+  )
 }

@@ -2,7 +2,7 @@
 Declaration API endpoints
 """
 from uuid import UUID
-from typing import Optional
+from typing import Optional, List
 from fastapi import APIRouter, Depends, HTTPException, status, Response, File, UploadFile, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -29,7 +29,7 @@ async def list_declarations(db: AsyncSession = Depends(get_db)):
 async def upload_declaration(
     arrival_notice: UploadFile = File(..., description="Arrival Notice PDF"),
     bill_of_lading: UploadFile = File(..., description="Bill of Lading PDF"),
-    certificate_of_origin: UploadFile = File(..., description="Certificate of Origin PDF"),
+    certificate_of_origin: List[UploadFile] = File(..., description="Certificate of Origin PDFs (1-20 files)"),
     invoice: UploadFile = File(..., description="Invoice (PDF, JPG, or PNG)"),
     auto_process: bool = Query(
         default=False,
@@ -38,35 +38,57 @@ async def upload_declaration(
     db: AsyncSession = Depends(get_db)
 ) -> DeclarationUploadResponse:
     """
-    Upload 4 declaration files to create new declaration
+    Upload 4 declaration file types to create new declaration
+    Updated in Story 3.3.1: Certificate of Origin supports multiple files (1-20)
 
-    Accepts multipart/form-data with 4 required files:
-    - arrival_notice: Arrival Notice (AN.pdf) - PDF only
-    - bill_of_lading: Bill of Lading (BOL.pdf) - PDF only
-    - certificate_of_origin: Certificate of Origin (CO.pdf) - PDF only
-    - invoice: Invoice - PDF, JPG, or PNG
+    Accepts multipart/form-data with 4 required file types:
+    - arrival_notice: Arrival Notice (AN.pdf) - PDF only - 1 file
+    - bill_of_lading: Bill of Lading (BOL.pdf) - PDF only - 1 file
+    - certificate_of_origin: Certificate of Origin (CO.pdf) - PDF only - 1-20 files
+    - invoice: Invoice - PDF, JPG, or PNG - 1 file
 
     File size limits:
-    - PDFs: Max 10MB
-    - Images: Max 5MB
+    - PDFs: Max 10MB per file
+    - Images: Max 5MB per file
 
     Returns:
         DeclarationUploadResponse with declaration_id, status, and file metadata
 
     Raises:
-        HTTPException 400: Validation failed (missing files, wrong types)
+        HTTPException 400: Validation failed (missing files, wrong types, C/O count out of range)
         HTTPException 413: File size exceeded
         HTTPException 507: Insufficient storage space
     """
+    # Validate C/O file count (1-20 files)
+    if not certificate_of_origin or len(certificate_of_origin) < 1:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                "error": "invalid_co_count",
+                "message": "At least 1 Certificate of Origin file is required",
+                "count": len(certificate_of_origin) if certificate_of_origin else 0
+            }
+        )
+
+    if len(certificate_of_origin) > 20:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                "error": "invalid_co_count",
+                "message": "Maximum 20 Certificate of Origin files allowed",
+                "count": len(certificate_of_origin)
+            }
+        )
+
     # Initialize services
     validation_service = FileValidationService()
     storage_service = FileStorageService()
 
-    # Collect all files
+    # Collect all files (CO is now a list)
     files = {
         "arrival_notice": arrival_notice,
         "bill_of_lading": bill_of_lading,
-        "certificate_of_origin": certificate_of_origin,
+        "certificate_of_origin": certificate_of_origin,  # Now a list
         "invoice": invoice
     }
 
@@ -216,16 +238,17 @@ async def process_declaration(
     """
     Trigger async processing for uploaded declaration
 
-    Triggers Celery task to process all 4 documents (AN, BOL, CO, INVOICE)
+    Triggers Celery task to process all document types (AN, BOL, CO (multiple), INVOICE)
     through OCR and LLM extraction pipeline.
 
     **Processing Stages:**
     1. PENDING_PROCESSING (progress: 0.0)
-    2. PROCESSING_OCR (progress: 0.2) - OCR extraction from 4 PDFs
+    2. PROCESSING_OCR (progress: 0.2) - OCR extraction from PDFs
     3. PROCESSING_LLM (progress: 0.6) - GPT-5 data extraction
     4. READY_FOR_REVIEW (progress: 1.0) - Complete
 
     **Expected Duration:** 46-72 seconds (avg 59s, within 90s NFR1 target)
+    Note: Duration may increase with multiple C/O files
 
     Args:
         declaration_id: UUID of declaration to process

@@ -115,7 +115,8 @@ export async function getCurrentUser(): Promise<User> {
 
 /**
  * Upload declaration files to backend
- * @param files - Object containing all 6 required files
+ * Updated in Story 3.3.1: 4 file types (AN, BOL, CO array, Invoice)
+ * @param files - Object containing all 4 required file types (CO supports multiple files)
  * @returns Declaration ID and metadata
  * @throws Error with user-friendly message on validation or upload failure
  */
@@ -125,15 +126,20 @@ export async function uploadDeclaration(
   // Build FormData object with correct field names matching backend API
   const formData = new FormData()
 
+  // Single-file uploads
   if (files.arrival_notice)
     formData.append('arrival_notice', files.arrival_notice)
   if (files.bill_of_lading)
     formData.append('bill_of_lading', files.bill_of_lading)
-  if (files.certificate_of_origin)
-    formData.append('certificate_of_origin', files.certificate_of_origin)
   if (files.invoice) formData.append('invoice', files.invoice)
-  if (files.good_list) formData.append('good_list', files.good_list)
-  if (files.exim_tariff) formData.append('exim_tariff', files.exim_tariff)
+
+  // Multi-file upload for Certificate of Origin
+  // Backend expects multiple files with the same key name 'certificate_of_origin'
+  if (files.certificate_of_origin && files.certificate_of_origin.length > 0) {
+    files.certificate_of_origin.forEach((coFile) => {
+      formData.append('certificate_of_origin', coFile)
+    })
+  }
 
   const url = `${API_BASE_URL}/declarations/upload`
 
