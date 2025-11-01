@@ -4,7 +4,15 @@
 
 import { LoginResponse, User } from '@/types/auth'
 import type { RegisterRequest } from '@/types/auth'
-import type { FileUploadState, UploadResponse, UploadErrorResponse } from '@/types/upload'
+import type {
+  FileUploadState,
+  UploadResponse,
+  UploadErrorResponse,
+} from '@/types/upload'
+import type {
+  StatusResponse,
+  RetryProcessingResponse,
+} from '@/types/declaration'
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'
@@ -65,7 +73,10 @@ export async function apiClient<T>(
 /**
  * Login user with email and password
  */
-export async function login(email: string, password: string): Promise<LoginResponse> {
+export async function login(
+  email: string,
+  password: string
+): Promise<LoginResponse> {
   return apiClient<LoginResponse>('/auth/login', {
     method: 'POST',
     body: JSON.stringify({ email, password }),
@@ -108,13 +119,18 @@ export async function getCurrentUser(): Promise<User> {
  * @returns Declaration ID and metadata
  * @throws Error with user-friendly message on validation or upload failure
  */
-export async function uploadDeclaration(files: FileUploadState): Promise<UploadResponse> {
+export async function uploadDeclaration(
+  files: FileUploadState
+): Promise<UploadResponse> {
   // Build FormData object with correct field names matching backend API
   const formData = new FormData()
 
-  if (files.arrival_notice) formData.append('arrival_notice', files.arrival_notice)
-  if (files.bill_of_lading) formData.append('bill_of_lading', files.bill_of_lading)
-  if (files.certificate_of_origin) formData.append('certificate_of_origin', files.certificate_of_origin)
+  if (files.arrival_notice)
+    formData.append('arrival_notice', files.arrival_notice)
+  if (files.bill_of_lading)
+    formData.append('bill_of_lading', files.bill_of_lading)
+  if (files.certificate_of_origin)
+    formData.append('certificate_of_origin', files.certificate_of_origin)
   if (files.invoice) formData.append('invoice', files.invoice)
   if (files.good_list) formData.append('good_list', files.good_list)
   if (files.exim_tariff) formData.append('exim_tariff', files.exim_tariff)
@@ -137,11 +153,13 @@ export async function uploadDeclaration(files: FileUploadState): Promise<UploadR
 
     if (!response.ok) {
       // Parse error response following RFC 7807 Problem Details format
-      const errorData: UploadErrorResponse = await response.json().catch(() => ({
-        type: 'UnknownError',
-        title: 'Upload failed',
-        detail: `HTTP ${response.status}: ${response.statusText}`,
-      }))
+      const errorData: UploadErrorResponse = await response
+        .json()
+        .catch(() => ({
+          type: 'UnknownError',
+          title: 'Upload failed',
+          detail: `HTTP ${response.status}: ${response.statusText}`,
+        }))
 
       // Extract user-friendly error message
       let errorMessage = errorData.detail || 'Failed to upload files'
@@ -163,14 +181,81 @@ export async function uploadDeclaration(files: FileUploadState): Promise<UploadR
 
     // Handle timeout error
     if (error instanceof Error && error.name === 'AbortError') {
-      throw new Error('Upload timeout. Please check your connection and try again.')
+      throw new Error(
+        'Upload timeout. Please check your connection and try again.'
+      )
     }
 
     // Handle network errors
     if (error instanceof Error && error.message.includes('fetch')) {
-      throw new Error('Network error. Please check your connection and try again.')
+      throw new Error(
+        'Network error. Please check your connection and try again.'
+      )
     }
 
+    // Re-throw other errors
+    throw error
+  }
+}
+
+/**
+ * Get declaration processing status
+ * @param id - Declaration UUID
+ * @returns Current status and processing progress
+ * @throws Error if declaration not found (404) or user not authorized (401/403)
+ */
+export async function getDeclarationStatus(
+  id: string
+): Promise<StatusResponse> {
+  try {
+    return await apiClient<StatusResponse>(`/declarations/${id}/status`, {
+      method: 'GET',
+    })
+  } catch (error) {
+    if (error instanceof Error) {
+      // Handle 404 - declaration not found
+      if (error.message.includes('404')) {
+        throw new Error(
+          'Declaration not found. Please check the ID and try again.'
+        )
+      }
+      // Handle 401/403 - unauthorized
+      if (error.message.includes('401') || error.message.includes('403')) {
+        throw new Error('You are not authorized to view this declaration.')
+      }
+    }
+    // Re-throw other errors
+    throw error
+  }
+}
+
+/**
+ * Retry processing for a failed declaration
+ * @param id - Declaration UUID
+ * @returns Confirmation message and declaration ID
+ * @throws Error if declaration not found or user not authorized
+ */
+export async function retryProcessing(
+  id: string
+): Promise<RetryProcessingResponse> {
+  try {
+    return await apiClient<RetryProcessingResponse>(
+      `/declarations/${id}/process`,
+      {
+        method: 'POST',
+      }
+    )
+  } catch (error) {
+    if (error instanceof Error) {
+      // Handle 404 - declaration not found
+      if (error.message.includes('404')) {
+        throw new Error('Declaration not found. Cannot retry processing.')
+      }
+      // Handle 401/403 - unauthorized
+      if (error.message.includes('401') || error.message.includes('403')) {
+        throw new Error('You are not authorized to retry this declaration.')
+      }
+    }
     // Re-throw other errors
     throw error
   }
