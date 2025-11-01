@@ -27,7 +27,7 @@ export interface HealthStatus {
  * Get backend health status
  */
 export async function getHealthStatus(): Promise<HealthStatus> {
-  const response = await fetch(`${API_BASE_URL.replace('/api', '')}/health`)
+  const response = await fetch(`${API_BASE_URL}/health`)
   if (!response.ok) {
     throw new Error('Failed to fetch health status')
   }
