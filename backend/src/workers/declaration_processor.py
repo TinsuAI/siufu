@@ -2,9 +2,11 @@
 Declaration processing Celery task
 
 Orchestrates full customs declaration processing pipeline:
-1. OCR processing of 4 PDF documents (AN, BOL, CO, INVOICE)
+1. OCR processing of PDF documents (AN, BOL, CO (1-20 files), INVOICE)
 2. LLM extraction of structured data
 3. Validation of extracted data
+
+Updated in Story 3.3.1: Certificate of Origin now supports 1-20 files
 4. Progress tracking throughout
 
 Expected duration: 52-85 seconds (within 90 second NFR1 requirement)
@@ -235,7 +237,8 @@ async def _process_declaration_async(declaration_id: str) -> Dict[str, Any]:
         else:
             raise ValueError(f"Invalid uploaded_files structure: {type(uploaded_files_list)}")
 
-        required_docs = ["AN", "BOL", "CO", "INVOICE"]
+        # Required single-file docs (Updated in Story 3.3.1: CO is now multi-file)
+        required_single_docs = ["AN", "BOL", "INVOICE"]
 
         # Stage 1: Update to PROCESSING_OCR status
         logger.info(f"Stage 1: Starting OCR processing", extra={"declaration_id": declaration_id})
@@ -249,11 +252,13 @@ async def _process_declaration_async(declaration_id: str) -> Dict[str, Any]:
         # Track OCR stage start time
         stage_start = time.time()
 
-        # Process all 4 PDFs through OCR in parallel
+        # Process all PDFs through OCR in parallel
+        # Updated in Story 3.3.1: Handle multiple CO files (CO_1, CO_2, etc.)
         ocr_service = OCRService()
         ocr_tasks = []
 
-        for doc_type in required_docs:
+        # Process single-file documents
+        for doc_type in required_single_docs:
             if doc_type not in uploaded_files:
                 raise ValueError(f"Missing required document: {doc_type}")
 
@@ -262,7 +267,21 @@ async def _process_declaration_async(declaration_id: str) -> Dict[str, Any]:
                 raise FileNotFoundError(f"File not found for {doc_type}: {file_path}")
 
             # Create async task for OCR processing
-            # Note: OCRService.process_document_ocr is synchronous, so we run it in executor
+            loop = asyncio.get_event_loop()
+            ocr_task = loop.run_in_executor(None, ocr_service.process_document_ocr, file_path)
+            ocr_tasks.append((doc_type, ocr_task))
+
+        # Process all CO files (CO_1, CO_2, ..., CO_N)
+        co_files = {k: v for k, v in uploaded_files.items() if k.startswith("CO_")}
+        if not co_files:
+            raise ValueError("Missing required document: CO (Certificate of Origin)")
+
+        for doc_type, file_metadata in co_files.items():
+            file_path = file_metadata.get("path")
+            if not file_path or not os.path.exists(file_path):
+                raise FileNotFoundError(f"File not found for {doc_type}: {file_path}")
+
+            # Create async task for OCR processing
             loop = asyncio.get_event_loop()
             ocr_task = loop.run_in_executor(None, ocr_service.process_document_ocr, file_path)
             ocr_tasks.append((doc_type, ocr_task))
@@ -292,12 +311,46 @@ async def _process_declaration_async(declaration_id: str) -> Dict[str, Any]:
         )
         sentry_sdk.set_tag("processing_stage", "PROCESSING_LLM")
 
+        # Combine multiple CO OCR results into one (Updated in Story 3.3.1)
+        # LLM service expects single OCRResult, but we may have CO_1, CO_2, etc.
+        co_ocr_combined = None
+        co_results_list = sorted([
+            (k, v) for k, v in ocr_results.items() if k.startswith("CO_")
+        ], key=lambda x: x[0])  # Sort by key to ensure CO_1, CO_2, ... order
+
+        if co_results_list:
+            # Combine all CO OCR texts
+            combined_text = "\n\n=== COMBINED CERTIFICATE OF ORIGIN FILES ===\n\n"
+            combined_key_value_pairs = []
+            combined_tables = []
+            combined_confidence_scores = {}
+
+            for idx, (co_key, co_result) in enumerate(co_results_list, 1):
+                combined_text += f"=== FILE {idx} ({co_key}) ===\n{co_result.text}\n\n"
+                combined_key_value_pairs.extend(co_result.key_value_pairs)
+                combined_tables.extend(co_result.tables)
+                # Prefix confidence score keys with file number to avoid conflicts
+                for k, v in co_result.confidence_scores.items():
+                    combined_confidence_scores[f"{co_key}_{k}"] = v
+
+            # Create combined OCRResult
+            from src.schemas.ocr import OCRResult
+            co_ocr_combined = OCRResult(
+                text=combined_text,
+                key_value_pairs=combined_key_value_pairs,
+                tables=combined_tables,
+                confidence_scores=combined_confidence_scores,
+                page_count=sum(r[1].page_count for r in co_results_list),
+                file_name=f"COMBINED_CO_({len(co_results_list)}_files)",
+                processing_time_ms=sum(r[1].processing_time_ms for r in co_results_list)
+            )
+
         # Extract structured data using LLM
         llm_service = LLMService()
         extracted_data = await llm_service.extract_from_multiple_documents(
             ocr_an=ocr_results.get("AN"),
             ocr_bol=ocr_results.get("BOL"),
-            ocr_co=ocr_results.get("CO"),
+            ocr_co=co_ocr_combined,
             ocr_invoice=ocr_results.get("INVOICE")
         )
 
