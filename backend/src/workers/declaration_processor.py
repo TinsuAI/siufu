@@ -371,7 +371,30 @@ async def _process_declaration_async(declaration_id: str) -> Dict[str, Any]:
         # Store extracted data and confidence scores in declaration
         declaration = await repo.get_by_id(UUID(declaration_id))
         declaration.extracted_data = extracted_data.model_dump()
-        declaration.confidence_scores = extracted_data.confidence_scores
+
+        # Build confidence scores dict from extracted data
+        confidence_scores = {
+            "overall": extracted_data.overall_confidence,
+            "shipper": extracted_data.shipper.confidence,
+            "consignee": extracted_data.consignee.confidence
+        }
+
+        # Add date confidence scores if available
+        if extracted_data.dates.confidence_scores:
+            for key, value in extracted_data.dates.confidence_scores.items():
+                confidence_scores[f"date_{key}"] = value
+
+        # Add product confidence scores
+        for idx, product in enumerate(extracted_data.products):
+            if product.confidence_scores:
+                for key, value in product.confidence_scores.items():
+                    confidence_scores[f"product_{idx}_{key}"] = value
+
+        # Add container confidence scores
+        for idx, container in enumerate(extracted_data.containers):
+            confidence_scores[f"container_{idx}"] = container.confidence
+
+        declaration.confidence_scores = confidence_scores
         await db.commit()
 
         storage_duration = time.time() - stage_start

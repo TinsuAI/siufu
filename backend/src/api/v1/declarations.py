@@ -3,10 +3,12 @@ Declaration API endpoints
 """
 from uuid import UUID
 from typing import Optional, List
-from fastapi import APIRouter, Depends, HTTPException, status, Response, File, UploadFile, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Response, File, UploadFile, Query, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.database import get_db
+from src.core.deps import get_current_user
+from src.models.user import User
 from src.repositories.declaration_repository import DeclarationRepository
 from src.schemas.declaration import DeclarationStatusResponse, DeclarationUploadResponse, UploadedFileMetadata
 from src.services.file_validation_service import FileValidationService, FileValidationError, FileSizeLimitExceeded
@@ -27,6 +29,7 @@ async def list_declarations(db: AsyncSession = Depends(get_db)):
 
 @router.post("/upload", response_model=DeclarationUploadResponse, status_code=status.HTTP_201_CREATED)
 async def upload_declaration(
+    request: Request,
     arrival_notice: UploadFile = File(..., description="Arrival Notice PDF"),
     bill_of_lading: UploadFile = File(..., description="Bill of Lading PDF"),
     certificate_of_origin: List[UploadFile] = File(..., description="Certificate of Origin PDFs (1-20 files)"),
@@ -56,9 +59,13 @@ async def upload_declaration(
 
     Raises:
         HTTPException 400: Validation failed (missing files, wrong types, C/O count out of range)
+        HTTPException 401: Not authenticated
         HTTPException 413: File size exceeded
         HTTPException 507: Insufficient storage space
     """
+    # Authenticate user (requires JWT token in cookie or Authorization header)
+    current_user = await get_current_user(request, db)
+
     # Validate C/O file count (1-20 files)
     if not certificate_of_origin or len(certificate_of_origin) < 1:
         raise HTTPException(
@@ -123,11 +130,9 @@ async def upload_declaration(
     # Create declaration record
     repo = DeclarationRepository(db)
 
-    # TODO: Get from JWT token when auth is implemented
-    # For now, use fixed test UUIDs that exist in the database
-    from uuid import UUID
-    organization_id = UUID("00000000-0000-0000-0000-000000000001")
-    created_by_user_id = UUID("00000000-0000-0000-0000-000000000002")
+    # Get organization and user IDs from authenticated user
+    organization_id = current_user.organization_id
+    created_by_user_id = current_user.id
 
     try:
         # Create declaration with UPLOADED status

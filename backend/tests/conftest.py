@@ -1,6 +1,8 @@
 """Pytest configuration and shared fixtures."""
 
 import pytest
+import pytest_asyncio
+import asyncio
 from typing import AsyncGenerator
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.pool import NullPool
@@ -32,8 +34,28 @@ def anyio_backend():
 
 
 @pytest.fixture(scope="session")
+def event_loop():
+    """
+    Create a session-scoped event loop for all async tests.
+
+    This prevents 'Event loop is closed' errors by ensuring all async
+    fixtures and tests use the same event loop throughout the test session.
+    """
+    policy = asyncio.get_event_loop_policy()
+    loop = policy.new_event_loop()
+    yield loop
+    loop.close()
+
+
+@pytest_asyncio.fixture(scope="session")
 async def test_engine():
-    """Create test database engine and setup tables."""
+    """
+    Create test database engine and setup tables.
+
+    Uses session-scoped fixture to create tables once per test session.
+    Transaction-based isolation ensures each test gets clean state without
+    recreating tables, preventing event loop conflicts.
+    """
     engine = create_async_engine(
         TEST_DATABASE_URL,
         poolclass=NullPool,  # Disable connection pooling for tests
@@ -53,7 +75,7 @@ async def test_engine():
     await engine.dispose()
 
 
-@pytest.fixture(scope="function")
+@pytest_asyncio.fixture(scope="function")
 async def db_session(test_engine) -> AsyncGenerator[AsyncSession, None]:
     """
     Create a new database session for each test.
@@ -66,17 +88,29 @@ async def db_session(test_engine) -> AsyncGenerator[AsyncSession, None]:
     - Closes the connection
 
     This ensures test isolation - each test gets a clean database state.
+
+    Note: We explicitly manage connection/transaction lifecycle instead of
+    using context managers to ensure proper cleanup order in the correct
+    event loop context, preventing "Event loop is closed" errors.
     """
-    async with test_engine.connect() as connection:
-        async with connection.begin() as transaction:
-            session_maker = async_sessionmaker(
-                bind=connection,
-                class_=AsyncSession,
-                expire_on_commit=False
-            )
-            async with session_maker() as session:
-                yield session
-                await transaction.rollback()
+    # Explicitly create connection and transaction for better cleanup control
+    connection = await test_engine.connect()
+    transaction = await connection.begin()
+
+    session_maker = async_sessionmaker(
+        bind=connection,
+        class_=AsyncSession,
+        expire_on_commit=False
+    )
+    session = session_maker()
+
+    try:
+        yield session
+    finally:
+        # Explicit cleanup in correct order
+        await session.close()
+        await transaction.rollback()
+        await connection.close()
 
 
 # Google Document AI mock fixtures
@@ -106,3 +140,74 @@ def google_ocr_error_mock():
 
 # OpenRouter LLM mock fixtures are now defined in tests/fixtures/openrouter.py
 # They are auto-discovered by pytest and don't need to be re-exported here
+
+
+# HTTP Client fixture for API testing
+@pytest_asyncio.fixture(scope="function")
+async def async_client():
+    """
+    Create async HTTP client for testing FastAPI endpoints.
+
+    Uses httpx.AsyncClient with FastAPI app. This fixture ensures proper
+    cleanup of HTTP connections and async resources.
+    """
+    from httpx import AsyncClient, ASGITransport
+    from src.main import app
+
+    transport = ASGITransport(app=app)
+    client = AsyncClient(transport=transport, base_url="http://test")
+
+    try:
+        yield client
+    finally:
+        await client.aclose()
+
+
+@pytest_asyncio.fixture(scope="function")
+async def test_organization(db_session: AsyncSession):
+    """
+    Create a test organization for use in tests.
+
+    Returns an Organization instance with a fixed UUID.
+    """
+    from uuid import UUID
+    from src.models.organization import Organization
+
+    org = Organization(
+        id=UUID("00000000-0000-0000-0000-000000000001"),
+        name="Test Organization"
+    )
+    db_session.add(org)
+    await db_session.commit()
+    await db_session.refresh(org)
+    return org
+
+
+@pytest_asyncio.fixture(scope="function")
+async def test_user(db_session: AsyncSession, test_organization):
+    """
+    Create a test user for authentication testing.
+
+    Returns a User instance with:
+    - Fixed UUID: 00000000-0000-0000-0000-000000000002
+    - Email: test@example.com
+    - Password: test123 (hashed)
+    - Role: processor
+    """
+    from uuid import UUID
+    from src.models.user import User, UserRole
+    from src.core.security import pwd_context
+
+    user = User(
+        id=UUID("00000000-0000-0000-0000-000000000002"),
+        email="test@example.com",
+        hashed_password=pwd_context.hash("test123"),
+        full_name="Test User",
+        role=UserRole.processor,
+        is_active=True,
+        organization_id=test_organization.id
+    )
+    db_session.add(user)
+    await db_session.commit()
+    await db_session.refresh(user)
+    return user

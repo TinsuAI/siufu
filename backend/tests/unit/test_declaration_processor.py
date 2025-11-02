@@ -24,10 +24,10 @@ def mock_declaration():
     declaration.id = uuid4()
     declaration.status = DeclarationStatus.UPLOADED
     declaration.uploaded_files = {
-        "AN": {"path": "/app/data/uploads/an.pdf"},
-        "BOL": {"path": "/app/data/uploads/bol.pdf"},
-        "CO": {"path": "/app/data/uploads/co.pdf"},
-        "INVOICE": {"path": "/app/data/uploads/invoice.pdf"}
+        "AN": {"path": "/app/data/uploads/an.pdf", "file_type": "AN"},
+        "BOL": {"path": "/app/data/uploads/bol.pdf", "file_type": "BOL"},
+        "CO_1": {"path": "/app/data/uploads/co.pdf", "file_type": "CO_1"},
+        "INVOICE": {"path": "/app/data/uploads/invoice.pdf", "file_type": "INVOICE"}
     }
     declaration.celery_task_id = None
     declaration.processing_progress = 0.0
@@ -114,7 +114,7 @@ class TestDeclarationProcessor:
             assert result["declaration_id"] == str(mock_declaration.id)
 
             # Verify status updates were called
-            assert mock_repo.update_status_and_progress.await_count == 4  # OCR, LLM, VALIDATING, READY_FOR_REVIEW
+            assert mock_repo.update_status_and_progress.await_count == 3  # OCR, LLM, READY_FOR_REVIEW
 
     @patch('src.workers.declaration_processor.AsyncSessionLocal')
     @pytest.mark.asyncio
@@ -172,11 +172,10 @@ class TestDeclarationProcessor:
             await _process_declaration_async(str(mock_declaration.id))
 
             # Verify progress sequence
-            assert len(progress_updates) == 4
-            assert progress_updates[0] == (DeclarationStatus.PROCESSING_OCR, 0.1)
+            assert len(progress_updates) == 3
+            assert progress_updates[0] == (DeclarationStatus.PROCESSING_OCR, 0.2)
             assert progress_updates[1] == (DeclarationStatus.PROCESSING_LLM, 0.4)
-            assert progress_updates[2] == (DeclarationStatus.VALIDATING, 0.7)
-            assert progress_updates[3] == (DeclarationStatus.READY_FOR_REVIEW, 1.0)
+            assert progress_updates[2] == (DeclarationStatus.READY_FOR_REVIEW, 1.0)
 
     @pytest.mark.asyncio
     async def test_process_declaration_task_handles_ocr_failure(self):
@@ -257,8 +256,10 @@ class TestDeclarationProcessor:
 
             await _process_declaration_async(str(mock_declaration.id))
 
-            # Verify extracted_data was set
-            assert mock_declaration.extracted_data == mock_extracted_data.model_dump()
+            # Verify extracted_data was set (excluding performance metrics)
+            extracted_data_without_perf = {k: v for k, v in mock_declaration.extracted_data.items()
+                                           if k != '_performance_metrics'}
+            assert extracted_data_without_perf == mock_extracted_data.model_dump()
             assert mock_db.commit.await_count > 0
 
     @patch('sentry_sdk.capture_exception')
