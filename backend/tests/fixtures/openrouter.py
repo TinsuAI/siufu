@@ -1,12 +1,10 @@
 """
 Mock fixtures for OpenRouter API testing
 """
-import pytest
 from typing import Dict, Any
 from unittest.mock import AsyncMock
 
 
-@pytest.fixture
 def mock_openrouter_response_success() -> Dict[str, Any]:
     """Mock successful OpenRouter API response with ExtractedData JSON"""
     return {
@@ -82,7 +80,6 @@ def mock_openrouter_response_success() -> Dict[str, Any]:
     }
 
 
-@pytest.fixture
 def mock_openrouter_response_with_markdown() -> Dict[str, Any]:
     """Mock response where JSON is wrapped in markdown code blocks"""
     return {
@@ -133,7 +130,6 @@ That's the extraction result."""
     }
 
 
-@pytest.fixture
 def mock_openrouter_response_invalid_json() -> Dict[str, Any]:
     """Mock response with invalid JSON (for testing error handling)"""
     return {
@@ -154,7 +150,6 @@ def mock_openrouter_response_invalid_json() -> Dict[str, Any]:
     }
 
 
-@pytest.fixture
 def sample_ocr_result():
     """Sample OCR result for testing"""
     from src.schemas.ocr import OCRResult, KeyValuePair, Table
@@ -203,8 +198,7 @@ Total Amount: USD 22,500.00""",
     )
 
 
-@pytest.fixture
-def mock_openrouter_client_success(monkeypatch, mock_openrouter_response_success):
+def _create_mock_openrouter_client_success(monkeypatch, mock_openrouter_response_success):
     """Mock OpenRouterClient for successful API calls"""
     from backend.src.core.openrouter import OpenRouterClient
 
@@ -214,8 +208,7 @@ def mock_openrouter_client_success(monkeypatch, mock_openrouter_response_success
     monkeypatch.setattr(OpenRouterClient, "chat_completion", mock_chat_completion)
 
 
-@pytest.fixture
-def mock_openrouter_client_rate_limit(monkeypatch):
+def _create_mock_openrouter_client_rate_limit(monkeypatch):
     """Mock OpenRouterClient that simulates rate limit error"""
     from src.core.openrouter import OpenRouterClient
     import httpx
@@ -235,8 +228,7 @@ def mock_openrouter_client_rate_limit(monkeypatch):
     monkeypatch.setattr(OpenRouterClient, "chat_completion", mock_chat_completion)
 
 
-@pytest.fixture
-def mock_openrouter_client_timeout(monkeypatch):
+def _create_mock_openrouter_client_timeout(monkeypatch):
     """Mock OpenRouterClient that simulates timeout"""
     from src.core.openrouter import OpenRouterClient
     import httpx
@@ -247,8 +239,7 @@ def mock_openrouter_client_timeout(monkeypatch):
     monkeypatch.setattr(OpenRouterClient, "chat_completion", mock_chat_completion)
 
 
-@pytest.fixture
-def mock_openrouter_client_auth_error(monkeypatch):
+def _create_mock_openrouter_client_auth_error(monkeypatch):
     """Mock OpenRouterClient that simulates auth error (401)"""
     from src.core.openrouter import OpenRouterClient
     import httpx

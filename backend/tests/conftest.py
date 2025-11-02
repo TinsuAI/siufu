@@ -17,8 +17,17 @@ from tests.fixtures.google_document_ai import (
     mock_ocr_certificate_of_origin_response,
     mock_ocr_error_response
 )
-# OpenRouter fixtures are pytest fixtures and don't need to be imported here
-# They are auto-discovered by pytest from tests/fixtures/openrouter.py
+
+from tests.fixtures.openrouter import (
+    mock_openrouter_response_success as _mock_openrouter_response_success,
+    mock_openrouter_response_with_markdown as _mock_openrouter_response_with_markdown,
+    mock_openrouter_response_invalid_json as _mock_openrouter_response_invalid_json,
+    sample_ocr_result as _sample_ocr_result,
+    _create_mock_openrouter_client_success,
+    _create_mock_openrouter_client_rate_limit,
+    _create_mock_openrouter_client_timeout,
+    _create_mock_openrouter_client_auth_error,
+)
 
 
 # Database configuration for tests
@@ -138,8 +147,53 @@ def google_ocr_error_mock():
     return mock_ocr_error_response()
 
 
-# OpenRouter LLM mock fixtures are now defined in tests/fixtures/openrouter.py
-# They are auto-discovered by pytest and don't need to be re-exported here
+# OpenRouter LLM mock fixtures (wrapped pattern matching Google fixtures)
+@pytest.fixture
+def mock_openrouter_response_success():
+    """Fixture for successful OpenRouter API response with ExtractedData JSON."""
+    return _mock_openrouter_response_success()
+
+
+@pytest.fixture
+def mock_openrouter_response_with_markdown():
+    """Fixture for OpenRouter response where JSON is wrapped in markdown code blocks."""
+    return _mock_openrouter_response_with_markdown()
+
+
+@pytest.fixture
+def mock_openrouter_response_invalid_json():
+    """Fixture for OpenRouter response with invalid JSON (for testing error handling)."""
+    return _mock_openrouter_response_invalid_json()
+
+
+@pytest.fixture
+def sample_ocr_result():
+    """Fixture for sample OCR result for LLM testing."""
+    return _sample_ocr_result()
+
+
+@pytest.fixture
+def mock_openrouter_client_success(monkeypatch, mock_openrouter_response_success):
+    """Fixture for mocked OpenRouterClient with successful API calls."""
+    _create_mock_openrouter_client_success(monkeypatch, mock_openrouter_response_success)
+
+
+@pytest.fixture
+def mock_openrouter_client_rate_limit(monkeypatch):
+    """Fixture for mocked OpenRouterClient that simulates rate limit error."""
+    _create_mock_openrouter_client_rate_limit(monkeypatch)
+
+
+@pytest.fixture
+def mock_openrouter_client_timeout(monkeypatch):
+    """Fixture for mocked OpenRouterClient that simulates timeout."""
+    _create_mock_openrouter_client_timeout(monkeypatch)
+
+
+@pytest.fixture
+def mock_openrouter_client_auth_error(monkeypatch):
+    """Fixture for mocked OpenRouterClient that simulates auth error (401)."""
+    _create_mock_openrouter_client_auth_error(monkeypatch)
 
 
 # HTTP Client fixture for API testing
