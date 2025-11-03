@@ -150,3 +150,94 @@ export interface PDFViewerProps {
   documentType: DocumentType // Which document to display
   highlightBox?: HighlightBox // Optional highlight region for jump-to-source
 }
+
+/**
+ * Uploaded File Interface
+ * Represents a file uploaded as part of a declaration
+ */
+export interface UploadedFile {
+  filename: string
+  file_type: string
+  upload_timestamp: string
+}
+
+/**
+ * Validation Warning Interface
+ * Represents a validation issue found during declaration processing
+ */
+export interface ValidationWarning {
+  message: string
+  severity: 'error' | 'warning'
+  field?: string // Optional field reference
+}
+
+/**
+ * Product Line Item in Draft Data
+ */
+export interface ProductLineItem {
+  description: string
+  hs_code: string
+  quantity: number
+  unit: string
+  unit_price: number
+  total_price: number
+  origin_country: string
+}
+
+/**
+ * Draft Data Structure (User-Editable Declaration Data)
+ * Stored in JSONB field, flexible schema
+ */
+export interface DraftData {
+  // Company Information
+  company_info: {
+    importer_name: string
+    tax_id: string
+    address: string
+    city: string
+    country: string
+    contact_person: string
+    contact_email: string
+    contact_phone: string
+  }
+  // Shipment Details
+  shipment_details: {
+    bol_number: string
+    arrival_date: string
+    port_of_arrival: string
+    port_of_departure: string
+    container_numbers: string[]
+    vessel_name: string
+  }
+  // Product Line Items
+  products: ProductLineItem[]
+  // Tax Calculations
+  tax_calculations: {
+    subtotal: number
+    vat_rate: number
+    vat_amount: number
+    import_duty_rate: number
+    import_duty_amount: number
+    total_tax: number
+    grand_total: number
+  }
+}
+
+/**
+ * Full Declaration Interface
+ * Represents a complete declaration with all metadata and processing state
+ */
+export interface Declaration {
+  id: string
+  status: DeclarationStatus
+  uploaded_files: UploadedFile[]
+  extracted_data: Record<string, unknown> | null
+  draft_data: DraftData | null // This is what the form edits
+  validation_warnings: ValidationWarning[]
+  confidence_scores: Record<string, number> // e.g., {"company_info.importer_name": 0.95}
+  processing_progress: number
+  processing_error: string | null
+  created_at: string
+  updated_at: string
+  user_id: string
+}

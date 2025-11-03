@@ -345,3 +345,56 @@ export async function getDeclarationMetadata(
     throw error
   }
 }
+
+/**
+ * Get full declaration data including draft_data
+ * @param id - Declaration UUID
+ * @returns Full declaration object
+ * @throws Error if declaration not found or user not authorized
+ */
+export async function getDeclaration(id: string): Promise<unknown> {
+  try {
+    return await apiClient<unknown>(`/declarations/${id}`, {
+      method: 'GET',
+    })
+  } catch (error) {
+    if (error instanceof Error) {
+      if (error.message.includes('404')) {
+        throw new Error('Declaration not found.')
+      }
+      if (error.message.includes('401') || error.message.includes('403')) {
+        throw new Error('You are not authorized to view this declaration.')
+      }
+    }
+    throw error
+  }
+}
+
+/**
+ * Update declaration draft data (partial update)
+ * @param id - Declaration UUID
+ * @param draftData - Partial draft data to update
+ * @returns Updated declaration object
+ * @throws Error if declaration not found or user not authorized
+ */
+export async function patchDeclaration(
+  id: string,
+  draftData: Record<string, unknown>
+): Promise<unknown> {
+  try {
+    return await apiClient<unknown>(`/declarations/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ draft_data: draftData }),
+    })
+  } catch (error) {
+    if (error instanceof Error) {
+      if (error.message.includes('404')) {
+        throw new Error('Declaration not found.')
+      }
+      if (error.message.includes('401') || error.message.includes('403')) {
+        throw new Error('You are not authorized to update this declaration.')
+      }
+    }
+    throw error
+  }
+}
