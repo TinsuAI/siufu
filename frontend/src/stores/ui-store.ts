@@ -2,8 +2,19 @@ import { create } from 'zustand'
 import type { DocumentType } from '@/types/declaration'
 
 /**
+ * Source highlight for jump navigation (Story 3.7)
+ */
+export interface SourceHighlight {
+  documentType: DocumentType
+  page: number
+  bbox: [number, number, number, number] // [x, y, width, height] normalized 0-1
+  timestamp: number // For auto-clear logic
+}
+
+/**
  * UI Store for client-side UI preferences
  * Stores PDF viewer controls (zoom, page, active tab, sidebar visibility)
+ * Story 3.7: Added sourceHighlight for jump navigation
  */
 interface UIState {
   // PDF Viewer State
@@ -12,12 +23,18 @@ interface UIState {
   activeDocumentTab: DocumentType // Which PDF document is currently displayed
   thumbnailSidebarOpen: boolean // Thumbnail sidebar visibility
 
+  // Jump Navigation State (Story 3.7)
+  sourceHighlight: SourceHighlight | null // Current highlight to display
+
   // PDF Viewer Actions
   setPdfZoom: (zoom: number) => void
   setPdfCurrentPage: (page: number) => void
   setActiveDocumentTab: (tab: DocumentType) => void
   toggleThumbnailSidebar: () => void
   resetPdfState: () => void // Reset PDF state to defaults
+
+  // Jump Navigation Actions (Story 3.7)
+  setSourceHighlight: (highlight: SourceHighlight | null) => void
 }
 
 /**
@@ -29,6 +46,7 @@ export const useUIStore = create<UIState>((set) => ({
   pdfCurrentPage: 1,
   activeDocumentTab: 'INVOICE', // Default to Invoice document
   thumbnailSidebarOpen: true,
+  sourceHighlight: null, // Story 3.7
 
   // Actions
   setPdfZoom: (zoom: number) => set({ pdfZoom: zoom }),
@@ -43,5 +61,24 @@ export const useUIStore = create<UIState>((set) => ({
       pdfCurrentPage: 1,
       activeDocumentTab: 'INVOICE',
       thumbnailSidebarOpen: true,
+      sourceHighlight: null,
     }),
+
+  // Story 3.7: Jump Navigation Actions
+  setSourceHighlight: (highlight: SourceHighlight | null) => {
+    set({ sourceHighlight: highlight })
+
+    // Auto-clear highlight after 3 seconds
+    if (highlight !== null) {
+      setTimeout(() => {
+        set((state) => {
+          // Only clear if this is still the same highlight (timestamp match)
+          if (state.sourceHighlight?.timestamp === highlight.timestamp) {
+            return { sourceHighlight: null }
+          }
+          return state
+        })
+      }, 3000)
+    }
+  },
 }))

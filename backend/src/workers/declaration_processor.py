@@ -364,6 +364,34 @@ async def _process_declaration_async(declaration_id: str) -> Dict[str, Any]:
             }
         )
 
+        # Build source metadata mapping (Story 3.7)
+        from src.services.extraction_service import ExtractionService
+        extraction_service = ExtractionService()
+
+        # Map OCR results to document types (exclude multi-CO results, use combined)
+        ocr_by_type = {
+            "AN": ocr_results.get("AN"),
+            "BOL": ocr_results.get("BOL"),
+            "CO": co_ocr_combined,  # Use combined CO OCR
+            "INVOICE": ocr_results.get("INVOICE")
+        }
+        # Remove None values
+        ocr_by_type = {k: v for k, v in ocr_by_type.items() if v is not None}
+
+        source_metadata = extraction_service.build_source_metadata(
+            extracted_data=extracted_data.model_dump(),
+            ocr_results=ocr_by_type,
+            file_type_mapping=extraction_service.get_default_field_type_mapping()
+        )
+
+        logger.info(
+            f"Source metadata generated",
+            extra={
+                "declaration_id": declaration_id,
+                "metadata_field_count": len(source_metadata)
+            }
+        )
+
         # Stage 3: Store extracted data in database
         stage_start = time.time()
         logger.info(f"Stage 3: Storing extracted data", extra={"declaration_id": declaration_id})
@@ -395,6 +423,7 @@ async def _process_declaration_async(declaration_id: str) -> Dict[str, Any]:
             confidence_scores[f"container_{idx}"] = container.confidence
 
         declaration.confidence_scores = confidence_scores
+        declaration.source_metadata = source_metadata  # Store source metadata (Story 3.7)
         await db.commit()
 
         storage_duration = time.time() - stage_start

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Document, Page } from 'react-pdf'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -48,14 +48,16 @@ export function PDFViewer({
     new Map()
   )
 
-  // Get PDF state from Zustand store
+  // Get PDF state from Zustand store (Story 3.7: added sourceHighlight)
   const {
     pdfZoom,
     pdfCurrentPage,
     thumbnailSidebarOpen,
+    sourceHighlight,
     setPdfZoom,
     setPdfCurrentPage,
     toggleThumbnailSidebar,
+    setActiveDocumentTab,
   } = useUIStore()
 
   // Fetch PDF using TanStack Query (use currentFilename if set, otherwise fallback to documentType)
@@ -101,6 +103,22 @@ export function PDFViewer({
       }
     }
   }, [pdfUrl])
+
+  // Story 3.7: Handle sourceHighlight changes (jump navigation)
+  useEffect(() => {
+    if (!sourceHighlight) return
+
+    // Check if highlight is for current document type
+    if (sourceHighlight.documentType === documentType) {
+      // Same document - just navigate to page
+      setPdfCurrentPage(sourceHighlight.page)
+      setPageInputValue(sourceHighlight.page.toString())
+    } else {
+      // Different document - switch tab
+      setActiveDocumentTab(sourceHighlight.documentType)
+      // Document change will be handled by parent component re-rendering with new documentType
+    }
+  }, [sourceHighlight, documentType, setPdfCurrentPage, setActiveDocumentTab])
 
   // PDF loaded successfully
   const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
@@ -498,7 +516,21 @@ export function PDFViewer({
                       </div>
                     }
                   />
-                  {/* Highlight Box Overlay (Task 8) */}
+                  {/* Highlight Box Overlay (Story 3.7: Jump Navigation) */}
+                  {sourceHighlight &&
+                    sourceHighlight.documentType === documentType &&
+                    sourceHighlight.page === pdfCurrentPage && (
+                      <div
+                        className="pointer-events-none absolute animate-pulse border-3 border-red-500 bg-red-500/20 transition-opacity duration-300"
+                        style={{
+                          left: `${sourceHighlight.bbox[0] * 100 * pdfZoom}%`,
+                          top: `${sourceHighlight.bbox[1] * 100 * pdfZoom}%`,
+                          width: `${sourceHighlight.bbox[2] * 100 * pdfZoom}%`,
+                          height: `${sourceHighlight.bbox[3] * 100 * pdfZoom}%`,
+                        }}
+                      />
+                    )}
+                  {/* Legacy highlight box support */}
                   {highlightBox && highlightBox.page === pdfCurrentPage && (
                     <div
                       className="absolute animate-pulse border-2 border-red-500 bg-red-500/20"

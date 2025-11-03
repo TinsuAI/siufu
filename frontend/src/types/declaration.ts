@@ -224,6 +224,16 @@ export interface DraftData {
 }
 
 /**
+ * Source Metadata for Jump Navigation (Story 3.7)
+ * Maps field paths to their source document locations
+ */
+export interface FieldSourceMetadata {
+  source: DocumentType
+  page: number
+  bbox: [number, number, number, number] // [x, y, width, height] normalized 0-1
+}
+
+/**
  * Full Declaration Interface
  * Represents a complete declaration with all metadata and processing state
  */
@@ -235,6 +245,7 @@ export interface Declaration {
   draft_data: DraftData | null // This is what the form edits
   validation_warnings: ValidationWarning[]
   confidence_scores: Record<string, number> // e.g., {"company_info.importer_name": 0.95}
+  source_metadata: Record<string, FieldSourceMetadata> | null // Story 3.7: field_path -> {source, page, bbox}
   processing_progress: number
   processing_error: string | null
   created_at: string

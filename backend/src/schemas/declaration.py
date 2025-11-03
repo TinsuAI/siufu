@@ -115,6 +115,7 @@ class DeclarationResponse(DeclarationBase):
     draft_data: Optional[Dict[str, Any]] = None
     validation_warnings: Optional[List[Dict[str, Any]]] = None
     confidence_scores: Optional[Dict[str, float]] = None
+    source_metadata: Optional[Dict[str, Dict[str, Any]]] = None  # NEW: field_path -> {source, page, bbox}
     processing_progress: Optional[float] = None
     processing_error: Optional[str] = None
     celery_task_id: Optional[str] = None

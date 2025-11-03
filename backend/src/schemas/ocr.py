@@ -10,6 +10,8 @@ class KeyValuePair(BaseModel):
     key: str
     value: str
     confidence: float = Field(ge=0.0, le=1.0)
+    page: int | None = None
+    bbox: List[float] | None = None  # [x, y, width, height] normalized coordinates
 
 
 class Table(BaseModel):

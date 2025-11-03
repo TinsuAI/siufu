@@ -1,0 +1,64 @@
+# Quality Gate: Story 3.7
+schema: 1
+story: "3.7"
+story_title: "Source Document Jump Navigation"
+gate: CONCERNS
+status_reason: "Core functionality excellent with comprehensive tests, but FieldLabel component not integrated into DeclarationForm and frontend build error blocks deployment."
+reviewer: "Quinn (Test Architect)"
+updated: "2025-11-02T23:20:00-08:00"
+
+waiver: { active: false }
+
+top_issues:
+  - id: "INT-001"
+    severity: medium
+    finding: "FieldLabel component created but not integrated into DeclarationForm - sourceMetadata prop accepted but unused"
+    suggested_action: "Integrate FieldLabel component into DeclarationForm to replace existing Label components for fields with source metadata"
+  - id: "BUILD-001"
+    severity: high
+    finding: "Frontend build fails with 'Promise.withResolvers is not a function' error on /login page (Node 20 Alpine compatibility issue)"
+    suggested_action: "Upgrade Node.js base image to 22-alpine or add polyfill for Promise.withResolvers (unrelated to Story 3.7 but blocks deployment)"
+
+risk_summary:
+  totals: { critical: 0, high: 1, medium: 1, low: 0 }
+  recommendations:
+    must_fix:
+      - "Fix frontend build error before deployment"
+    monitor:
+      - "FieldLabel integration can be completed in follow-up task"
+
+quality_score: 80
+expires: "2025-11-16T00:00:00Z"
+
+evidence:
+  tests_reviewed: 16
+  risks_identified: 2
+  trace:
+    ac_covered: [1, 2, 3, 4, 5, 6, 7, 8]
+    ac_gaps: []
+
+nfr_validation:
+  security:
+    status: PASS
+    notes: "No new attack vectors. Source metadata contains only coordinates (numbers). JWT auth already in place."
+  performance:
+    status: PASS
+    notes: "Minimal overhead (<1KB metadata per declaration). Canvas rendering efficient with auto-clear preventing memory leaks."
+  reliability:
+    status: PASS
+    notes: "Graceful degradation for calculated fields with tooltip. Auto-clear logic prevents stale highlights."
+  maintainability:
+    status: PASS
+    notes: "Well-documented code with comprehensive tests. Clear separation of concerns (Zustand for UI state)."
+
+recommendations:
+  immediate:
+    - action: "Fix Node.js compatibility issue causing build failure"
+      refs: ["Dockerfile frontend base image", "package.json engines"]
+    - action: "Integrate FieldLabel component into DeclarationForm"
+      refs: ["frontend/src/components/declarations/declaration-form.tsx"]
+  future:
+    - action: "Add Levenshtein distance threshold to fuzzy matching to reduce false positives"
+      refs: ["backend/src/services/extraction_service.py:134"]
+    - action: "Add E2E test for full jump navigation user journey"
+      refs: ["frontend/src/__tests__/e2e/"]

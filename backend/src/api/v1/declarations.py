@@ -386,13 +386,14 @@ async def get_declaration(
             detail=f"Declaration {declaration_id} not found"
         )
 
-    # Build response with all fields
+    # Build response with all fields (including source_metadata from Story 3.7)
     response = {
         "id": str(declaration.id),
         "status": declaration.status,
         "uploaded_files": declaration.uploaded_files or {},
         "extracted_data": declaration.extracted_data or {},
         "confidence_scores": declaration.confidence_scores or {},
+        "source_metadata": declaration.source_metadata or {},  # NEW: Story 3.7
         "processing_progress": declaration.processing_progress or 0.0,
         "processing_error": declaration.processing_error,
         "celery_task_id": declaration.celery_task_id,

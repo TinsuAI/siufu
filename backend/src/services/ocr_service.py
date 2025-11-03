@@ -174,16 +174,83 @@ class OCRService:
         return mime_types[ext]
 
     def _extract_key_value_pairs(self, document: Any) -> list[KeyValuePair]:
-        """Extract key-value pairs from Document AI response"""
+        """Extract key-value pairs from Document AI response with page/bbox metadata"""
         pairs = []
         if hasattr(document, 'entities'):
             for entity in document.entities:
+                # Extract page number and bounding box from entity
+                page_num, bbox = self._extract_entity_location(entity, document)
+
                 pairs.append(KeyValuePair(
                     key=entity.type_,
                     value=entity.mention_text,
-                    confidence=entity.confidence if hasattr(entity, 'confidence') else 0.0
+                    confidence=entity.confidence if hasattr(entity, 'confidence') else 0.0,
+                    page=page_num,
+                    bbox=bbox
                 ))
         return pairs
+
+    def _extract_entity_location(self, entity: Any, document: Any) -> tuple[int | None, list[float] | None]:
+        """
+        Extract page number and bounding box from Document AI entity
+
+        Returns:
+            Tuple of (page_number, bbox) where bbox is [x, y, width, height] in normalized coordinates
+        """
+        page_num = None
+        bbox = None
+
+        # Extract page number from page_anchor
+        if hasattr(entity, 'page_anchor') and entity.page_anchor:
+            page_refs = entity.page_anchor.page_refs
+            if page_refs and len(page_refs) > 0:
+                # Use first page reference
+                page_num = int(page_refs[0].page) if hasattr(page_refs[0], 'page') else None
+
+                # Extract bounding box from bounding_poly
+                if hasattr(page_refs[0], 'bounding_poly') and page_refs[0].bounding_poly:
+                    bbox = self._normalize_bounding_poly(
+                        page_refs[0].bounding_poly,
+                        page_num,
+                        document
+                    )
+
+        return page_num, bbox
+
+    def _normalize_bounding_poly(
+        self,
+        bounding_poly: Any,
+        page_num: int | None,
+        document: Any
+    ) -> list[float] | None:
+        """
+        Convert Document AI bounding_poly to normalized [x, y, width, height]
+
+        Document AI returns vertices as normalized coordinates (0-1 range)
+        """
+        if not hasattr(bounding_poly, 'normalized_vertices'):
+            return None
+
+        vertices = bounding_poly.normalized_vertices
+        if len(vertices) < 2:
+            return None
+
+        # Get min/max x and y from vertices to calculate bounding box
+        x_coords = [v.x for v in vertices if hasattr(v, 'x')]
+        y_coords = [v.y for v in vertices if hasattr(v, 'y')]
+
+        if not x_coords or not y_coords:
+            return None
+
+        min_x = min(x_coords)
+        min_y = min(y_coords)
+        max_x = max(x_coords)
+        max_y = max(y_coords)
+
+        width = max_x - min_x
+        height = max_y - min_y
+
+        return [min_x, min_y, width, height]
 
     def _extract_tables(self, document: Any) -> list[Table]:
         """Extract tables from Document AI response"""

@@ -45,6 +45,7 @@ class Declaration(Base):
     draft_data: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
     validation_warnings: Mapped[Optional[list]] = mapped_column(JSONB, nullable=True)
     confidence_scores: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+    source_metadata: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)  # NEW: field_path -> {source, page, bbox}
     processing_progress: Mapped[Optional[float]] = mapped_column(Float, nullable=True, default=0.0)
     processing_error: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     celery_task_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True, index=True)

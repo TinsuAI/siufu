@@ -31,6 +31,7 @@ import {
 import { ChevronDown, ChevronUp, Plus, Trash2 } from 'lucide-react'
 import type { DraftData } from '@/types/declaration'
 import { ConfidenceInput } from './confidence-input'
+import { FieldLabel } from './field-label'
 import { getFieldConfidence } from '@/lib/confidence-utils'
 
 // ==================== Zod Validation Schema ====================
@@ -100,6 +101,7 @@ export type DeclarationFormData = z.infer<typeof declarationFormSchema>
 interface DeclarationFormProps {
   initialData?: DraftData | null
   confidenceScores?: Record<string, number>
+  sourceMetadata?: Record<string, any> | null // Story 3.7: field_path -> {source, page, bbox}
   onSubmit?: (data: DeclarationFormData) => void
   onChange?: (data: DeclarationFormData) => void
   isSubmitting?: boolean
@@ -108,6 +110,7 @@ interface DeclarationFormProps {
 export function DeclarationForm({
   initialData,
   confidenceScores = {}, // Will be used in Task 2 for color-coding
+  sourceMetadata = null, // Story 3.7: source metadata for jump navigation (TODO: integrate with FieldLabel)
   onSubmit,
   onChange,
   isSubmitting = false,
@@ -271,7 +274,12 @@ export function DeclarationForm({
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="importer_name">Importer Name *</Label>
+                  <FieldLabel
+                    htmlFor="importer_name"
+                    label="Importer Name *"
+                    fieldPath="company_info.importer_name"
+                    sourceMetadata={sourceMetadata}
+                  />
                   <ConfidenceInput
                     {...register('company_info.importer_name')}
                     id="importer_name"
@@ -288,7 +296,12 @@ export function DeclarationForm({
                   )}
                 </div>
                 <div>
-                  <Label htmlFor="tax_id">Tax ID *</Label>
+                  <FieldLabel
+                    htmlFor="tax_id"
+                    label="Tax ID *"
+                    fieldPath="company_info.tax_id"
+                    sourceMetadata={sourceMetadata}
+                  />
                   <ConfidenceInput
                     {...register('company_info.tax_id')}
                     id="tax_id"
@@ -307,7 +320,12 @@ export function DeclarationForm({
               </div>
 
               <div>
-                <Label htmlFor="address">Address *</Label>
+                <FieldLabel
+                  htmlFor="address"
+                  label="Address *"
+                  fieldPath="company_info.address"
+                  sourceMetadata={sourceMetadata}
+                />
                 <ConfidenceInput
                   {...register('company_info.address')}
                   id="address"
@@ -326,7 +344,12 @@ export function DeclarationForm({
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="city">City *</Label>
+                  <FieldLabel
+                    htmlFor="city"
+                    label="City *"
+                    fieldPath="company_info.city"
+                    sourceMetadata={sourceMetadata}
+                  />
                   <ConfidenceInput
                     {...register('company_info.city')}
                     id="city"
@@ -343,7 +366,12 @@ export function DeclarationForm({
                   )}
                 </div>
                 <div>
-                  <Label htmlFor="country">Country Code *</Label>
+                  <FieldLabel
+                    htmlFor="country"
+                    label="Country Code *"
+                    fieldPath="company_info.country"
+                    sourceMetadata={sourceMetadata}
+                  />
                   <ConfidenceInput
                     {...register('company_info.country')}
                     id="country"
@@ -363,7 +391,12 @@ export function DeclarationForm({
               </div>
 
               <div>
-                <Label htmlFor="contact_person">Contact Person *</Label>
+                <FieldLabel
+                  htmlFor="contact_person"
+                  label="Contact Person *"
+                  fieldPath="company_info.contact_person"
+                  sourceMetadata={sourceMetadata}
+                />
                 <ConfidenceInput
                   {...register('company_info.contact_person')}
                   id="contact_person"
@@ -382,7 +415,12 @@ export function DeclarationForm({
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="contact_email">Contact Email *</Label>
+                  <FieldLabel
+                    htmlFor="contact_email"
+                    label="Contact Email *"
+                    fieldPath="company_info.contact_email"
+                    sourceMetadata={sourceMetadata}
+                  />
                   <ConfidenceInput
                     {...register('company_info.contact_email')}
                     id="contact_email"
@@ -400,7 +438,12 @@ export function DeclarationForm({
                   )}
                 </div>
                 <div>
-                  <Label htmlFor="contact_phone">Contact Phone *</Label>
+                  <FieldLabel
+                    htmlFor="contact_phone"
+                    label="Contact Phone *"
+                    fieldPath="company_info.contact_phone"
+                    sourceMetadata={sourceMetadata}
+                  />
                   <ConfidenceInput
                     {...register('company_info.contact_phone')}
                     id="contact_phone"
@@ -442,7 +485,12 @@ export function DeclarationForm({
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="bol_number">BOL Number *</Label>
+                  <FieldLabel
+                    htmlFor="bol_number"
+                    label="BOL Number *"
+                    fieldPath="shipment_details.bol_number"
+                    sourceMetadata={sourceMetadata}
+                  />
                   <ConfidenceInput
                     {...register('shipment_details.bol_number')}
                     id="bol_number"
@@ -459,7 +507,12 @@ export function DeclarationForm({
                   )}
                 </div>
                 <div>
-                  <Label htmlFor="arrival_date">Arrival Date *</Label>
+                  <FieldLabel
+                    htmlFor="arrival_date"
+                    label="Arrival Date *"
+                    fieldPath="shipment_details.arrival_date"
+                    sourceMetadata={sourceMetadata}
+                  />
                   <ConfidenceInput
                     {...register('shipment_details.arrival_date')}
                     id="arrival_date"
@@ -479,7 +532,12 @@ export function DeclarationForm({
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="port_of_arrival">Port of Arrival *</Label>
+                  <FieldLabel
+                    htmlFor="port_of_arrival"
+                    label="Port of Arrival *"
+                    fieldPath="shipment_details.port_of_arrival"
+                    sourceMetadata={sourceMetadata}
+                  />
                   <ConfidenceInput
                     {...register('shipment_details.port_of_arrival')}
                     id="port_of_arrival"
@@ -496,7 +554,12 @@ export function DeclarationForm({
                   )}
                 </div>
                 <div>
-                  <Label htmlFor="port_of_departure">Port of Departure *</Label>
+                  <FieldLabel
+                    htmlFor="port_of_departure"
+                    label="Port of Departure *"
+                    fieldPath="shipment_details.port_of_departure"
+                    sourceMetadata={sourceMetadata}
+                  />
                   <ConfidenceInput
                     {...register('shipment_details.port_of_departure')}
                     id="port_of_departure"
@@ -515,7 +578,12 @@ export function DeclarationForm({
               </div>
 
               <div>
-                <Label htmlFor="vessel_name">Vessel Name *</Label>
+                <FieldLabel
+                  htmlFor="vessel_name"
+                  label="Vessel Name *"
+                  fieldPath="shipment_details.vessel_name"
+                  sourceMetadata={sourceMetadata}
+                />
                 <ConfidenceInput
                   {...register('shipment_details.vessel_name')}
                   id="vessel_name"
@@ -805,7 +873,12 @@ export function DeclarationForm({
           <CollapsibleContent>
             <CardContent className="space-y-4">
               <div>
-                <Label htmlFor="subtotal">Subtotal *</Label>
+                <FieldLabel
+                  htmlFor="subtotal"
+                  label="Subtotal *"
+                  fieldPath="tax_calculations.subtotal"
+                  sourceMetadata={sourceMetadata}
+                />
                 <ConfidenceInput
                   {...register('tax_calculations.subtotal', {
                     valueAsNumber: true,
@@ -828,7 +901,12 @@ export function DeclarationForm({
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="vat_rate">VAT Rate (%) *</Label>
+                  <FieldLabel
+                    htmlFor="vat_rate"
+                    label="VAT Rate (%) *"
+                    fieldPath="tax_calculations.vat_rate"
+                    sourceMetadata={sourceMetadata}
+                  />
                   <ConfidenceInput
                     {...register('tax_calculations.vat_rate', {
                       valueAsNumber: true,
@@ -849,7 +927,12 @@ export function DeclarationForm({
                   )}
                 </div>
                 <div>
-                  <Label htmlFor="vat_amount">VAT Amount *</Label>
+                  <FieldLabel
+                    htmlFor="vat_amount"
+                    label="VAT Amount *"
+                    fieldPath="tax_calculations.vat_amount"
+                    sourceMetadata={sourceMetadata}
+                  />
                   <ConfidenceInput
                     {...register('tax_calculations.vat_amount', {
                       valueAsNumber: true,
@@ -873,9 +956,12 @@ export function DeclarationForm({
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="import_duty_rate">
-                    Import Duty Rate (%) *
-                  </Label>
+                  <FieldLabel
+                    htmlFor="import_duty_rate"
+                    label="Import Duty Rate (%) *"
+                    fieldPath="tax_calculations.import_duty_rate"
+                    sourceMetadata={sourceMetadata}
+                  />
                   <ConfidenceInput
                     {...register('tax_calculations.import_duty_rate', {
                       valueAsNumber: true,
@@ -896,9 +982,12 @@ export function DeclarationForm({
                   )}
                 </div>
                 <div>
-                  <Label htmlFor="import_duty_amount">
-                    Import Duty Amount *
-                  </Label>
+                  <FieldLabel
+                    htmlFor="import_duty_amount"
+                    label="Import Duty Amount *"
+                    fieldPath="tax_calculations.import_duty_amount"
+                    sourceMetadata={sourceMetadata}
+                  />
                   <ConfidenceInput
                     {...register('tax_calculations.import_duty_amount', {
                       valueAsNumber: true,
@@ -922,7 +1011,12 @@ export function DeclarationForm({
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="total_tax">Total Tax *</Label>
+                  <FieldLabel
+                    htmlFor="total_tax"
+                    label="Total Tax *"
+                    fieldPath="tax_calculations.total_tax"
+                    sourceMetadata={sourceMetadata}
+                  />
                   <ConfidenceInput
                     {...register('tax_calculations.total_tax', {
                       valueAsNumber: true,
@@ -943,7 +1037,12 @@ export function DeclarationForm({
                   )}
                 </div>
                 <div>
-                  <Label htmlFor="grand_total">Grand Total *</Label>
+                  <FieldLabel
+                    htmlFor="grand_total"
+                    label="Grand Total *"
+                    fieldPath="tax_calculations.grand_total"
+                    sourceMetadata={sourceMetadata}
+                  />
                   <ConfidenceInput
                     {...register('tax_calculations.grand_total', {
                       valueAsNumber: true,
