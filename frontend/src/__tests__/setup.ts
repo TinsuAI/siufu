@@ -4,14 +4,14 @@
  * This file configures the test environment for all tests.
  */
 
-import '@testing-library/jest-dom';
-import { cleanup } from '@testing-library/react';
-import { afterEach } from 'vitest';
+import '@testing-library/jest-dom'
+import { cleanup } from '@testing-library/react'
+import { afterEach } from 'vitest'
 
 // Reset handlers after each test (important for test isolation)
 afterEach(() => {
-  cleanup();
-});
+  cleanup()
+})
 
 // Mock Next.js router at global level
 global.matchMedia =
@@ -21,5 +21,9 @@ global.matchMedia =
       matches: false,
       addListener: function () {},
       removeListener: function () {},
-    };
-  };
+    }
+  }
+
+// Mock URL.createObjectURL and URL.revokeObjectURL for PDF viewer tests
+global.URL.createObjectURL = () => 'blob:mock-url'
+global.URL.revokeObjectURL = () => {}

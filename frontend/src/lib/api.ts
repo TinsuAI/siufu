@@ -266,3 +266,82 @@ export async function retryProcessing(
     throw error
   }
 }
+
+/**
+ * Get PDF file for a declaration document
+ * @param declarationId - Declaration UUID
+ * @param filename - PDF filename (e.g., AN.pdf, BOL.pdf, CO_1.pdf, INVOICE.pdf)
+ * @returns Blob object containing the PDF file data
+ * @throws Error if file not found (404) or user not authorized (401/403)
+ */
+export async function getPDFFile(
+  declarationId: string,
+  filename: string
+): Promise<Blob> {
+  const url = `${API_BASE_URL}/declarations/${declarationId}/files/${filename}`
+
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      credentials: 'include', // Include cookies for JWT authentication
+    })
+
+    if (!response.ok) {
+      // Handle HTTP errors
+      if (response.status === 404) {
+        throw new Error(`File "${filename}" not found for this declaration.`)
+      }
+      if (response.status === 401 || response.status === 403) {
+        throw new Error('You are not authorized to access this file.')
+      }
+      throw new Error(`Failed to fetch PDF file: HTTP ${response.status}`)
+    }
+
+    // Return the response body as a Blob
+    return response.blob()
+  } catch (error) {
+    if (error instanceof Error) {
+      throw error
+    }
+    throw new Error('Failed to fetch PDF file. Please try again.')
+  }
+}
+
+/**
+ * Declaration metadata interface for uploaded files
+ */
+export interface DeclarationMetadata {
+  id: string
+  uploaded_files: {
+    arrival_notice?: string
+    bill_of_lading?: string
+    certificate_of_origin?: string[] // Array for multiple C/O files
+    invoice?: string
+  }
+}
+
+/**
+ * Get declaration metadata to determine available files
+ * @param id - Declaration UUID
+ * @returns Declaration metadata with uploaded files
+ * @throws Error if declaration not found or user not authorized
+ */
+export async function getDeclarationMetadata(
+  id: string
+): Promise<DeclarationMetadata> {
+  try {
+    return await apiClient<DeclarationMetadata>(`/declarations/${id}`, {
+      method: 'GET',
+    })
+  } catch (error) {
+    if (error instanceof Error) {
+      if (error.message.includes('404')) {
+        throw new Error('Declaration not found.')
+      }
+      if (error.message.includes('401') || error.message.includes('403')) {
+        throw new Error('You are not authorized to view this declaration.')
+      }
+    }
+    throw error
+  }
+}

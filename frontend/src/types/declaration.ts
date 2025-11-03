@@ -124,3 +124,29 @@ export function isProcessingStatus(status: DeclarationStatus): boolean {
     DeclarationStatus.VALIDATING,
   ].includes(status)
 }
+
+/**
+ * Document Type Enum for PDF Viewer
+ * Represents the four types of source documents in a declaration
+ */
+export type DocumentType = 'AN' | 'BOL' | 'CO' | 'INVOICE'
+
+/**
+ * Highlight Box Interface for Jump-to-Source Feature
+ * Defines a rectangular region on a PDF page to highlight
+ * Coordinates are in PDF points (1/72 inch), origin is top-left
+ */
+export interface HighlightBox {
+  page: number // Page number (1-indexed)
+  bbox: [number, number, number, number] // [x, y, width, height]
+}
+
+/**
+ * PDF Viewer Component Props
+ * Used by the PDFViewer component to display source documents
+ */
+export interface PDFViewerProps {
+  declarationId: string // Declaration UUID
+  documentType: DocumentType // Which document to display
+  highlightBox?: HighlightBox // Optional highlight region for jump-to-source
+}
