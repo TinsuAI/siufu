@@ -10,7 +10,7 @@ export interface LoginCredentials {
 }
 
 /**
- * Navigate to login page and perform login
+ * Navigate to login page and perform login via UI form
  */
 export async function login(page: Page, credentials: LoginCredentials) {
   // Navigate to login page
@@ -20,11 +20,29 @@ export async function login(page: Page, credentials: LoginCredentials) {
   await page.getByLabel(/email/i).fill(credentials.email)
   await page.getByLabel(/password/i).fill(credentials.password)
 
-  // Submit form
-  await page.getByRole('button', { name: /log in|sign in/i }).click()
+  // Wait for login API response
+  const loginResponsePromise = page.waitForResponse(
+    response => response.url().includes('/api/v1/auth/login') && response.status() === 200,
+    { timeout: 10000 }
+  )
 
-  // Wait for navigation to complete (e.g., redirect to dashboard)
-  await page.waitForURL(/\/(dashboard|home)/, { timeout: 10000 })
+  // Submit form
+  await page.getByRole('main').getByRole('button', { name: /^login$/i }).click()
+
+  // Wait for login to complete
+  const loginResponse = await loginResponsePromise
+
+  // Verify login was successful
+  if (!loginResponse.ok()) {
+    const responseBody = await loginResponse.text()
+    throw new Error(`Login failed: ${loginResponse.status()} - ${responseBody}`)
+  }
+
+  // Wait for logout button to appear (confirms authentication in UI)
+  await page.getByRole('button', { name: /logout/i }).waitFor({ timeout: 10000 })
+
+  // Give the app a moment to fully process authentication
+  await page.waitForTimeout(500)
 }
 
 /**

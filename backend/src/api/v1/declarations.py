@@ -4,13 +4,21 @@ Declaration API endpoints
 from uuid import UUID
 from typing import Optional, List
 from fastapi import APIRouter, Depends, HTTPException, status, Response, File, UploadFile, Query, Request
+from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.database import get_db
 from src.core.deps import get_current_user
 from src.models.user import User
 from src.repositories.declaration_repository import DeclarationRepository
-from src.schemas.declaration import DeclarationStatusResponse, DeclarationUploadResponse, UploadedFileMetadata
+from src.schemas.declaration import (
+    DeclarationStatusResponse,
+    DeclarationUploadResponse,
+    UploadedFileMetadata,
+    DeclarationApproveResponse,
+    DeclarationRejectRequest,
+    DeclarationRejectResponse
+)
 from src.services.file_validation_service import FileValidationService, FileValidationError, FileSizeLimitExceeded
 from src.services.file_storage_service import FileStorageService
 
@@ -416,31 +424,193 @@ async def update_declaration(declaration_id: str, db: AsyncSession = Depends(get
     return {"message": f"Update declaration {declaration_id} endpoint - to be implemented"}
 
 
-@router.post("/{declaration_id}/approve")
-async def approve_declaration(declaration_id: str, db: AsyncSession = Depends(get_db)):
+@router.post("/{declaration_id}/approve", response_model=DeclarationApproveResponse)
+async def approve_declaration(
+    declaration_id: UUID,
+    request: Request,
+    db: AsyncSession = Depends(get_db)
+) -> DeclarationApproveResponse:
     """
     Approve declaration and lock for editing
 
-    Sets status to APPROVED, records approver and timestamp
+    Sets status to APPROVED, records approver and timestamp (per FR20)
+
+    Args:
+        declaration_id: UUID of declaration to approve
+        request: FastAPI Request object for authentication
+        db: Database session
+
+    Returns:
+        DeclarationApproveResponse with updated status and approval details
+
+    Raises:
+        HTTPException 404: If declaration not found
+        HTTPException 400: If invalid status transition (can only approve READY_FOR_REVIEW declarations)
+        HTTPException 401: If not authenticated
     """
-    return {"message": f"Approve declaration {declaration_id} endpoint - to be implemented"}
+    # Authenticate user
+    current_user = await get_current_user(request, db)
+
+    # Get declaration
+    repo = DeclarationRepository(db)
+    declaration = await repo.get_by_id(declaration_id)
+
+    if not declaration:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Declaration {declaration_id} not found"
+        )
+
+    # Validate status - can only approve READY_FOR_REVIEW declarations
+    if declaration.status != "READY_FOR_REVIEW":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Cannot approve declaration with status '{declaration.status}'. Only READY_FOR_REVIEW declarations can be approved."
+        )
+
+    # Update declaration status to APPROVED
+    from datetime import datetime, timezone
+    declaration.status = "APPROVED"
+    declaration.approved_by_user_id = current_user.id
+    declaration.approved_at = datetime.now(timezone.utc)
+    await db.commit()
+    await db.refresh(declaration)
+
+    # Return success response
+    return DeclarationApproveResponse(
+        id=declaration.id,
+        status=declaration.status,
+        approved_at=declaration.approved_at,
+        approved_by_user_id=declaration.approved_by_user_id,
+        message="Declaration approved successfully"
+    )
 
 
-@router.post("/{declaration_id}/reject")
-async def reject_declaration(declaration_id: str, db: AsyncSession = Depends(get_db)):
+@router.post("/{declaration_id}/reject", response_model=DeclarationRejectResponse)
+async def reject_declaration(
+    declaration_id: UUID,
+    reject_request: DeclarationRejectRequest,
+    request: Request,
+    db: AsyncSession = Depends(get_db)
+) -> DeclarationRejectResponse:
     """
     Reject declaration with reason
 
-    Sets status to REJECTED, allows re-editing
+    Sets status to REJECTED, stores rejection reason, allows re-editing
+
+    Args:
+        declaration_id: UUID of declaration to reject
+        reject_request: Request body with rejection_reason (min 10 characters)
+        request: FastAPI Request object for authentication
+        db: Database session
+
+    Returns:
+        DeclarationRejectResponse with updated status and rejection reason
+
+    Raises:
+        HTTPException 404: If declaration not found
+        HTTPException 400: If invalid status transition or missing reason
+        HTTPException 401: If not authenticated
+        HTTPException 422: If rejection reason too short (< 10 characters)
     """
-    return {"message": f"Reject declaration {declaration_id} endpoint - to be implemented"}
+    # Authenticate user
+    current_user = await get_current_user(request, db)
+
+    # Get declaration
+    repo = DeclarationRepository(db)
+    declaration = await repo.get_by_id(declaration_id)
+
+    if not declaration:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Declaration {declaration_id} not found"
+        )
+
+    # Validate status - can only reject READY_FOR_REVIEW declarations
+    if declaration.status != "READY_FOR_REVIEW":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Cannot reject declaration with status '{declaration.status}'. Only READY_FOR_REVIEW declarations can be rejected."
+        )
+
+    # Update declaration status to REJECTED and store rejection reason
+    declaration.status = "REJECTED"
+    declaration.processing_error = reject_request.rejection_reason  # Reuse processing_error field for rejection reason
+    await db.commit()
+    await db.refresh(declaration)
+
+    # Return success response
+    return DeclarationRejectResponse(
+        id=declaration.id,
+        status=declaration.status,
+        rejection_reason=reject_request.rejection_reason,
+        message="Declaration rejected successfully"
+    )
 
 
 @router.get("/{declaration_id}/export")
-async def export_declaration(declaration_id: str, db: AsyncSession = Depends(get_db)):
+async def export_declaration(
+    declaration_id: UUID,
+    request: Request,
+    db: AsyncSession = Depends(get_db)
+) -> FileResponse:
     """
     Export declaration to Excel using template
 
-    Returns: Excel file download
+    Downloads the generated CD.xlsx file for approved declarations.
+    File must be generated by the processing pipeline before download.
+
+    Args:
+        declaration_id: UUID of declaration to export
+        request: FastAPI Request object for authentication
+        db: Database session
+
+    Returns:
+        FileResponse with Excel file download
+
+    Raises:
+        HTTPException 404: If declaration not found or Excel file not generated
+        HTTPException 403: If declaration not approved (only APPROVED declarations can be exported)
+        HTTPException 401: If not authenticated
     """
-    return {"message": f"Export declaration {declaration_id} endpoint - to be implemented"}
+    from pathlib import Path
+
+    # Authenticate user
+    current_user = await get_current_user(request, db)
+
+    # Get declaration
+    repo = DeclarationRepository(db)
+    declaration = await repo.get_by_id(declaration_id)
+
+    if not declaration:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Declaration {declaration_id} not found"
+        )
+
+    # Validate status - can only export APPROVED declarations
+    if declaration.status != "APPROVED":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Cannot export declaration with status '{declaration.status}'. Only APPROVED declarations can be exported."
+        )
+
+    # Check if Excel file exists
+    export_file_path = Path(f"./data/exports/{declaration_id}/CD.xlsx")
+
+    if not export_file_path.exists():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Excel file not yet generated. Please wait for processing to complete."
+        )
+
+    # Return file as download with correct headers
+    return FileResponse(
+        path=str(export_file_path),
+        filename=f"CD_{declaration_id}.xlsx",
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={
+            "Cache-Control": "private, max-age=3600",
+            "Content-Disposition": f'attachment; filename="CD_{declaration_id}.xlsx"'
+        }
+    )

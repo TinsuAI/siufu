@@ -398,3 +398,136 @@ export async function patchDeclaration(
     throw error
   }
 }
+
+/**
+ * Approve declaration response interface
+ */
+export interface ApproveDeclarationResponse {
+  id: string
+  status: string
+  approved_at: string
+  approved_by_user_id: string
+  message: string
+}
+
+/**
+ * Approve a declaration
+ * @param id - Declaration UUID
+ * @returns Approval confirmation with timestamp
+ * @throws Error if declaration not found, not ready for approval, or user not authorized
+ */
+export async function approveDeclaration(
+  id: string
+): Promise<ApproveDeclarationResponse> {
+  try {
+    return await apiClient<ApproveDeclarationResponse>(
+      `/declarations/${id}/approve`,
+      {
+        method: 'POST',
+      }
+    )
+  } catch (error) {
+    if (error instanceof Error) {
+      if (error.message.includes('404')) {
+        throw new Error('Declaration not found.')
+      }
+      if (error.message.includes('400')) {
+        throw new Error(
+          'Declaration cannot be approved. Please ensure all changes are saved and the declaration is ready for review.'
+        )
+      }
+      if (error.message.includes('401') || error.message.includes('403')) {
+        throw new Error('You are not authorized to approve this declaration.')
+      }
+    }
+    throw error
+  }
+}
+
+/**
+ * Reject declaration response interface
+ */
+export interface RejectDeclarationResponse {
+  id: string
+  status: string
+  rejection_reason: string
+  message: string
+}
+
+/**
+ * Reject a declaration with a reason
+ * @param id - Declaration UUID
+ * @param rejectionReason - Reason for rejection (minimum 10 characters)
+ * @returns Rejection confirmation
+ * @throws Error if declaration not found, invalid reason, or user not authorized
+ */
+export async function rejectDeclaration(
+  id: string,
+  rejectionReason: string
+): Promise<RejectDeclarationResponse> {
+  try {
+    return await apiClient<RejectDeclarationResponse>(
+      `/declarations/${id}/reject`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ rejection_reason: rejectionReason }),
+      }
+    )
+  } catch (error) {
+    if (error instanceof Error) {
+      if (error.message.includes('404')) {
+        throw new Error('Declaration not found.')
+      }
+      if (error.message.includes('400') || error.message.includes('422')) {
+        throw new Error('Rejection reason must be at least 10 characters long.')
+      }
+      if (error.message.includes('401') || error.message.includes('403')) {
+        throw new Error('You are not authorized to reject this declaration.')
+      }
+    }
+    throw error
+  }
+}
+
+/**
+ * Export declaration to Excel file
+ * @param id - Declaration UUID
+ * @returns Blob containing the Excel file
+ * @throws Error if declaration not approved, file not generated, or user not authorized
+ */
+export async function exportDeclaration(id: string): Promise<Blob> {
+  const url = `${API_BASE_URL}/declarations/${id}/export`
+
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      credentials: 'include', // Include cookies for JWT authentication
+    })
+
+    if (!response.ok) {
+      // Handle HTTP errors
+      if (response.status === 404) {
+        throw new Error(
+          'Excel file not yet generated. Please wait a moment and try again.'
+        )
+      }
+      if (response.status === 403) {
+        throw new Error(
+          'Declaration must be approved before exporting to Excel.'
+        )
+      }
+      if (response.status === 401) {
+        throw new Error('You are not authorized to export this declaration.')
+      }
+      throw new Error(`Failed to export declaration: HTTP ${response.status}`)
+    }
+
+    // Return the response body as a Blob
+    return response.blob()
+  } catch (error) {
+    if (error instanceof Error) {
+      throw error
+    }
+    throw new Error('Failed to export declaration. Please try again.')
+  }
+}

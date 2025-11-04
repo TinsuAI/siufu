@@ -149,3 +149,61 @@ class DeclarationResponse(DeclarationBase):
             }
         }
     )
+
+
+class DeclarationApproveResponse(BaseModel):
+    """Schema for declaration approval response"""
+    id: UUID
+    status: DeclarationStatus
+    approved_at: datetime
+    approved_by_user_id: UUID
+    message: str
+
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_schema_extra={
+            "example": {
+                "id": "323e4567-e89b-12d3-a456-426614174000",
+                "status": "APPROVED",
+                "approved_at": "2025-11-03T10:30:00Z",
+                "approved_by_user_id": "123e4567-e89b-12d3-a456-426614174000",
+                "message": "Declaration approved successfully"
+            }
+        }
+    )
+
+
+class DeclarationRejectRequest(BaseModel):
+    """Schema for declaration rejection request"""
+    rejection_reason: str = Field(
+        min_length=10,
+        description="Reason for rejecting the declaration (minimum 10 characters)"
+    )
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "rejection_reason": "Incomplete invoice information - missing product descriptions"
+            }
+        }
+    )
+
+
+class DeclarationRejectResponse(BaseModel):
+    """Schema for declaration rejection response"""
+    id: UUID
+    status: DeclarationStatus
+    rejection_reason: str
+    message: str
+
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_schema_extra={
+            "example": {
+                "id": "323e4567-e89b-12d3-a456-426614174000",
+                "status": "REJECTED",
+                "rejection_reason": "Incomplete invoice information - missing product descriptions",
+                "message": "Declaration rejected successfully"
+            }
+        }
+    )
