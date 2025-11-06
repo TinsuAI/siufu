@@ -12,8 +12,6 @@ class DeclarationStatus(str, Enum):
     """Declaration status enumeration"""
     UPLOADED = "UPLOADED"
     PROCESSING = "PROCESSING"
-    PROCESSING_OCR = "PROCESSING_OCR"
-    PROCESSING_LLM = "PROCESSING_LLM"
     VALIDATING = "VALIDATING"
     READY_FOR_REVIEW = "READY_FOR_REVIEW"
     APPROVED = "APPROVED"
@@ -37,6 +35,14 @@ class DeclarationUpdate(BaseModel):
     draft_data: Dict[str, Any] = Field(description="Partial updates to draft data (will be merged)")
 
 
+class ProcessingLogEntry(BaseModel):
+    """Schema for a single processing log entry"""
+    timestamp: str = Field(description="ISO 8601 timestamp")
+    level: str = Field(description="Log level: info, success, warning, error")
+    message: str = Field(description="Log message")
+    details: Optional[Dict[str, Any]] = Field(default=None, description="Additional details")
+
+
 class DeclarationStatusResponse(BaseModel):
     """Schema for declaration status polling response"""
     id: UUID
@@ -44,16 +50,27 @@ class DeclarationStatusResponse(BaseModel):
     progress: float = Field(ge=0.0, le=1.0, description="Processing progress from 0.0 to 1.0")
     processing_error: Optional[str] = None
     celery_task_id: Optional[str] = None
+    processing_log: List[ProcessingLogEntry] = Field(default_factory=list, description="Processing activity log")
+    created_at: datetime = Field(description="Declaration creation timestamp")
 
     model_config = ConfigDict(
         from_attributes=True,
         json_schema_extra={
             "example": {
                 "id": "123e4567-e89b-12d3-a456-426614174000",
-                "status": "PROCESSING_LLM",
+                "status": "PROCESSING",
                 "progress": 0.4,
                 "processing_error": None,
-                "celery_task_id": "abc123-def456-ghi789"
+                "celery_task_id": "abc123-def456-ghi789",
+                "processing_log": [
+                    {
+                        "timestamp": "2025-11-04T07:00:00Z",
+                        "level": "info",
+                        "message": "Starting OCR processing",
+                        "details": {"file_count": 4}
+                    }
+                ],
+                "created_at": "2025-11-04T07:00:00Z"
             }
         }
     )
@@ -204,6 +221,63 @@ class DeclarationRejectResponse(BaseModel):
                 "status": "REJECTED",
                 "rejection_reason": "Incomplete invoice information - missing product descriptions",
                 "message": "Declaration rejected successfully"
+            }
+        }
+    )
+
+
+class DeclarationListItem(BaseModel):
+    """Schema for declaration list item (optimized - excludes large fields)"""
+    id: UUID
+    status: DeclarationStatus
+    created_at: datetime
+    updated_at: datetime
+    approved_at: Optional[datetime] = None
+    products_count: int = Field(
+        default=0,
+        description="Number of products in the declaration (calculated from draft_data.products)"
+    )
+
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_schema_extra={
+            "example": {
+                "id": "323e4567-e89b-12d3-a456-426614174000",
+                "status": "APPROVED",
+                "created_at": "2025-11-03T10:00:00Z",
+                "updated_at": "2025-11-03T11:30:00Z",
+                "approved_at": "2025-11-03T11:30:00Z",
+                "products_count": 15
+            }
+        }
+    )
+
+
+class DeclarationListResponse(BaseModel):
+    """Schema for paginated declaration list response"""
+    items: List[DeclarationListItem] = Field(description="List of declarations")
+    total: int = Field(description="Total count of matching declarations")
+    page: int = Field(description="Current page number")
+    limit: int = Field(description="Items per page")
+    total_pages: int = Field(description="Total number of pages")
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "items": [
+                    {
+                        "id": "323e4567-e89b-12d3-a456-426614174000",
+                        "status": "APPROVED",
+                        "created_at": "2025-11-03T10:00:00Z",
+                        "updated_at": "2025-11-03T11:30:00Z",
+                        "approved_at": "2025-11-03T11:30:00Z",
+                        "products_count": 15
+                    }
+                ],
+                "total": 156,
+                "page": 1,
+                "limit": 20,
+                "total_pages": 8
             }
         }
     )

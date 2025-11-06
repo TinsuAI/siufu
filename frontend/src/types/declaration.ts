@@ -83,6 +83,17 @@ export function mapStatusToStage(
 }
 
 /**
+ * Processing Log Entry
+ * Single log entry for monitoring processing activity
+ */
+export interface ProcessingLogEntry {
+  timestamp: string
+  level: 'info' | 'success' | 'warning' | 'error'
+  message: string
+  details?: Record<string, any>
+}
+
+/**
  * Status Response from GET /api/declarations/{id}/status
  */
 export interface StatusResponse {
@@ -90,6 +101,7 @@ export interface StatusResponse {
   status: DeclarationStatus
   processing_progress: number // 0.0 to 1.0
   processing_error: string | null
+  processing_log: ProcessingLogEntry[]
   created_at: string // ISO 8601 timestamp
   updated_at: string // ISO 8601 timestamp
 }
@@ -251,4 +263,42 @@ export interface Declaration {
   created_at: string
   updated_at: string
   user_id: string
+}
+
+/**
+ * Declaration List Item (Story 3.9)
+ * Optimized schema for list view - excludes large fields for performance
+ */
+export interface DeclarationListItem {
+  id: string
+  status: DeclarationStatus
+  created_at: string
+  updated_at: string
+  approved_at: string | null
+  products_count: number
+}
+
+/**
+ * Declaration List Response (Story 3.9)
+ * Paginated response for declaration list endpoint
+ */
+export interface DeclarationListResponse {
+  items: DeclarationListItem[]
+  total: number
+  page: number
+  limit: number
+  total_pages: number
+}
+
+/**
+ * Declaration List Query Params (Story 3.9)
+ * Query parameters for filtering and sorting declarations
+ */
+export interface DeclarationListParams {
+  page?: number
+  limit?: number
+  status?: string
+  search?: string
+  sort_by?: 'created_at' | 'status'
+  sort_order?: 'asc' | 'desc'
 }

@@ -411,3 +411,303 @@ class TestExportEndpoint:
 
             assert exc_info.value.status_code == 404
             assert "not yet generated" in str(exc_info.value.detail).lower()
+
+
+class TestListDeclarationsEndpoint:
+    """Tests for GET /api/declarations endpoint (Story 3.9)"""
+
+    @pytest.mark.asyncio
+    async def test_list_declarations_default_pagination(self, mock_user, mock_db):
+        """Test listing declarations with default pagination"""
+        from src.api.v1.declarations import list_declarations
+        from fastapi import Request
+
+        # Setup - create mock declarations
+        mock_declarations = []
+        for i in range(5):
+            decl = Mock()
+            decl.id = uuid4()
+            decl.status = DeclarationStatus.APPROVED
+            decl.created_at = datetime.now(timezone.utc)
+            decl.updated_at = datetime.now(timezone.utc)
+            decl.approved_at = datetime.now(timezone.utc)
+            decl.deleted_at = None
+            decl.draft_data = {"products": [{"name": f"Product {j}"} for j in range(10)]}
+            decl.created_by_user_id = mock_user.id
+            mock_declarations.append(decl)
+
+        mock_request = Mock(spec=Request)
+
+        # Mock database execution
+        mock_result = Mock()
+        mock_result.scalars = Mock(return_value=Mock(all=Mock(return_value=mock_declarations)))
+        mock_result.scalar_one = Mock(return_value=5)  # total count
+
+        with patch('src.api.v1.declarations.get_current_user', return_value=mock_user):
+            # Mock execute to return results for both count and select queries
+            mock_db.execute = AsyncMock(side_effect=[
+                Mock(scalar_one=Mock(return_value=5)),  # count query
+                mock_result  # select query
+            ])
+
+            # Execute
+            result = await list_declarations(
+                request=mock_request,
+                page=1,
+                limit=20,
+                status_filter=None,
+                search=None,
+                sort_by="created_at",
+                sort_order="desc",
+                db=mock_db
+            )
+
+            # Assert
+            assert result.total == 5
+            assert result.page == 1
+            assert result.limit == 20
+            assert result.total_pages == 1
+            assert len(result.items) == 5
+            assert result.items[0].products_count == 10
+
+    @pytest.mark.asyncio
+    async def test_list_declarations_with_status_filter(self, mock_user, mock_db):
+        """Test listing declarations filtered by status"""
+        from src.api.v1.declarations import list_declarations
+        from fastapi import Request
+
+        mock_request = Mock(spec=Request)
+        mock_result = Mock()
+        mock_result.scalars = Mock(return_value=Mock(all=Mock(return_value=[])))
+
+        with patch('src.api.v1.declarations.get_current_user', return_value=mock_user):
+            mock_db.execute = AsyncMock(side_effect=[
+                Mock(scalar_one=Mock(return_value=0)),  # count
+                mock_result  # select
+            ])
+
+            # Execute with status filter
+            result = await list_declarations(
+                request=mock_request,
+                page=1,
+                limit=20,
+                status_filter="APPROVED",
+                search=None,
+                sort_by="created_at",
+                sort_order="desc",
+                db=mock_db
+            )
+
+            # Assert
+            assert result.total == 0
+            assert len(result.items) == 0
+
+    @pytest.mark.asyncio
+    async def test_list_declarations_with_search(self, mock_user, mock_db):
+        """Test listing declarations with search by ID"""
+        from src.api.v1.declarations import list_declarations
+        from fastapi import Request
+
+        mock_request = Mock(spec=Request)
+        mock_result = Mock()
+        mock_result.scalars = Mock(return_value=Mock(all=Mock(return_value=[])))
+
+        with patch('src.api.v1.declarations.get_current_user', return_value=mock_user):
+            mock_db.execute = AsyncMock(side_effect=[
+                Mock(scalar_one=Mock(return_value=0)),
+                mock_result
+            ])
+
+            # Execute with search
+            result = await list_declarations(
+                request=mock_request,
+                page=1,
+                limit=20,
+                status_filter=None,
+                search="abc123",
+                sort_by="created_at",
+                sort_order="desc",
+                db=mock_db
+            )
+
+            assert result.total == 0
+
+    @pytest.mark.asyncio
+    async def test_list_declarations_invalid_sort_by(self, mock_user, mock_db):
+        """Test listing declarations with invalid sort_by parameter"""
+        from src.api.v1.declarations import list_declarations
+        from fastapi import Request
+
+        mock_request = Mock(spec=Request)
+
+        with patch('src.api.v1.declarations.get_current_user', return_value=mock_user):
+            # Execute with invalid sort_by
+            with pytest.raises(HTTPException) as exc_info:
+                await list_declarations(
+                    request=mock_request,
+                    page=1,
+                    limit=20,
+                    status_filter=None,
+                    search=None,
+                    sort_by="invalid_field",
+                    sort_order="desc",
+                    db=mock_db
+                )
+
+            assert exc_info.value.status_code == 400
+            assert "Invalid sort_by" in str(exc_info.value.detail)
+
+    @pytest.mark.asyncio
+    async def test_list_declarations_calculates_products_count(self, mock_user, mock_db):
+        """Test that products_count is calculated correctly from draft_data"""
+        from src.api.v1.declarations import list_declarations
+        from fastapi import Request
+
+        # Setup - declaration with products in draft_data
+        decl = Mock()
+        decl.id = uuid4()
+        decl.status = DeclarationStatus.READY_FOR_REVIEW
+        decl.created_at = datetime.now(timezone.utc)
+        decl.updated_at = datetime.now(timezone.utc)
+        decl.approved_at = None
+        decl.deleted_at = None
+        decl.draft_data = {"products": [{"name": "P1"}, {"name": "P2"}, {"name": "P3"}]}
+        decl.created_by_user_id = mock_user.id
+
+        mock_request = Mock(spec=Request)
+        mock_result = Mock()
+        mock_result.scalars = Mock(return_value=Mock(all=Mock(return_value=[decl])))
+
+        with patch('src.api.v1.declarations.get_current_user', return_value=mock_user):
+            mock_db.execute = AsyncMock(side_effect=[
+                Mock(scalar_one=Mock(return_value=1)),
+                mock_result
+            ])
+
+            result = await list_declarations(
+                request=mock_request,
+                page=1,
+                limit=20,
+                status_filter=None,
+                search=None,
+                sort_by="created_at",
+                sort_order="desc",
+                db=mock_db
+            )
+
+            # Assert products_count is 3
+            assert len(result.items) == 1
+            assert result.items[0].products_count == 3
+
+
+class TestDeleteDeclarationEndpoint:
+    """Tests for DELETE /api/declarations/{id} endpoint (Story 3.9)"""
+
+    @pytest.mark.asyncio
+    async def test_delete_declaration_success(self, mock_declaration, mock_user, mock_db):
+        """Test successful soft delete of declaration"""
+        from src.api.v1.declarations import delete_declaration
+        from fastapi import Request
+
+        # Setup
+        mock_declaration.created_by_user_id = mock_user.id
+        mock_declaration.deleted_at = None
+        mock_request = Mock(spec=Request)
+
+        with patch('src.api.v1.declarations.get_current_user', return_value=mock_user), \
+             patch('src.api.v1.declarations.DeclarationRepository') as MockRepo:
+
+            mock_repo = MockRepo.return_value
+            mock_repo.get_by_id = AsyncMock(return_value=mock_declaration)
+
+            # Execute
+            result = await delete_declaration(
+                declaration_id=mock_declaration.id,
+                request=mock_request,
+                db=mock_db
+            )
+
+            # Assert
+            assert result.status_code == 204
+            assert mock_declaration.deleted_at is not None
+            mock_db.commit.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_delete_declaration_not_found(self, mock_user, mock_db):
+        """Test delete fails when declaration does not exist"""
+        from src.api.v1.declarations import delete_declaration
+        from fastapi import Request
+
+        mock_request = Mock(spec=Request)
+        declaration_id = uuid4()
+
+        with patch('src.api.v1.declarations.get_current_user', return_value=mock_user), \
+             patch('src.api.v1.declarations.DeclarationRepository') as MockRepo:
+
+            mock_repo = MockRepo.return_value
+            mock_repo.get_by_id = AsyncMock(return_value=None)
+
+            # Execute & Assert
+            with pytest.raises(HTTPException) as exc_info:
+                await delete_declaration(
+                    declaration_id=declaration_id,
+                    request=mock_request,
+                    db=mock_db
+                )
+
+            assert exc_info.value.status_code == 404
+
+    @pytest.mark.asyncio
+    async def test_delete_declaration_unauthorized(self, mock_declaration, mock_user, mock_db):
+        """Test delete fails when user doesn't own the declaration"""
+        from src.api.v1.declarations import delete_declaration
+        from fastapi import Request
+
+        # Setup - declaration owned by different user
+        mock_declaration.created_by_user_id = uuid4()  # Different user ID
+        mock_declaration.deleted_at = None
+        mock_request = Mock(spec=Request)
+
+        with patch('src.api.v1.declarations.get_current_user', return_value=mock_user), \
+             patch('src.api.v1.declarations.DeclarationRepository') as MockRepo:
+
+            mock_repo = MockRepo.return_value
+            mock_repo.get_by_id = AsyncMock(return_value=mock_declaration)
+
+            # Execute & Assert
+            with pytest.raises(HTTPException) as exc_info:
+                await delete_declaration(
+                    declaration_id=mock_declaration.id,
+                    request=mock_request,
+                    db=mock_db
+                )
+
+            assert exc_info.value.status_code == 403
+            assert "not authorized" in str(exc_info.value.detail).lower()
+
+    @pytest.mark.asyncio
+    async def test_delete_already_deleted_declaration(self, mock_declaration, mock_user, mock_db):
+        """Test delete fails when declaration already deleted"""
+        from src.api.v1.declarations import delete_declaration
+        from fastapi import Request
+
+        # Setup - declaration already deleted
+        mock_declaration.created_by_user_id = mock_user.id
+        mock_declaration.deleted_at = datetime.now(timezone.utc)
+        mock_request = Mock(spec=Request)
+
+        with patch('src.api.v1.declarations.get_current_user', return_value=mock_user), \
+             patch('src.api.v1.declarations.DeclarationRepository') as MockRepo:
+
+            mock_repo = MockRepo.return_value
+            mock_repo.get_by_id = AsyncMock(return_value=mock_declaration)
+
+            # Execute & Assert
+            with pytest.raises(HTTPException) as exc_info:
+                await delete_declaration(
+                    declaration_id=mock_declaration.id,
+                    request=mock_request,
+                    db=mock_db
+                )
+
+            assert exc_info.value.status_code == 404

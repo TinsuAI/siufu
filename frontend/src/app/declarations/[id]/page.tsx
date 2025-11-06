@@ -12,6 +12,7 @@ import {
   useRetryProcessing,
 } from '@/hooks/use-declaration-status'
 import { ProcessingStepper } from '@/components/declarations/processing-stepper'
+import { ProcessingLog } from '@/components/declarations/processing-log'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { DeclarationStatus } from '@/types/declaration'
@@ -189,6 +190,11 @@ export default function ProcessingStatusPage() {
               </p>
             </div>
           </div>
+        )}
+
+        {/* Processing Log */}
+        {!showRedirectMessage && (
+          <ProcessingLog logs={statusData.processing_log || []} />
         )}
 
         {/* Background Processing Message */}

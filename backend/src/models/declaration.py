@@ -17,8 +17,6 @@ class DeclarationStatus(str, enum.Enum):
     """Declaration status enumeration"""
     UPLOADED = "UPLOADED"
     PROCESSING = "PROCESSING"
-    PROCESSING_OCR = "PROCESSING_OCR"  # New: OCR processing stage
-    PROCESSING_LLM = "PROCESSING_LLM"  # New: LLM extraction stage
     VALIDATING = "VALIDATING"
     READY_FOR_REVIEW = "READY_FOR_REVIEW"
     APPROVED = "APPROVED"
@@ -46,6 +44,7 @@ class Declaration(Base):
     validation_warnings: Mapped[Optional[list]] = mapped_column(JSONB, nullable=True)
     confidence_scores: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
     source_metadata: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)  # NEW: field_path -> {source, page, bbox}
+    processing_log: Mapped[Optional[list]] = mapped_column(JSONB, nullable=True, default=list)  # Processing activity log
     processing_progress: Mapped[Optional[float]] = mapped_column(Float, nullable=True, default=0.0)
     processing_error: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     celery_task_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True, index=True)

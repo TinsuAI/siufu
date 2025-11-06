@@ -12,6 +12,8 @@ import type {
 import type {
   StatusResponse,
   RetryProcessingResponse,
+  DeclarationListResponse,
+  DeclarationListParams,
 } from '@/types/declaration'
 
 const API_BASE_URL =
@@ -141,7 +143,8 @@ export async function uploadDeclaration(
     })
   }
 
-  const url = `${API_BASE_URL}/declarations/upload`
+  // Always auto-process after upload
+  const url = `${API_BASE_URL}/declarations/upload?auto_process=true`
 
   // Create AbortController for timeout handling (60 seconds)
   const controller = new AbortController()
@@ -530,4 +533,56 @@ export async function exportDeclaration(id: string): Promise<Blob> {
     }
     throw new Error('Failed to export declaration. Please try again.')
   }
+}
+
+/**
+ * Get paginated list of declarations with filtering and sorting (Story 3.9)
+ * @param params - Query parameters for pagination, filtering, and sorting
+ * @returns Paginated declaration list response
+ */
+export async function getDeclarations(
+  params: DeclarationListParams = {}
+): Promise<DeclarationListResponse> {
+  // Build query string from params
+  const queryParams = new URLSearchParams()
+
+  if (params.page) queryParams.append('page', params.page.toString())
+  if (params.limit) queryParams.append('limit', params.limit.toString())
+  if (params.status) queryParams.append('status', params.status)
+  if (params.search) queryParams.append('search', params.search)
+  if (params.sort_by) queryParams.append('sort_by', params.sort_by)
+  if (params.sort_order) queryParams.append('sort_order', params.sort_order)
+
+  const queryString = queryParams.toString()
+  const endpoint = `/declarations${queryString ? `?${queryString}` : ''}`
+
+  return apiClient<DeclarationListResponse>(endpoint, {
+    method: 'GET',
+  })
+}
+
+/**
+ * Soft delete a declaration (Story 3.9)
+ * @param id - Declaration UUID to delete
+ * @throws Error if user doesn't own declaration or declaration not found
+ */
+export async function deleteDeclaration(id: string): Promise<void> {
+  const url = `${API_BASE_URL}/declarations/${id}`
+
+  const response = await fetch(url, {
+    method: 'DELETE',
+    credentials: 'include', // Include cookies for JWT authentication
+  })
+
+  if (!response.ok) {
+    if (response.status === 404) {
+      throw new Error('Declaration not found')
+    }
+    if (response.status === 403) {
+      throw new Error('You are not authorized to delete this declaration')
+    }
+    throw new Error(`Failed to delete declaration: HTTP ${response.status}`)
+  }
+
+  // 204 No Content - no response body to parse
 }

@@ -17,7 +17,9 @@ from src.schemas.declaration import (
     UploadedFileMetadata,
     DeclarationApproveResponse,
     DeclarationRejectRequest,
-    DeclarationRejectResponse
+    DeclarationRejectResponse,
+    DeclarationListItem,
+    DeclarationListResponse
 )
 from src.services.file_validation_service import FileValidationService, FileValidationError, FileSizeLimitExceeded
 from src.services.file_storage_service import FileStorageService
@@ -25,14 +27,135 @@ from src.services.file_storage_service import FileStorageService
 router = APIRouter()
 
 
-@router.get("")
-async def list_declarations(db: AsyncSession = Depends(get_db)):
+@router.get("", response_model=DeclarationListResponse)
+async def list_declarations(
+    request: Request,
+    page: int = Query(default=1, ge=1, description="Page number (starts at 1)"),
+    limit: int = Query(default=20, ge=1, le=100, description="Items per page (max 100)"),
+    status_filter: Optional[str] = Query(default=None, alias="status", description="Filter by status (e.g., APPROVED)"),
+    search: Optional[str] = Query(default=None, description="Search by declaration ID (partial match)"),
+    sort_by: str = Query(default="created_at", description="Sort field (created_at or status)"),
+    sort_order: str = Query(default="desc", description="Sort direction (asc or desc)"),
+    db: AsyncSession = Depends(get_db)
+) -> DeclarationListResponse:
     """
-    List all declarations with pagination
+    List declarations with pagination, filtering, and sorting
 
-    Query params: skip, limit, status filter
+    Query Parameters:
+    - page: Page number (default: 1, min: 1)
+    - limit: Items per page (default: 20, min: 1, max: 100)
+    - status: Filter by status (optional) - e.g., "APPROVED", "PROCESSING"
+    - search: Search by declaration ID (optional) - partial match
+    - sort_by: Sort field (default: "created_at") - options: "created_at", "status"
+    - sort_order: Sort direction (default: "desc") - options: "asc", "desc"
+
+    Returns:
+        DeclarationListResponse with paginated items and metadata
+
+    Raises:
+        HTTPException 400: Invalid query parameters
+        HTTPException 401: Not authenticated
     """
-    return {"message": "List declarations endpoint - to be implemented"}
+    from sqlalchemy import select, func, cast, String
+    from src.models.declaration import Declaration
+    import math
+
+    # Authenticate user
+    current_user = await get_current_user(request, db)
+
+    # Validate sort_by parameter
+    if sort_by not in ["created_at", "status"]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid sort_by parameter: '{sort_by}'. Must be 'created_at' or 'status'."
+        )
+
+    # Validate sort_order parameter
+    if sort_order not in ["asc", "desc"]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid sort_order parameter: '{sort_order}'. Must be 'asc' or 'desc'."
+        )
+
+    # Build query: Filter by authenticated user and exclude soft-deleted
+    query = select(Declaration).where(
+        Declaration.created_by_user_id == current_user.id,
+        Declaration.deleted_at.is_(None)
+    )
+
+    # Apply status filter if provided
+    if status_filter:
+        # Validate status value
+        try:
+            from src.models.declaration import DeclarationStatus as ModelDeclarationStatus
+            status_enum = ModelDeclarationStatus(status_filter)
+            query = query.where(Declaration.status == status_enum)
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid status: '{status_filter}'. Must be one of: {[s.value for s in ModelDeclarationStatus]}"
+            )
+
+    # Apply search filter if provided (partial match on declaration ID)
+    if search:
+        # Convert UUID to string for partial matching
+        query = query.where(
+            cast(Declaration.id, String).ilike(f"%{search}%")
+        )
+
+    # Count total matching declarations (before pagination)
+    count_query = select(func.count()).select_from(query.subquery())
+    total_result = await db.execute(count_query)
+    total = total_result.scalar_one()
+
+    # Apply sorting
+    if sort_by == "created_at":
+        order_column = Declaration.created_at
+    else:  # status
+        order_column = Declaration.status
+
+    if sort_order == "asc":
+        query = query.order_by(order_column.asc())
+    else:  # desc
+        query = query.order_by(order_column.desc())
+
+    # Apply pagination
+    offset = (page - 1) * limit
+    query = query.offset(offset).limit(limit)
+
+    # Execute query
+    result = await db.execute(query)
+    declarations = result.scalars().all()
+
+    # Build response items with products_count
+    items = []
+    for declaration in declarations:
+        # Calculate products_count from draft_data.products array
+        products_count = 0
+        if declaration.draft_data and isinstance(declaration.draft_data, dict):
+            products = declaration.draft_data.get("products")
+            if isinstance(products, list):
+                products_count = len(products)
+
+        items.append(DeclarationListItem(
+            id=declaration.id,
+            status=declaration.status,
+            created_at=declaration.created_at,
+            updated_at=declaration.updated_at,
+            approved_at=declaration.approved_at,
+            products_count=products_count
+        ))
+
+    # Calculate total pages
+    total_pages = math.ceil(total / limit) if total > 0 else 0
+
+    return DeclarationListResponse(
+        items=items,
+        total=total,
+        page=page,
+        limit=limit,
+        total_pages=total_pages
+    )
 
 
 @router.post("/upload", response_model=DeclarationUploadResponse, status_code=status.HTTP_201_CREATED)
@@ -255,10 +378,11 @@ async def process_declaration(
     through OCR and LLM extraction pipeline.
 
     **Processing Stages:**
-    1. PENDING_PROCESSING (progress: 0.0)
-    2. PROCESSING_OCR (progress: 0.2) - OCR extraction from PDFs
-    3. PROCESSING_LLM (progress: 0.6) - GPT-5 data extraction
-    4. READY_FOR_REVIEW (progress: 1.0) - Complete
+    1. UPLOADED (progress: 0.0)
+    2. PROCESSING (progress: 0.2) - OCR extraction from PDFs
+    3. PROCESSING (progress: 0.4) - LLM data extraction
+    4. VALIDATING (progress: 0.7) - Data validation
+    5. READY_FOR_REVIEW (progress: 1.0) - Complete
 
     **Expected Duration:** 46-72 seconds (avg 59s, within 90s NFR1 target)
     Note: Duration may increase with multiple C/O files
@@ -356,7 +480,9 @@ async def get_declaration_status(
         status=declaration.status,
         progress=declaration.processing_progress or 0.0,
         processing_error=declaration.processing_error,
-        celery_task_id=declaration.celery_task_id
+        celery_task_id=declaration.celery_task_id,
+        processing_log=declaration.processing_log or [],
+        created_at=declaration.created_at
     )
 
 
@@ -400,6 +526,7 @@ async def get_declaration(
         "status": declaration.status,
         "uploaded_files": declaration.uploaded_files or {},
         "extracted_data": declaration.extracted_data or {},
+        "draft_data": declaration.draft_data or {},  # Draft data for review form
         "confidence_scores": declaration.confidence_scores or {},
         "source_metadata": declaration.source_metadata or {},  # NEW: Story 3.7
         "processing_progress": declaration.processing_progress or 0.0,
@@ -614,3 +741,65 @@ async def export_declaration(
             "Content-Disposition": f'attachment; filename="CD_{declaration_id}.xlsx"'
         }
     )
+
+
+@router.delete("/{declaration_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_declaration(
+    declaration_id: UUID,
+    request: Request,
+    db: AsyncSession = Depends(get_db)
+) -> Response:
+    """
+    Soft delete a declaration
+
+    Sets deleted_at timestamp instead of hard deleting (preserves audit trail).
+    Users can only delete their own declarations.
+
+    Args:
+        declaration_id: UUID of declaration to delete
+        request: FastAPI Request object for authentication
+        db: Database session
+
+    Returns:
+        204 No Content on success
+
+    Raises:
+        HTTPException 404: If declaration not found
+        HTTPException 403: If user doesn't own the declaration (authorization check)
+        HTTPException 401: If not authenticated
+    """
+    from datetime import datetime, timezone
+
+    # Authenticate user
+    current_user = await get_current_user(request, db)
+
+    # Get declaration
+    repo = DeclarationRepository(db)
+    declaration = await repo.get_by_id(declaration_id)
+
+    if not declaration:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Declaration {declaration_id} not found"
+        )
+
+    # Check if already deleted
+    if declaration.deleted_at is not None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Declaration {declaration_id} not found"
+        )
+
+    # Authorization: User can only delete their own declarations
+    if declaration.created_by_user_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not authorized to delete this declaration. Users can only delete their own declarations."
+        )
+
+    # Soft delete: Set deleted_at timestamp
+    declaration.deleted_at = datetime.now(timezone.utc)
+    await db.commit()
+
+    # Return 204 No Content
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

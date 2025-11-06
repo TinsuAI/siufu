@@ -42,9 +42,9 @@ celery_app.conf.update(
     # Task tracking
     task_track_started=True,
 
-    # Task time limits (5 minutes max per task as per story requirements)
-    task_time_limit=300,  # 5 minutes hard limit
-    task_soft_time_limit=270,  # 4.5 minutes soft limit (warning)
+    # Task time limits (30 minutes max for LLM processing)
+    task_time_limit=1800,  # 30 minutes hard limit (LLM can take 5-10 min)
+    task_soft_time_limit=1500,  # 25 minutes soft limit (warning)
 
     # Result backend settings
     result_expires=3600,  # Results expire after 1 hour

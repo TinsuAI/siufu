@@ -173,8 +173,8 @@ class TestDeclarationProcessor:
 
             # Verify progress sequence
             assert len(progress_updates) == 3
-            assert progress_updates[0] == (DeclarationStatus.PROCESSING_OCR, 0.2)
-            assert progress_updates[1] == (DeclarationStatus.PROCESSING_LLM, 0.4)
+            assert progress_updates[0] == (DeclarationStatus.PROCESSING, 0.2)
+            assert progress_updates[1] == (DeclarationStatus.PROCESSING, 0.4)
             assert progress_updates[2] == (DeclarationStatus.READY_FOR_REVIEW, 1.0)
 
     @pytest.mark.asyncio

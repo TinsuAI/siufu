@@ -1,85 +1,76 @@
 /**
- * Custom hook for fetching declarations using TanStack Query
+ * Hook for managing declarations list with pagination, filtering, and sorting
+ * Story 3.9: Declaration History List
  */
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { getDeclarations, deleteDeclaration } from '@/lib/api'
+import type {
+  DeclarationListParams,
+  DeclarationListResponse,
+} from '@/types/declaration'
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
-
-export interface Declaration {
-  id: number
-  declaration_number: string
-  status: string
-  importer_name: string
-  created_at: string
-  updated_at: string
+export interface UseDeclarationsOptions extends DeclarationListParams {
+  enabled?: boolean // Allow disabling the query
 }
 
-export interface CreateDeclarationInput {
-  importer_name: string
-  importer_address: string
-  total_value: number
-  currency: string
-}
-
-/**
- * Fetch all declarations
- */
-export function useDeclarations() {
-  return useQuery({
-    queryKey: ['declarations'],
-    queryFn: async (): Promise<Declaration[]> => {
-      const response = await fetch(`${API_BASE_URL}/api/declarations`)
-      if (!response.ok) {
-        throw new Error('Failed to fetch declarations')
-      }
-      return response.json()
-    }
-  })
-}
-
-/**
- * Fetch a single declaration by ID
- */
-export function useDeclaration(id: number) {
-  return useQuery({
-    queryKey: ['declarations', id],
-    queryFn: async (): Promise<Declaration> => {
-      const response = await fetch(`${API_BASE_URL}/api/declarations/${id}`)
-      if (!response.ok) {
-        throw new Error(`Failed to fetch declaration ${id}`)
-      }
-      return response.json()
-    },
-    enabled: !!id  // Only run query if ID is provided
-  })
-}
-
-/**
- * Create a new declaration
- */
-export function useCreateDeclaration() {
+export function useDeclarations(options: UseDeclarationsOptions = {}) {
   const queryClient = useQueryClient()
 
-  return useMutation({
-    mutationFn: async (data: CreateDeclarationInput): Promise<Declaration> => {
-      const response = await fetch(`${API_BASE_URL}/api/declarations`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(data)
-      })
+  // Extract query parameters
+  const {
+    page = 1,
+    limit = 20,
+    status,
+    search,
+    sort_by = 'created_at',
+    sort_order = 'desc',
+    enabled = true,
+  } = options
 
-      if (!response.ok) {
-        throw new Error('Failed to create declaration')
-      }
-
-      return response.json()
-    },
-    // Invalidate and refetch declarations list after successful creation
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['declarations'] })
-    }
+  // Fetch declarations list
+  const query = useQuery<DeclarationListResponse, Error>({
+    queryKey: [
+      'declarations',
+      'list',
+      page,
+      limit,
+      status,
+      search,
+      sort_by,
+      sort_order,
+    ],
+    queryFn: () =>
+      getDeclarations({
+        page,
+        limit,
+        status,
+        search,
+        sort_by,
+        sort_order,
+      }),
+    enabled,
+    // Keep previous data while fetching new page (better UX - no flash of empty state)
+    placeholderData: (previousData) => previousData,
+    // Stale time: 30 seconds (reduce refetches for same params)
+    staleTime: 30000,
   })
+
+  // Delete mutation
+  const deleteMutation = useMutation({
+    mutationFn: (declarationId: string) => deleteDeclaration(declarationId),
+    onSuccess: () => {
+      // Invalidate declarations list query to trigger refetch
+      queryClient.invalidateQueries({
+        queryKey: ['declarations', 'list'],
+      })
+    },
+  })
+
+  return {
+    data: query.data,
+    isLoading: query.isLoading,
+    error: query.error,
+    refetch: query.refetch,
+    deleteMutation,
+  }
 }

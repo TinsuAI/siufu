@@ -15,17 +15,20 @@ import asyncio
 import logging
 import os
 import time
-from typing import Dict, Any
+from datetime import datetime
+from typing import Dict, Any, Optional
 from uuid import UUID
 
 import sentry_sdk
 from celery import Task
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
+from sqlalchemy import select, update
+from sqlalchemy.dialects.postgresql import insert
 
 from src.core.celery_app import celery_app
 from src.core.config import settings
 from src.core.errors import DocumentAIException, OpenRouterException
-from src.models.declaration import DeclarationStatus
+from src.models.declaration import DeclarationStatus, Declaration
 from src.repositories.declaration_repository import DeclarationRepository
 from src.services.ocr_service import OCRService
 from src.services.llm_service import LLMService
@@ -46,6 +49,122 @@ AsyncSessionLocal = async_sessionmaker(
     class_=AsyncSession,
     expire_on_commit=False
 )
+
+
+def transform_vietnamese_to_draft(extracted_data: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Transform Vietnamese declaration data structure to match frontend form schema.
+
+    Converts from LLM extraction format (importer, exporter, products, vat, invoice)
+    to frontend form format (company_info, shipment_details, products, tax_calculations)
+    """
+    importer = extracted_data.get("importer", {})
+    invoice = extracted_data.get("invoice", {})
+    products = extracted_data.get("products", [])
+    vat = extracted_data.get("vat", {})
+    import_duty = extracted_data.get("import_duty", {})
+
+    # Transform products array
+    transformed_products = []
+    for product in products:
+        transformed_products.append({
+            "description": product.get("product_description", ""),
+            "hs_code": product.get("hs_code", ""),
+            "quantity": product.get("quantity_1", 0),
+            "unit": product.get("quantity_unit_1", ""),
+            "unit_price": product.get("invoice_unit_price", 0),
+            "total_price": product.get("invoice_line_total", 0),
+            "origin_country": product.get("country_of_origin_code", "")
+        })
+
+    # Calculate tax totals
+    vat_amount = vat.get("amount", 0)
+    import_duty_amount = import_duty.get("amount", 0)
+    total_tax = vat_amount + import_duty_amount
+    invoice_total = invoice.get("invoice_total", 0)
+    grand_total = invoice_total + total_tax
+
+    # Build draft data in form schema format
+    draft_data = {
+        "company_info": {
+            "importer_name": importer.get("name", ""),
+            "tax_id": importer.get("tax_code", ""),
+            "address": importer.get("address", ""),
+            "city": "",  # Not in Vietnamese format, leave empty
+            "country": "VN",  # Default to Vietnam
+            "contact_person": "",  # Not in Vietnamese format
+            "contact_email": "",  # Not in Vietnamese format
+            "contact_phone": importer.get("phone", "")
+        },
+        "shipment_details": {
+            "bol_number": invoice.get("invoice_number", ""),
+            "arrival_date": invoice.get("invoice_date", ""),
+            "port_of_arrival": "",  # Not in Vietnamese format
+            "port_of_departure": "",  # Not in Vietnamese format
+            "container_numbers": [""],  # Not in Vietnamese format
+            "vessel_name": ""  # Not in Vietnamese format
+        },
+        "products": transformed_products if transformed_products else [{
+            "description": "",
+            "hs_code": "",
+            "quantity": 0,
+            "unit": "",
+            "unit_price": 0,
+            "total_price": 0,
+            "origin_country": ""
+        }],
+        "tax_calculations": {
+            "subtotal": invoice_total,
+            "vat_rate": vat.get("rate", 0),
+            "vat_amount": vat_amount,
+            "import_duty_rate": import_duty.get("rate", 0),
+            "import_duty_amount": import_duty_amount,
+            "total_tax": total_tax,
+            "grand_total": grand_total
+        }
+    }
+
+    return draft_data
+
+
+async def add_processing_log(
+    db: AsyncSession,
+    declaration_id: UUID,
+    level: str,
+    message: str,
+    details: Optional[Dict[str, Any]] = None
+) -> None:
+    """
+    Add entry to declaration processing_log
+
+    Args:
+        db: Database session
+        declaration_id: Declaration UUID
+        level: Log level (info, success, warning, error)
+        message: Log message
+        details: Optional additional details
+    """
+    log_entry = {
+        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "level": level,
+        "message": message,
+    }
+    if details:
+        log_entry["details"] = details
+
+    # Fetch current log, append new entry, update
+    result = await db.execute(
+        select(Declaration.processing_log).where(Declaration.id == declaration_id)
+    )
+    current_log = result.scalar_one_or_none() or []
+    current_log.append(log_entry)
+
+    await db.execute(
+        update(Declaration)
+        .where(Declaration.id == declaration_id)
+        .values(processing_log=current_log)
+    )
+    await db.commit()
 
 
 class DeclarationProcessingTask(Task):
@@ -70,8 +189,8 @@ def process_declaration_task(self, declaration_id: str) -> Dict[str, Any]:
     Process a customs declaration through full pipeline
 
     Task progresses through stages:
-    1. PROCESSING_OCR (progress: 0.1) - OCR extraction from PDFs
-    2. PROCESSING_LLM (progress: 0.4) - LLM data extraction
+    1. PROCESSING (progress: 0.2) - OCR extraction from PDFs
+    2. PROCESSING (progress: 0.4) - LLM data extraction
     3. VALIDATING (progress: 0.7) - Data validation
     4. READY_FOR_REVIEW (progress: 1.0) - Complete
 
@@ -240,14 +359,23 @@ async def _process_declaration_async(declaration_id: str) -> Dict[str, Any]:
         # Required single-file docs (Updated in Story 3.3.1: CO is now multi-file)
         required_single_docs = ["AN", "BOL", "INVOICE"]
 
-        # Stage 1: Update to PROCESSING_OCR status
+        # Stage 1: Update to PROCESSING status (OCR stage)
         logger.info(f"Stage 1: Starting OCR processing", extra={"declaration_id": declaration_id})
         await repo.update_status_and_progress(
             UUID(declaration_id),
-            DeclarationStatus.PROCESSING_OCR,
+            DeclarationStatus.PROCESSING,
             0.2
         )
-        sentry_sdk.set_tag("processing_stage", "PROCESSING_OCR")
+        sentry_sdk.set_tag("processing_stage", "OCR")
+
+        # Log OCR start
+        await add_processing_log(
+            db,
+            UUID(declaration_id),
+            "info",
+            "Starting OCR processing",
+            {"stage": "OCR", "files_to_process": len([k for k in uploaded_files.keys()])}
+        )
 
         # Track OCR stage start time
         stage_start = time.time()
@@ -301,15 +429,33 @@ async def _process_declaration_async(declaration_id: str) -> Dict[str, Any]:
             }
         )
 
-        # Stage 2: Update to PROCESSING_LLM status
+        # Log OCR complete
+        await add_processing_log(
+            db,
+            UUID(declaration_id),
+            "success",
+            "OCR processing complete",
+            {"documents_processed": len(ocr_results), "duration_seconds": round(ocr_duration, 2)}
+        )
+
+        # Stage 2: Continue PROCESSING status (LLM stage)
         stage_start = time.time()
         logger.info(f"Stage 2: Starting LLM extraction", extra={"declaration_id": declaration_id})
         await repo.update_status_and_progress(
             UUID(declaration_id),
-            DeclarationStatus.PROCESSING_LLM,
+            DeclarationStatus.PROCESSING,
             0.4
         )
-        sentry_sdk.set_tag("processing_stage", "PROCESSING_LLM")
+        sentry_sdk.set_tag("processing_stage", "LLM")
+
+        # Log LLM start
+        await add_processing_log(
+            db,
+            UUID(declaration_id),
+            "info",
+            "Starting LLM data extraction",
+            {"stage": "LLM"}
+        )
 
         # Combine multiple CO OCR results into one (Updated in Story 3.3.1)
         # LLM service expects single OCRResult, but we may have CO_1, CO_2, etc.
@@ -364,6 +510,18 @@ async def _process_declaration_async(declaration_id: str) -> Dict[str, Any]:
             }
         )
 
+        # Log LLM complete
+        await add_processing_log(
+            db,
+            UUID(declaration_id),
+            "success",
+            "LLM data extraction complete",
+            {
+                "duration_seconds": round(llm_duration, 2),
+                "overall_confidence": round(extracted_data.overall_confidence, 2)
+            }
+        )
+
         # Build source metadata mapping (Story 3.7)
         from src.services.extraction_service import ExtractionService
         extraction_service = ExtractionService()
@@ -402,28 +560,39 @@ async def _process_declaration_async(declaration_id: str) -> Dict[str, Any]:
 
         # Build confidence scores dict from extracted data
         confidence_scores = {
-            "overall": extracted_data.overall_confidence,
-            "shipper": extracted_data.shipper.confidence,
-            "consignee": extracted_data.consignee.confidence
+            "overall": extracted_data.overall_confidence
         }
 
+        # Add shipper/consignee confidence if available
+        if hasattr(extracted_data, 'shipper') and extracted_data.shipper:
+            confidence_scores["shipper"] = extracted_data.shipper.confidence
+        if hasattr(extracted_data, 'consignee') and extracted_data.consignee:
+            confidence_scores["consignee"] = extracted_data.consignee.confidence
+
         # Add date confidence scores if available
-        if extracted_data.dates.confidence_scores:
+        if hasattr(extracted_data, 'dates') and extracted_data.dates and hasattr(extracted_data.dates, 'confidence_scores') and extracted_data.dates.confidence_scores:
             for key, value in extracted_data.dates.confidence_scores.items():
                 confidence_scores[f"date_{key}"] = value
 
         # Add product confidence scores
-        for idx, product in enumerate(extracted_data.products):
-            if product.confidence_scores:
-                for key, value in product.confidence_scores.items():
-                    confidence_scores[f"product_{idx}_{key}"] = value
+        if hasattr(extracted_data, 'products') and extracted_data.products:
+            for idx, product in enumerate(extracted_data.products):
+                if hasattr(product, 'confidence_scores') and product.confidence_scores:
+                    for key, value in product.confidence_scores.items():
+                        confidence_scores[f"product_{idx}_{key}"] = value
 
         # Add container confidence scores
-        for idx, container in enumerate(extracted_data.containers):
-            confidence_scores[f"container_{idx}"] = container.confidence
+        if hasattr(extracted_data, 'containers') and extracted_data.containers:
+            for idx, container in enumerate(extracted_data.containers):
+                if hasattr(container, 'confidence'):
+                    confidence_scores[f"container_{idx}"] = container.confidence
 
         declaration.confidence_scores = confidence_scores
         declaration.source_metadata = source_metadata  # Store source metadata (Story 3.7)
+
+        # Transform extracted data to draft_data format for frontend form
+        extracted_dict = extracted_data.model_dump()
+        declaration.draft_data = transform_vietnamese_to_draft(extracted_dict)
         await db.commit()
 
         storage_duration = time.time() - stage_start
@@ -445,6 +614,19 @@ async def _process_declaration_async(declaration_id: str) -> Dict[str, Any]:
             1.0
         )
         sentry_sdk.set_tag("processing_stage", "READY_FOR_REVIEW")
+
+        # Log completion
+        total_duration = ocr_duration + llm_duration + storage_duration
+        await add_processing_log(
+            db,
+            UUID(declaration_id),
+            "success",
+            "Declaration processing complete - Ready for review",
+            {
+                "total_duration_seconds": round(total_duration, 2),
+                "product_count": len(extracted_data.products)
+            }
+        )
 
         # Store performance metrics in declaration metadata for analytics
         performance_metadata = {
