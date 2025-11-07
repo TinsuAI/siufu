@@ -47,6 +47,29 @@ class Correction(Base):
     source_document: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     extra_metadata: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
 
+    # Story 3.6 Expansion: New fields for inline flagging feature
+    correction_category: Mapped[str] = mapped_column(
+        String(50),
+        nullable=False,
+        index=True,
+        comment="Category: AI Extraction Error, Wrong HS Code, Calculation Error, Missing Data, Format Issue, Other"
+    )
+    notes: Mapped[str] = mapped_column(
+        Text,
+        nullable=False,
+        comment="Required user notes explaining why the correction is needed (max 500 chars)"
+    )
+    expected_value: Mapped[str] = mapped_column(
+        Text,
+        nullable=False,
+        comment="Required field: what the correct value should be (max 500 chars)"
+    )
+    screenshots: Mapped[Optional[list]] = mapped_column(
+        JSONB,
+        nullable=True,
+        comment="Optional array of screenshot URLs showing where the correct data appears in the document (max 3)"
+    )
+
     user_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="CASCADE"),

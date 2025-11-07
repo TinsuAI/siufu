@@ -53,10 +53,15 @@ AsyncSessionLocal = async_sessionmaker(
 
 def transform_vietnamese_to_draft(extracted_data: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Transform Vietnamese declaration data structure to match frontend form schema.
+    **DEPRECATED**: This function is no longer used. Frontend now uses Vietnamese schema directly.
+
+    Transform Vietnamese declaration data structure to match OLD frontend form schema.
 
     Converts from LLM extraction format (importer, exporter, products, vat, invoice)
-    to frontend form format (company_info, shipment_details, products, tax_calculations)
+    to OLD frontend form format (company_info, shipment_details, products, tax_calculations)
+
+    This function is kept for backward compatibility with existing test data only.
+    New declarations should use Vietnamese schema directly.
     """
     importer = extracted_data.get("importer", {})
     invoice = extracted_data.get("invoice", {})
@@ -590,9 +595,10 @@ async def _process_declaration_async(declaration_id: str) -> Dict[str, Any]:
         declaration.confidence_scores = confidence_scores
         declaration.source_metadata = source_metadata  # Store source metadata (Story 3.7)
 
-        # Transform extracted data to draft_data format for frontend form
+        # Store extracted data directly as draft_data (Vietnamese schema)
+        # Frontend now uses Vietnamese schema (declaration_header, importer, exporter, etc.)
         extracted_dict = extracted_data.model_dump()
-        declaration.draft_data = transform_vietnamese_to_draft(extracted_dict)
+        declaration.draft_data = extracted_dict  # No longer transform to old schema
         await db.commit()
 
         storage_duration = time.time() - stage_start

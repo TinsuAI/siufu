@@ -14,6 +14,9 @@ import type {
   RetryProcessingResponse,
   DeclarationListResponse,
   DeclarationListParams,
+  CorrectionCreate,
+  CorrectionResponse,
+  CorrectionListResponse,
 } from '@/types/declaration'
 
 const API_BASE_URL =
@@ -585,4 +588,72 @@ export async function deleteDeclaration(id: string): Promise<void> {
   }
 
   // 204 No Content - no response body to parse
+}
+
+// ==================== Corrections API (Story 3.6 Expansion) ====================
+
+/**
+ * Create a new correction flag for a field
+ * @param declarationId - Declaration UUID
+ * @param correctionData - Correction details
+ * @returns Created correction record
+ */
+export async function createCorrection(
+  declarationId: string,
+  correctionData: CorrectionCreate
+): Promise<CorrectionResponse> {
+  return apiClient<CorrectionResponse>(
+    `/declarations/${declarationId}/corrections`,
+    {
+      method: 'POST',
+      body: JSON.stringify(correctionData),
+    }
+  )
+}
+
+/**
+ * Get all corrections for a declaration (JSON format)
+ * @param declarationId - Declaration UUID
+ * @returns List of corrections
+ */
+export async function getCorrections(
+  declarationId: string
+): Promise<CorrectionListResponse> {
+  return apiClient<CorrectionListResponse>(
+    `/declarations/${declarationId}/corrections?format=json`,
+    {
+      method: 'GET',
+    }
+  )
+}
+
+/**
+ * Download corrections as CSV file
+ * @param declarationId - Declaration UUID
+ * @returns Promise that resolves when download starts
+ */
+export async function downloadCorrectionsCSV(
+  declarationId: string
+): Promise<void> {
+  const url = `${API_BASE_URL}/declarations/${declarationId}/corrections?format=csv`
+
+  const response = await fetch(url, {
+    method: 'GET',
+    credentials: 'include',
+  })
+
+  if (!response.ok) {
+    throw new Error(`Failed to download CSV: HTTP ${response.status}`)
+  }
+
+  // Trigger download
+  const blob = await response.blob()
+  const downloadUrl = window.URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = downloadUrl
+  a.download = `corrections_${declarationId}.csv`
+  document.body.appendChild(a)
+  a.click()
+  window.URL.revokeObjectURL(downloadUrl)
+  document.body.removeChild(a)
 }

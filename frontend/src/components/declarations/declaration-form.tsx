@@ -1,5 +1,11 @@
 /**
- * Declaration Form Component
+ * Declaration Form Component (DEPRECATED)
+ *
+ * @deprecated This component uses the OLD schema (company_info, shipment_details).
+ * Use DeclarationFormV2 instead, which uses the Vietnamese declaration schema.
+ *
+ * This component is kept for backward compatibility with existing test data only.
+ * All new development should use DeclarationFormV2.
  *
  * Comprehensive form for reviewing and editing extracted declaration data
  * with confidence indicators, auto-save, and validation
@@ -101,7 +107,10 @@ export type DeclarationFormData = z.infer<typeof declarationFormSchema>
 interface DeclarationFormProps {
   initialData?: DraftData | null
   confidenceScores?: Record<string, number>
-  sourceMetadata?: Record<string, any> | null // Story 3.7: field_path -> {source, page, bbox}
+  sourceMetadata?: Record<
+    string,
+    { source: string; page: number; bbox: number[] }
+  > | null // Story 3.7: field_path -> {source, page, bbox}
   onSubmit?: (data: DeclarationFormData) => void
   onChange?: (data: DeclarationFormData) => void
   isSubmitting?: boolean
@@ -127,7 +136,7 @@ export function DeclarationForm({
     formState: { errors },
   } = useForm<DeclarationFormData>({
     resolver: zodResolver(declarationFormSchema),
-    defaultValues: initialData || {
+    defaultValues: (initialData as DeclarationFormData) || {
       company_info: {
         importer_name: '',
         tax_id: '',
@@ -607,7 +616,7 @@ export function DeclarationForm({
                     type="button"
                     size="sm"
                     variant="outline"
-                    onClick={() => appendContainer('' as any)}
+                    onClick={() => appendContainer('')}
                   >
                     <Plus className="h-4 w-4 mr-1" />
                     Add Container

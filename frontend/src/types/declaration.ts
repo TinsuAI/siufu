@@ -90,7 +90,7 @@ export interface ProcessingLogEntry {
   timestamp: string
   level: 'info' | 'success' | 'warning' | 'error'
   message: string
-  details?: Record<string, any>
+  details?: Record<string, unknown>
 }
 
 /**
@@ -184,23 +184,180 @@ export interface ValidationWarning {
 }
 
 /**
- * Product Line Item in Draft Data
+ * Product Line Item in Draft Data (18 fields per product)
+ * Matches backend ProductLineItem schema
  */
 export interface ProductLineItem {
-  description: string
-  hs_code: string
-  quantity: number
-  unit: string
-  unit_price: number
-  total_price: number
-  origin_country: string
+  item_number?: number | null
+  hs_code?: string | null
+  product_description?: string | null
+  quantity_1?: number | null
+  quantity_unit_1?: string | null
+  quantity_2?: number | null
+  quantity_unit_2?: string | null
+  invoice_unit_price?: number | null
+  invoice_unit_price_currency?: string | null
+  invoice_line_total?: number | null
+  taxable_value_vnd?: number | null
+  unit_price_vnd?: number | null
+  country_of_origin_code?: string | null
+  country_of_origin_name?: string | null
+  preferential_code?: string | null
+  manufacturer_name?: string | null
+  brand_name?: string | null
+  condition?: string | null
 }
 
 /**
- * Draft Data Structure (User-Editable Declaration Data)
+ * Declaration Header (6 fields)
+ */
+export interface DeclarationHeader {
+  declaration_number?: string | null
+  declaration_type_code?: string | null
+  customs_office_code?: string | null
+  processing_division_code?: string | null
+  registration_date?: string | null
+  representative_hs_code?: string | null
+}
+
+/**
+ * Importer Information (5 fields)
+ */
+export interface Importer {
+  tax_code?: string | null
+  name?: string | null
+  postal_code?: string | null
+  address?: string | null
+  phone?: string | null
+}
+
+/**
+ * Exporter Information (5 fields)
+ */
+export interface Exporter {
+  name?: string | null
+  address_line1?: string | null
+  address_line2?: string | null
+  address_line3?: string | null
+  country_code?: string | null
+}
+
+/**
+ * Shipping & Transport Information (10 fields)
+ */
+export interface ShippingTransport {
+  bill_of_lading_number?: string | null
+  warehouse_code?: string | null
+  warehouse_name?: string | null
+  port_of_discharge_code?: string | null
+  port_of_discharge_name?: string | null
+  port_of_loading_code?: string | null
+  port_of_loading_name?: string | null
+  transport_mode_code?: string | null
+  vessel_name?: string | null
+  arrival_date?: string | null
+}
+
+/**
+ * Package & Container Information (6 fields)
+ */
+export interface PackageContainer {
+  total_packages?: number | null
+  package_unit?: string | null
+  package_marks?: string | null
+  gross_weight_kg?: number | null
+  gross_weight_unit?: string | null
+  container_count?: number | null
+}
+
+/**
+ * Invoice Information (8 fields)
+ */
+export interface Invoice {
+  invoice_number?: string | null
+  invoice_date?: string | null
+  payment_method_code?: string | null
+  invoice_total?: number | null
+  invoice_currency?: string | null
+  invoice_incoterm?: string | null
+  total_taxable_value_vnd?: number | null
+  exchange_rate?: number | null
+}
+
+/**
+ * Certificate of Origin (3 fields)
+ */
+export interface CertificateOfOrigin {
+  co_form_type?: string | null
+  co_number?: string | null
+  co_date?: string | null
+}
+
+/**
+ * Import Duty (4 fields)
+ */
+export interface ImportDuty {
+  rate?: number | null
+  rate_type?: string | null
+  amount?: number | null
+  exemption_amount?: number | null
+}
+
+/**
+ * VAT & Other Taxes (6 fields)
+ */
+export interface VAT {
+  name?: string | null
+  rate_code?: string | null
+  rate?: number | null
+  taxable_value_vnd?: number | null
+  amount?: number | null
+  exemption_amount?: number | null
+}
+
+/**
+ * Tax Summary (4 fields)
+ */
+export interface TaxSummary {
+  total_tax_amount_vnd?: number | null
+  tax_payment_deadline_code?: string | null
+  taxpayer_type?: string | null
+  tax_classification?: string | null
+}
+
+/**
+ * Metadata (2 fields - read-only)
+ */
+export interface Metadata {
+  total_pages?: number | null
+  total_line_items?: number | null
+}
+
+/**
+ * Draft Data Structure (User-Editable Declaration Data - 77 fields total)
+ * Matches backend VietnameseDeclarationData schema
  * Stored in JSONB field, flexible schema
  */
 export interface DraftData {
+  declaration_header?: DeclarationHeader
+  importer?: Importer
+  exporter?: Exporter
+  shipping_transport?: ShippingTransport
+  package_container?: PackageContainer
+  invoice?: Invoice
+  certificate_of_origin?: CertificateOfOrigin
+  products?: ProductLineItem[]
+  import_duty?: ImportDuty
+  vat?: VAT
+  tax_summary?: TaxSummary
+  metadata?: Metadata
+}
+
+/**
+ * Legacy Draft Data Structure (DEPRECATED - for backward compatibility)
+ * Old 25-field structure - will be removed in future versions
+ */
+export interface LegacyDraftData {
   // Company Information
   company_info: {
     importer_name: string
@@ -222,7 +379,15 @@ export interface DraftData {
     vessel_name: string
   }
   // Product Line Items
-  products: ProductLineItem[]
+  products: Array<{
+    description: string
+    hs_code: string
+    quantity: number
+    unit: string
+    unit_price: number
+    total_price: number
+    origin_country: string
+  }>
   // Tax Calculations
   tax_calculations: {
     subtotal: number
@@ -301,4 +466,58 @@ export interface DeclarationListParams {
   search?: string
   sort_by?: 'created_at' | 'status'
   sort_order?: 'asc' | 'desc'
+}
+
+/**
+ * Correction Category (Story 3.6 Expansion)
+ * Categories for user corrections to help improve AI
+ */
+export type CorrectionCategory =
+  | 'AI Extraction Error'
+  | 'Wrong HS Code'
+  | 'Calculation Error'
+  | 'Missing Data'
+  | 'Format Issue'
+  | 'Other'
+
+/**
+ * Correction Create Request (Story 3.6 Expansion)
+ * Payload for creating a new correction flag
+ */
+export interface CorrectionCreate {
+  field_name: string
+  original_value: string | null
+  corrected_value: string
+  correction_category: CorrectionCategory
+  expected_value: string // Required: What the correct value should be
+  notes: string // Required: Explanation of why this is wrong
+  screenshots?: string[] // Optional: URLs of uploaded screenshot images
+}
+
+/**
+ * Correction Response (Story 3.6 Expansion)
+ * Single correction record from backend
+ */
+export interface CorrectionResponse {
+  id: string
+  declaration_id: string
+  field_name: string
+  original_value: string | null
+  corrected_value: string
+  correction_category: CorrectionCategory
+  expected_value: string // Required: What the correct value should be
+  notes: string // Required: Explanation of why this is wrong
+  screenshots: string[] | null // Optional: URLs of screenshot images
+  user_id: string
+  user_name: string
+  created_at: string
+}
+
+/**
+ * Correction List Response (Story 3.6 Expansion)
+ * List of corrections for a declaration
+ */
+export interface CorrectionListResponse {
+  corrections: CorrectionResponse[]
+  count: number
 }

@@ -11,9 +11,10 @@ import React, { useState, useEffect } from 'react'
 import { use } from 'react'
 import { useRouter } from 'next/navigation'
 import {
-  DeclarationForm,
+  DeclarationFormV2,
   DeclarationFormData,
-} from '@/components/declarations/declaration-form'
+} from '@/components/declarations/declaration-form-v2'
+import { CorrectionsLogPanel } from '@/components/declarations/corrections-log-panel'
 import { ValidationWarningsPanel } from '@/components/declarations/validation-warnings'
 import { SaveIndicator } from '@/components/declarations/save-indicator'
 import { useDeclaration } from '@/hooks/use-declaration'
@@ -325,9 +326,16 @@ export default function DeclarationReviewPage({
               </div>
             )}
 
+          {/* Corrections Log Panel */}
+          <div className="mb-6">
+            <CorrectionsLogPanel declarationId={id} />
+          </div>
+
           {/* Declaration Form */}
-          <DeclarationForm
+          <DeclarationFormV2
+            declarationId={id}
             initialData={declaration.draft_data}
+            extractedData={declaration.extracted_data}
             confidenceScores={declaration.confidence_scores}
             onChange={handleFormChange}
             isSubmitting={autoSave.isSaving}
