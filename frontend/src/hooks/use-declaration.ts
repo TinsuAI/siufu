@@ -12,7 +12,7 @@ import {
   rejectDeclaration,
   exportDeclaration,
 } from '@/lib/api'
-import type { Declaration } from '@/types/declaration'
+import type { Declaration, DraftData } from '@/types/declaration'
 
 interface UseDeclarationResult {
   /**
@@ -148,7 +148,7 @@ export function useDeclaration(id: string): UseDeclarationResult {
       if (previousDeclaration) {
         queryClient.setQueryData<Declaration>(['declarations', id], {
           ...previousDeclaration,
-          draft_data: newDraftData as any,
+          draft_data: newDraftData as DraftData,
         })
       }
 

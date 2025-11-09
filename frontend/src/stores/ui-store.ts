@@ -1,6 +1,8 @@
 import { create } from 'zustand'
 import type { DocumentType } from '@/types/declaration'
 
+export type DocumentTabType = DocumentType | `CO_${number}`
+
 /**
  * Source highlight for jump navigation (Story 3.7)
  */
@@ -16,11 +18,11 @@ export interface SourceHighlight {
  * Stores PDF viewer controls (zoom, page, active tab, sidebar visibility)
  * Story 3.7: Added sourceHighlight for jump navigation
  */
-interface UIState {
+export interface UIState {
   // PDF Viewer State
   pdfZoom: number // Zoom level (1.0 = 100%, 1.5 = 150%)
   pdfCurrentPage: number // Current page number (1-indexed)
-  activeDocumentTab: DocumentType // Which PDF document is currently displayed
+  activeDocumentTab: DocumentTabType // Which PDF document is currently displayed
   thumbnailSidebarOpen: boolean // Thumbnail sidebar visibility
 
   // Jump Navigation State (Story 3.7)
@@ -29,7 +31,7 @@ interface UIState {
   // PDF Viewer Actions
   setPdfZoom: (zoom: number) => void
   setPdfCurrentPage: (page: number) => void
-  setActiveDocumentTab: (tab: DocumentType) => void
+  setActiveDocumentTab: (tab: DocumentTabType) => void
   toggleThumbnailSidebar: () => void
   resetPdfState: () => void // Reset PDF state to defaults
 
@@ -51,7 +53,7 @@ export const useUIStore = create<UIState>((set) => ({
   // Actions
   setPdfZoom: (zoom: number) => set({ pdfZoom: zoom }),
   setPdfCurrentPage: (page: number) => set({ pdfCurrentPage: page }),
-  setActiveDocumentTab: (tab: DocumentType) =>
+  setActiveDocumentTab: (tab: DocumentTabType) =>
     set({ activeDocumentTab: tab, pdfCurrentPage: 1 }), // Reset page when switching documents
   toggleThumbnailSidebar: () =>
     set((state) => ({ thumbnailSidebarOpen: !state.thumbnailSidebarOpen })),

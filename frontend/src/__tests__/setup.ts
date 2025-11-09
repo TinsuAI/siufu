@@ -27,3 +27,18 @@ global.matchMedia =
 // Mock URL.createObjectURL and URL.revokeObjectURL for PDF viewer tests
 global.URL.createObjectURL = () => 'blob:mock-url'
 global.URL.revokeObjectURL = () => {}
+
+// Mock hasPointerCapture for Radix UI components (not supported in jsdom)
+if (typeof Element !== 'undefined') {
+  Element.prototype.hasPointerCapture =
+    Element.prototype.hasPointerCapture ||
+    function () {
+      return false
+    }
+  Element.prototype.setPointerCapture =
+    Element.prototype.setPointerCapture || function () {}
+  Element.prototype.releasePointerCapture =
+    Element.prototype.releasePointerCapture || function () {}
+  Element.prototype.scrollIntoView =
+    Element.prototype.scrollIntoView || function () {}
+}

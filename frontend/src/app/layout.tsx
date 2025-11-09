@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
+import '@/polyfills/promise-with-resolvers'
 import { Header } from '@/components/layout/header'
 import { QueryProvider } from '@/components/providers/query-provider'
 import { PDFProvider } from '@/components/providers/pdf-provider'

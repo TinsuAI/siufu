@@ -18,6 +18,16 @@ import type {
   CorrectionResponse,
   CorrectionListResponse,
 } from '@/types/declaration'
+import type {
+  CompanyListResponse,
+  CompanyListParams,
+  CompanyDetail,
+  CompanyCreate,
+  CompanyUpdate,
+  DuplicatePair,
+  MergeRequest,
+  CompanyType,
+} from '@/types/company'
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'
@@ -656,4 +666,135 @@ export async function downloadCorrectionsCSV(
   a.click()
   window.URL.revokeObjectURL(downloadUrl)
   document.body.removeChild(a)
+}
+
+// ==================== Companies API (Master Data) ====================
+
+/**
+ * Get paginated list of companies (importers or exporters)
+ */
+export async function getCompanies(
+  params: CompanyListParams
+): Promise<CompanyListResponse> {
+  const queryParams = new URLSearchParams()
+  queryParams.append('type', params.type)
+
+  if (params.search) queryParams.append('search', params.search)
+  if (params.filter) queryParams.append('filter', params.filter)
+  if (params.page) queryParams.append('page', params.page.toString())
+  if (params.limit) queryParams.append('limit', params.limit.toString())
+  if (params.sort_by) queryParams.append('sort_by', params.sort_by)
+  if (params.sort_order) queryParams.append('sort_order', params.sort_order)
+
+  return apiClient<CompanyListResponse>(`/companies/?${queryParams.toString()}`)
+}
+
+/**
+ * Get company details by ID
+ */
+export async function getCompany(
+  id: string,
+  type: CompanyType
+): Promise<CompanyDetail> {
+  const queryParams = new URLSearchParams({ type })
+  return apiClient<CompanyDetail>(`/companies/${id}?${queryParams.toString()}`)
+}
+
+/**
+ * Create a new company manually
+ */
+export async function createCompany(
+  type: CompanyType,
+  data: CompanyCreate
+): Promise<CompanyDetail> {
+  const queryParams = new URLSearchParams({ type })
+
+  // Determine the correct body key based on type
+  const bodyKey = type === 'importers' ? 'importer_data' : 'exporter_data'
+
+  return apiClient<CompanyDetail>(`/companies/?${queryParams.toString()}`, {
+    method: 'POST',
+    body: JSON.stringify({ [bodyKey]: data }),
+  })
+}
+
+/**
+ * Update company details
+ */
+export async function updateCompany(
+  id: string,
+  type: CompanyType,
+  data: CompanyUpdate
+): Promise<CompanyDetail> {
+  const queryParams = new URLSearchParams({ type })
+
+  // Determine the correct body key based on type
+  const bodyKey = type === 'importers' ? 'importer_data' : 'exporter_data'
+
+  return apiClient<CompanyDetail>(
+    `/companies/${id}?${queryParams.toString()}`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify({ [bodyKey]: data }),
+    }
+  )
+}
+
+/**
+ * Soft delete a company
+ */
+export async function deleteCompany(
+  id: string,
+  type: CompanyType
+): Promise<void> {
+  const queryParams = new URLSearchParams({ type })
+
+  const response = await fetch(
+    `${API_BASE_URL}/companies/${id}?${queryParams.toString()}`,
+    {
+      method: 'DELETE',
+      credentials: 'include',
+    }
+  )
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({
+      message: 'Failed to delete company',
+    }))
+    throw new Error(error.message || `HTTP ${response.status}`)
+  }
+}
+
+/**
+ * Get potential duplicate companies
+ */
+export async function getDuplicates(
+  type: CompanyType
+): Promise<DuplicatePair[]> {
+  const queryParams = new URLSearchParams({ type })
+  return apiClient<DuplicatePair[]>(
+    `/companies/duplicates/?${queryParams.toString()}`
+  )
+}
+
+/**
+ * Merge two companies
+ */
+export async function mergeCompanies(
+  type: CompanyType,
+  keepId: string,
+  mergeId: string
+): Promise<CompanyDetail> {
+  const queryParams = new URLSearchParams({ type })
+
+  return apiClient<CompanyDetail>(
+    `/companies/merge/?${queryParams.toString()}`,
+    {
+      method: 'POST',
+      body: JSON.stringify({
+        keep_id: keepId,
+        merge_id: mergeId,
+      } as MergeRequest),
+    }
+  )
 }

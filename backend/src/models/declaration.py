@@ -58,6 +58,20 @@ class Declaration(Base):
         DateTime(timezone=True), nullable=True
     )
 
+    # Master data foreign keys
+    importer_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("importers.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True
+    )
+    exporter_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("exporters.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True
+    )
+
     organization_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("organizations.id", ondelete="CASCADE"),
@@ -92,6 +106,12 @@ class Declaration(Base):
         "User",
         foreign_keys=[approved_by_user_id],
         back_populates="approved_declarations"
+    )
+    importer: Mapped[Optional["Importer"]] = relationship(
+        "Importer", back_populates="declarations"
+    )
+    exporter: Mapped[Optional["Exporter"]] = relationship(
+        "Exporter", back_populates="declarations"
     )
     corrections: Mapped[list["Correction"]] = relationship(
         "Correction", back_populates="declaration", cascade="all, delete-orphan"

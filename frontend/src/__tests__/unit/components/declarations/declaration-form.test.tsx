@@ -93,9 +93,9 @@ describe('DeclarationForm', () => {
     it('renders empty form when no initial data provided', () => {
       render(<DeclarationForm />)
 
-      const importerNameInput = screen.getByPlaceholderText(
-        'Enter importer name'
-      )
+      const importerNameInput = screen.getByLabelText('Importer Name *', {
+        selector: 'input',
+      })
       expect(importerNameInput).toBeInTheDocument()
       expect(importerNameInput).toHaveValue('')
     })
@@ -221,7 +221,9 @@ describe('DeclarationForm', () => {
       const addButton = screen.getByText('Add Product')
       await user.click(addButton)
 
-      const productRows = screen.getAllByPlaceholderText('Product description')
+      const productRows = screen.getAllByLabelText(/Product \d+ description/i, {
+        selector: 'input',
+      })
       expect(productRows).toHaveLength(2) // Initial + added
     })
 
@@ -246,7 +248,9 @@ describe('DeclarationForm', () => {
 
       render(<DeclarationForm initialData={dataWith2Products} />)
 
-      const productRows = screen.getAllByPlaceholderText('Product description')
+      const productRows = screen.getAllByLabelText(/Product \d+ description/i, {
+        selector: 'input',
+      })
       expect(productRows).toHaveLength(2)
 
       // Use aria-label to find delete button
@@ -258,8 +262,9 @@ describe('DeclarationForm', () => {
       await user.click(deleteButton)
 
       await waitFor(() => {
-        const updatedProductRows = screen.getAllByPlaceholderText(
-          'Product description'
+        const updatedProductRows = screen.getAllByLabelText(
+          /Product \d+ description/i,
+          { selector: 'input' }
         )
         expect(updatedProductRows).toHaveLength(1)
       })
@@ -331,13 +336,13 @@ describe('DeclarationForm', () => {
 
       // All sections should be visible
       expect(
-        screen.getByPlaceholderText('Enter importer name')
+        screen.getByLabelText('Importer Name *', { selector: 'input' })
       ).toBeInTheDocument()
       expect(
-        screen.getByPlaceholderText('Enter BOL number')
+        screen.getByLabelText('BOL Number *', { selector: 'input' })
       ).toBeInTheDocument()
       expect(
-        screen.getByPlaceholderText('Product description')
+        screen.getByLabelText('Product 1 description', { selector: 'input' })
       ).toBeInTheDocument()
     })
 
@@ -356,9 +361,9 @@ describe('DeclarationForm', () => {
       // Since radix-ui collapsible uses data-state, let's wait for that
       await waitFor(
         () => {
-          const importerInput = screen.queryByPlaceholderText(
-            'Enter importer name'
-          )
+          const importerInput = screen.queryByLabelText('Importer Name *', {
+            selector: 'input',
+          })
           // The input might still be in DOM but hidden via CSS
           // Let's check if it's not visible or the parent collapsible is closed
           if (importerInput) {

@@ -5,6 +5,7 @@ import path from 'path'
 export default defineConfig({
   plugins: [react()],
   test: {
+    pool: 'threads',
     name: 'logai-frontend',
     environment: 'jsdom',
     setupFiles: ['./src/__tests__/setup.ts'],
@@ -18,20 +19,20 @@ export default defineConfig({
         'src/**/*.d.ts',
         'src/**/*.test.{ts,tsx}',
         'src/**/__tests__/**',
-        'src/app/**',  // Next.js app dir (mostly routing)
-        'src/mocks/**'
+        'src/app/**', // Next.js app dir (mostly routing)
+        'src/mocks/**',
       ],
       thresholds: {
         statements: 60,
         branches: 60,
         functions: 60,
-        lines: 60
-      }
-    }
+        lines: 60,
+      },
+    },
   },
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src')
-    }
-  }
+      '@': path.resolve(__dirname, './src'),
+    },
+  },
 })

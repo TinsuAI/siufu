@@ -32,6 +32,7 @@ from src.models.declaration import DeclarationStatus, Declaration
 from src.repositories.declaration_repository import DeclarationRepository
 from src.services.ocr_service import OCRService
 from src.services.llm_service import LLMService
+from src.services import master_data_service
 
 logger = logging.getLogger(__name__)
 
@@ -557,11 +558,101 @@ async def _process_declaration_async(declaration_id: str) -> Dict[str, Any]:
 
         # Stage 3: Store extracted data in database
         stage_start = time.time()
-        logger.info(f"Stage 3: Storing extracted data", extra={"declaration_id": declaration_id})
+        logger.info(f"Stage 3: Matching master data and storing extracted data", extra={"declaration_id": declaration_id})
 
         # Store extracted data and confidence scores in declaration
         declaration = await repo.get_by_id(UUID(declaration_id))
-        declaration.extracted_data = extracted_data.model_dump()
+
+        # Story 3.10: Match importer against master data
+        extracted_dict = extracted_data.model_dump()
+        importer_data = extracted_dict.get("importer", {})
+
+        if importer_data:
+            matched_importer = await master_data_service.match_importer(
+                extracted_tax_code=importer_data.get("tax_code"),
+                extracted_name=importer_data.get("name"),
+                organization_id=declaration.organization_id,
+                db=db
+            )
+
+            if matched_importer:
+                logger.info(
+                    f"Matched importer from master data",
+                    extra={
+                        "declaration_id": declaration_id,
+                        "importer_id": str(matched_importer.id),
+                        "importer_name": matched_importer.name
+                    }
+                )
+
+                # Replace extracted data with master data
+                extracted_dict["importer"] = {
+                    "tax_code": matched_importer.tax_code,
+                    "name": matched_importer.name,
+                    "postal_code": matched_importer.postal_code,
+                    "address": matched_importer.address,
+                    "phone": matched_importer.phone
+                }
+
+                # Set confidence scores to 1.0 for master data fields
+                if "confidence_scores" not in extracted_dict:
+                    extracted_dict["confidence_scores"] = {}
+                extracted_dict["confidence_scores"]["importer_tax_code"] = 1.0
+                extracted_dict["confidence_scores"]["importer_name"] = 1.0
+                extracted_dict["confidence_scores"]["importer_address"] = 1.0
+
+                # Link declaration to importer
+                declaration.importer_id = matched_importer.id
+
+                # Update importer statistics
+                matched_importer.declaration_count += 1
+                matched_importer.last_seen_declaration_id = declaration.id
+
+        # Story 3.10: Match exporter against master data
+        exporter_data = extracted_dict.get("exporter", {})
+
+        if exporter_data:
+            matched_exporter = await master_data_service.match_exporter(
+                extracted_name=exporter_data.get("name"),
+                extracted_country_code=exporter_data.get("country_code"),
+                organization_id=declaration.organization_id,
+                db=db
+            )
+
+            if matched_exporter:
+                logger.info(
+                    f"Matched exporter from master data",
+                    extra={
+                        "declaration_id": declaration_id,
+                        "exporter_id": str(matched_exporter.id),
+                        "exporter_name": matched_exporter.name
+                    }
+                )
+
+                # Replace extracted data with master data
+                extracted_dict["exporter"] = {
+                    "name": matched_exporter.name,
+                    "country_code": matched_exporter.country_code,
+                    "address_line1": matched_exporter.address_line1,
+                    "address_line2": matched_exporter.address_line2,
+                    "address_line3": matched_exporter.address_line3
+                }
+
+                # Set confidence scores to 1.0 for master data fields
+                if "confidence_scores" not in extracted_dict:
+                    extracted_dict["confidence_scores"] = {}
+                extracted_dict["confidence_scores"]["exporter_name"] = 1.0
+                extracted_dict["confidence_scores"]["exporter_country"] = 1.0
+                extracted_dict["confidence_scores"]["exporter_address"] = 1.0
+
+                # Link declaration to exporter
+                declaration.exporter_id = matched_exporter.id
+
+                # Update exporter statistics
+                matched_exporter.declaration_count += 1
+                matched_exporter.last_seen_declaration_id = declaration.id
+
+        declaration.extracted_data = extracted_dict
 
         # Build confidence scores dict from extracted data
         confidence_scores = {
@@ -597,7 +688,7 @@ async def _process_declaration_async(declaration_id: str) -> Dict[str, Any]:
 
         # Store extracted data directly as draft_data (Vietnamese schema)
         # Frontend now uses Vietnamese schema (declaration_header, importer, exporter, etc.)
-        extracted_dict = extracted_data.model_dump()
+        # Note: extracted_dict was already created above for master data matching
         declaration.draft_data = extracted_dict  # No longer transform to old schema
         await db.commit()
 

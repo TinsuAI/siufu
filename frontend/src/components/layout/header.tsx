@@ -16,6 +16,7 @@ export function Header() {
 
   const navItems = [
     { href: '/declarations', label: 'Declarations' },
+    { href: '/companies', label: 'Companies' },
     { href: '/upload', label: 'Upload' },
   ]
 
@@ -49,9 +50,7 @@ export function Header() {
                 href={item.href}
                 className={cn(
                   'text-sm font-medium transition-colors hover:text-slate-700',
-                  pathname === item.href
-                    ? 'text-slate-700'
-                    : 'text-slate-500'
+                  pathname === item.href ? 'text-slate-700' : 'text-slate-500'
                 )}
               >
                 {item.label}
@@ -76,7 +75,9 @@ export function Header() {
                 </div>
                 <div className="flex flex-col">
                   <span className="text-sm font-medium">{user.full_name}</span>
-                  <span className="text-xs text-slate-500 capitalize">{user.role}</span>
+                  <span className="text-xs text-slate-500 capitalize">
+                    {user.role}
+                  </span>
                 </div>
               </div>
               <Button

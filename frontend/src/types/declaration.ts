@@ -410,6 +410,13 @@ export interface FieldSourceMetadata {
   bbox: [number, number, number, number] // [x, y, width, height] normalized 0-1
 }
 
+export interface LinkedCompanySummary {
+  id: string
+  name: string
+  is_verified: boolean
+  declaration_count: number
+}
+
 /**
  * Full Declaration Interface
  * Represents a complete declaration with all metadata and processing state
@@ -423,6 +430,10 @@ export interface Declaration {
   validation_warnings: ValidationWarning[]
   confidence_scores: Record<string, number> // e.g., {"company_info.importer_name": 0.95}
   source_metadata: Record<string, FieldSourceMetadata> | null // Story 3.7: field_path -> {source, page, bbox}
+  importer_id: string | null
+  exporter_id: string | null
+  importer_summary: LinkedCompanySummary | null
+  exporter_summary: LinkedCompanySummary | null
   processing_progress: number
   processing_error: string | null
   created_at: string

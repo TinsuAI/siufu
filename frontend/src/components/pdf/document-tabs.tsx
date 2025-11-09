@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/select'
 import { getDeclarationMetadata } from '@/lib/api'
 import { useUIStore } from '@/stores/ui-store'
+import type { DocumentTabType } from '@/stores/ui-store'
 
 interface DocumentTabsProps {
   declarationId: string
@@ -50,7 +51,11 @@ export function DocumentTabs({
   }
 
   // Build list of available documents
-  const documents: Array<{ label: string; filename: string; type: string }> = []
+  const documents: Array<{
+    label: string
+    filename: string
+    type: DocumentTabType
+  }> = []
 
   if (metadata.uploaded_files.arrival_notice) {
     documents.push({
@@ -101,8 +106,7 @@ export function DocumentTabs({
   const handleDocumentSelect = (filename: string) => {
     const doc = documents.find((d) => d.filename === filename)
     if (doc) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      setActiveDocumentTab(doc.type as any) // Update Zustand store
+      setActiveDocumentTab(doc.type)
       onDocumentChange?.(filename)
     }
   }

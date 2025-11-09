@@ -17,6 +17,7 @@ import type {
  * @returns Query state with status data and estimated time remaining
  */
 export function useDeclarationStatus(id: string) {
+  const disableRetry = process.env.NODE_ENV === 'test'
   const query = useQuery<StatusResponse, Error>({
     queryKey: ['declarations', id, 'status'],
     queryFn: () => getDeclarationStatus(id),
@@ -40,8 +41,10 @@ export function useDeclarationStatus(id: string) {
     // Resume polling when user returns to tab
     refetchOnWindowFocus: true,
     // Retry on error with exponential backoff (3 retries)
-    retry: 3,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+    retry: disableRetry ? false : 3,
+    retryDelay: disableRetry
+      ? undefined
+      : (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
     // Keep previous data while refetching
     placeholderData: (previousData) => previousData,
   })

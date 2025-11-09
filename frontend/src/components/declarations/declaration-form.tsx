@@ -38,6 +38,7 @@ import { ChevronDown, ChevronUp, Plus, Trash2 } from 'lucide-react'
 import type { DraftData } from '@/types/declaration'
 import { ConfidenceInput } from './confidence-input'
 import { FieldLabel } from './field-label'
+import type { SourceMetadataMap } from '@/lib/jump-navigation'
 import { getFieldConfidence } from '@/lib/confidence-utils'
 
 // ==================== Zod Validation Schema ====================
@@ -107,10 +108,7 @@ export type DeclarationFormData = z.infer<typeof declarationFormSchema>
 interface DeclarationFormProps {
   initialData?: DraftData | null
   confidenceScores?: Record<string, number>
-  sourceMetadata?: Record<
-    string,
-    { source: string; page: number; bbox: number[] }
-  > | null // Story 3.7: field_path -> {source, page, bbox}
+  sourceMetadata?: SourceMetadataMap | null // Story 3.7: field_path -> {source, page, bbox}
   onSubmit?: (data: DeclarationFormData) => void
   onChange?: (data: DeclarationFormData) => void
   isSubmitting?: boolean
@@ -716,6 +714,7 @@ export function DeclarationForm({
                           <ConfidenceInput
                             {...register(`products.${index}.description`)}
                             placeholder="Product description"
+                            aria-label={`Product ${index + 1} description`}
                             confidenceScore={getFieldConfidence(
                               confidenceScores,
                               `products.${index}.description`

@@ -1,0 +1,84 @@
+# Quality Gate Decision for Story 3.10: Master Data Management
+
+schema: 1
+story: "3.10"
+story_title: "Master Data Management for Importers & Exporters"
+gate: CONCERNS
+status_reason: "Key UX requirements remain unmet: verified company badges never surface and the Companies cards lack the required Edit/Merge actions."
+reviewer: "Quinn (Test Architect)"
+updated: "2025-11-09T00:55:34Z"
+
+waiver: { active: false }
+
+top_issues:
+  - id: "UI-VERIFIED-BADGE"
+    severity: medium
+    finding: "The declaration API never exposes importer_id/exporter_id and the review page does not pass those fields to CompanyBadge, so the UI always shows the 'New Company' warning even when master data matches."
+    suggested_action: "Include importer/exporter identifiers (and optional declaration counts) in GET /api/declarations/{id}, extend the TS types, and feed those values through DeclarationReviewPage into CompanyBadge."
+    suggested_owner: dev
+    refs:
+      - "backend/src/api/v1/declarations.py:526-542"
+      - "frontend/src/types/declaration.ts:420-431"
+      - "frontend/src/app/declarations/[id]/review/page.tsx:334-342"
+      - "frontend/src/components/declarations/declaration-form-v2.tsx:535-544"
+  - id: "UI-COMPANY-ACTIONS"
+    severity: medium
+    finding: "Company cards only offer View+Delete actions even though the spec mandates View, Edit, Merge, and Delete, leaving no direct entry point to merge duplicates or jump straight into edit mode."
+    suggested_action: "Add the missing Edit (can route to the detail page in edit mode) and Merge (link to /companies/merge pre-selecting the company) buttons on each card."
+    suggested_owner: dev
+    refs:
+      - "docs/stories/3.10.master-data-management.story.md:188-209"
+      - "frontend/src/app/companies/page.tsx:120-185"
+
+risk_summary:
+  totals: { critical: 0, high: 0, medium: 2, low: 0 }
+  recommendations:
+    must_fix:
+      - "Surface importer/exporter linkage so CompanyBadge can satisfy AC5 (UI-VERIFIED-BADGE)."
+      - "Restore the missing Edit/Merge actions per the story spec (UI-COMPANY-ACTIONS)."
+    monitor:
+      - "Backend + end-to-end test suites were not run because Python deps/environment are absent; re-run once tooling is available."
+
+quality_score: 80
+expires: "2025-11-23T00:00:00Z"
+
+evidence:
+  tests_reviewed: 278
+  risks_identified: 2
+  trace:
+    ac_covered: [1, 2, 3, 4, 6, 8, 9, 10]
+    ac_gaps: [5, 7]
+
+nfr_validation:
+  security:
+    status: PASS
+    notes: "Authz and org isolation remain in place; no security regressions observed."
+  performance:
+    status: PASS
+    notes: "Existing pagination, indexing, and caching controls keep list/merge flows responsive."
+  reliability:
+    status: PASS
+    notes: "Database constraints, soft-delete auditing, and merge transaction handling continue to look solid."
+  maintainability:
+    status: PASS
+    notes: "Codebase stays well-factored with comprehensive unit coverage on both API and UI layers."
+
+recommendations:
+  immediate:
+    - action: "Expose importer/exporter linkage in the declaration API and thread it through the React form so CompanyBadge reflects verified companies."
+      refs:
+        - "backend/src/api/v1/declarations.py:526-542"
+        - "frontend/src/app/declarations/[id]/review/page.tsx:334-342"
+    - action: "Add Edit and Merge actions to each company card as described in Task 11."
+      refs:
+        - "docs/stories/3.10.master-data-management.story.md:188-209"
+        - "frontend/src/app/companies/page.tsx:120-185"
+  future:
+    - action: "Re-run backend unit/integration and Playwright E2E suites once the Python environment and full stack services are available."
+      refs:
+        - "backend/tests"
+        - "tests/e2e/master-data-management.spec.ts"
+
+notes: |
+  Frontend Vitest suites (19 files / 278 tests) now pass consistently, resolving the failures highlighted in the previous gate. The remaining gaps are purely functional: verified badges never light up because importer/exporter IDs are not surfaced, and the Companies page omits the Edit/Merge affordances promised in the story.
+  Once those issues are addressed and the heavier backend/E2E suites are re-run, this story should be ready for a PASS decision.

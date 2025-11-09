@@ -15,6 +15,8 @@ from src.models.knowledge_base_version import (
 from src.models.good_list_entry import GoodListEntry
 from src.models.tariff_rate import TariffRate
 from src.models.correction import Correction, CorrectionType
+from src.models.importer import Importer
+from src.models.exporter import Exporter
 
 __all__ = [
     "Base",
@@ -30,4 +32,6 @@ __all__ = [
     "TariffRate",
     "Correction",
     "CorrectionType",
+    "Importer",
+    "Exporter",
 ]

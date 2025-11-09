@@ -337,6 +337,17 @@ export default function DeclarationReviewPage({
             initialData={declaration.draft_data}
             extractedData={declaration.extracted_data}
             confidenceScores={declaration.confidence_scores}
+            sourceMetadata={declaration.source_metadata}
+            importerId={declaration.importer_id}
+            exporterId={declaration.exporter_id}
+            importerDeclarationCount={
+              declaration.importer_summary?.declaration_count
+            }
+            exporterDeclarationCount={
+              declaration.exporter_summary?.declaration_count
+            }
+            importerSummary={declaration.importer_summary}
+            exporterSummary={declaration.exporter_summary}
             onChange={handleFormChange}
             isSubmitting={autoSave.isSaving}
           />

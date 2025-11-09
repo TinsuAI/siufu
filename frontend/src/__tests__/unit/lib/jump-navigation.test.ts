@@ -5,6 +5,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { jumpToSource, hasSourceMetadata } from '@/lib/jump-navigation'
 import type { SourceMetadataMap } from '@/lib/jump-navigation'
 import { useUIStore } from '@/stores/ui-store'
+import type { UIState } from '@/stores/ui-store'
 
 // Mock Zustand store
 vi.mock('@/stores/ui-store', () => ({
@@ -66,10 +67,12 @@ describe('Jump Navigation Utils', () => {
       const mockSetSourceHighlight = vi.fn()
       const mockSetActiveDocumentTab = vi.fn()
 
-      vi.mocked(useUIStore.getState).mockReturnValue({
+      const mockState = {
         setSourceHighlight: mockSetSourceHighlight,
         setActiveDocumentTab: mockSetActiveDocumentTab,
-      } as any)
+      } as unknown as UIState
+
+      vi.mocked(useUIStore.getState).mockReturnValue(mockState)
 
       jumpToSource('company_info.importer_name', mockSourceMetadata)
 
@@ -87,10 +90,12 @@ describe('Jump Navigation Utils', () => {
       const mockSetSourceHighlight = vi.fn()
       const mockSetActiveDocumentTab = vi.fn()
 
-      vi.mocked(useUIStore.getState).mockReturnValue({
+      const mockState = {
         setSourceHighlight: mockSetSourceHighlight,
         setActiveDocumentTab: mockSetActiveDocumentTab,
-      } as any)
+      } as unknown as UIState
+
+      vi.mocked(useUIStore.getState).mockReturnValue(mockState)
 
       jumpToSource('tax_calculations.total_tax', mockSourceMetadata)
 
@@ -107,10 +112,12 @@ describe('Jump Navigation Utils', () => {
       const mockSetSourceHighlight = vi.fn()
       const mockSetActiveDocumentTab = vi.fn()
 
-      vi.mocked(useUIStore.getState).mockReturnValue({
+      const mockState = {
         setSourceHighlight: mockSetSourceHighlight,
         setActiveDocumentTab: mockSetActiveDocumentTab,
-      } as any)
+      } as unknown as UIState
+
+      vi.mocked(useUIStore.getState).mockReturnValue(mockState)
 
       jumpToSource('products.0.hs_code', mockSourceMetadata)
 

@@ -21,12 +21,16 @@ import { jumpToSource, hasSourceMetadata } from '@/lib/jump-navigation'
 import type { SourceMetadataMap } from '@/lib/jump-navigation'
 import { cn } from '@/lib/utils'
 
+type FieldLabelVariant = 'full' | 'icon-only'
+
 interface FieldLabelProps {
-  htmlFor: string
-  label: string
+  htmlFor?: string
+  label: React.ReactNode
   fieldPath: string
   sourceMetadata: SourceMetadataMap | null | undefined
   className?: string
+  variant?: FieldLabelVariant
+  hideWhenNoSource?: boolean
 }
 
 /**
@@ -40,6 +44,8 @@ export function FieldLabel({
   fieldPath,
   sourceMetadata,
   className,
+  variant = 'full',
+  hideWhenNoSource = false,
 }: FieldLabelProps) {
   const hasSource = hasSourceMetadata(fieldPath, sourceMetadata)
 
@@ -49,9 +55,20 @@ export function FieldLabel({
     }
   }
 
+  const wrapperClassName = cn(
+    variant === 'icon-only'
+      ? 'inline-flex items-center'
+      : 'flex items-center gap-2',
+    className
+  )
+
+  if (!hasSource && hideWhenNoSource && variant === 'icon-only') {
+    return null
+  }
+
   return (
-    <div className={cn('flex items-center gap-2', className)}>
-      <Label htmlFor={htmlFor}>{label}</Label>
+    <div className={wrapperClassName}>
+      {variant === 'full' && <Label htmlFor={htmlFor}>{label}</Label>}
 
       {hasSource && sourceMetadata ? (
         <TooltipProvider>
@@ -61,9 +78,14 @@ export function FieldLabel({
                 type="button"
                 variant="ghost"
                 size="icon"
-                className="h-5 w-5 hover:bg-primary/10"
+                className={cn(
+                  'h-5 w-5 hover:bg-primary/10',
+                  variant === 'icon-only' ? '' : undefined
+                )}
                 onClick={handleViewSource}
-                aria-label={`View source for ${label}`}
+                aria-label={`View source for ${
+                  typeof label === 'string' ? label : 'field'
+                }`}
               >
                 <Eye className="h-3.5 w-3.5 text-primary" />
               </Button>
@@ -74,25 +96,29 @@ export function FieldLabel({
           </Tooltip>
         </TooltipProvider>
       ) : !hasSource ? (
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="h-5 w-5 cursor-not-allowed opacity-40"
-                disabled
-                aria-label={`No source for ${label}`}
-              >
-                <Eye className="h-3.5 w-3.5 text-muted-foreground" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Calculated field - no source</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+        hideWhenNoSource && variant === 'icon-only' ? null : (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-5 w-5 cursor-not-allowed opacity-40"
+                  disabled
+                  aria-label={`No source for ${
+                    typeof label === 'string' ? label : 'field'
+                  }`}
+                >
+                  <Eye className="h-3.5 w-3.5 text-muted-foreground" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Calculated field - no source</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )
       ) : null}
     </div>
   )

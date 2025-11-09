@@ -6,6 +6,8 @@ from typing import Optional, List
 from fastapi import APIRouter, Depends, HTTPException, status, Response, File, UploadFile, Query, Request
 from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 
 from src.core.database import get_db
 from src.core.deps import get_current_user
@@ -23,6 +25,10 @@ from src.schemas.declaration import (
 )
 from src.services.file_validation_service import FileValidationService, FileValidationError, FileSizeLimitExceeded
 from src.services.file_storage_service import FileStorageService
+from src.services import master_data_service
+from src.models.importer import Importer
+from src.models.exporter import Exporter
+from src.models.declaration import Declaration
 
 router = APIRouter()
 
@@ -511,14 +517,39 @@ async def get_declaration(
     Raises:
         HTTPException 404: If declaration not found
     """
-    repo = DeclarationRepository(db)
-    declaration = await repo.get_by_id(declaration_id)
+    declaration_result = await db.execute(
+        select(Declaration)
+        .options(
+            selectinload(Declaration.importer),
+            selectinload(Declaration.exporter)
+        )
+        .where(Declaration.id == declaration_id)
+    )
+    declaration = declaration_result.scalars().first()
 
     if not declaration:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Declaration {declaration_id} not found"
         )
+
+    importer_summary = None
+    if declaration.importer:
+        importer_summary = {
+            "id": str(declaration.importer.id),
+            "name": declaration.importer.name,
+            "is_verified": declaration.importer.is_verified,
+            "declaration_count": declaration.importer.declaration_count,
+        }
+
+    exporter_summary = None
+    if declaration.exporter:
+        exporter_summary = {
+            "id": str(declaration.exporter.id),
+            "name": declaration.exporter.name,
+            "is_verified": declaration.exporter.is_verified,
+            "declaration_count": declaration.exporter.declaration_count,
+        }
 
     # Build response with all fields (including source_metadata from Story 3.7)
     response = {
@@ -532,6 +563,10 @@ async def get_declaration(
         "processing_progress": declaration.processing_progress or 0.0,
         "processing_error": declaration.processing_error,
         "celery_task_id": declaration.celery_task_id,
+        "importer_id": str(declaration.importer_id) if declaration.importer_id else None,
+        "exporter_id": str(declaration.exporter_id) if declaration.exporter_id else None,
+        "importer_summary": importer_summary,
+        "exporter_summary": exporter_summary,
         "organization_id": str(declaration.organization_id),
         "created_by_user_id": str(declaration.created_by_user_id),
         "created_at": declaration.created_at.isoformat() if declaration.created_at else None,
@@ -600,6 +635,91 @@ async def approve_declaration(
     declaration.status = "APPROVED"
     declaration.approved_by_user_id = current_user.id
     declaration.approved_at = datetime.now(timezone.utc)
+
+    # Story 3.10: Create or update importer master data
+    if declaration.draft_data and "importer" in declaration.draft_data:
+        importer_data = declaration.draft_data["importer"]
+
+        if declaration.importer_id:
+            # Update existing importer
+            from sqlalchemy import select
+            stmt = select(Importer).where(Importer.id == declaration.importer_id)
+            result = await db.execute(stmt)
+            importer = result.scalars().first()
+
+            if importer:
+                importer.name = importer_data.get("name", importer.name)
+                importer.name_normalized = master_data_service.normalize_company_name(importer_data.get("name", importer.name))
+                importer.tax_code = master_data_service.normalize_tax_code(importer_data.get("tax_code", importer.tax_code))
+                importer.postal_code = importer_data.get("postal_code")
+                importer.address = importer_data.get("address")
+                importer.phone = importer_data.get("phone")
+                importer.last_reviewed_by_user_id = current_user.id
+                importer.last_reviewed_at = datetime.now(timezone.utc)
+        else:
+            # Create new importer
+            new_importer = Importer(
+                tax_code=master_data_service.normalize_tax_code(importer_data.get("tax_code", "")),
+                name=importer_data.get("name", ""),
+                name_normalized=master_data_service.normalize_company_name(importer_data.get("name", "")),
+                postal_code=importer_data.get("postal_code"),
+                address=importer_data.get("address"),
+                phone=importer_data.get("phone"),
+                organization_id=declaration.organization_id,
+                first_seen_declaration_id=declaration.id,
+                last_seen_declaration_id=declaration.id,
+                declaration_count=1,
+                is_verified=True,
+                confidence_score=1.0,
+                last_reviewed_by_user_id=current_user.id,
+                last_reviewed_at=datetime.now(timezone.utc)
+            )
+            db.add(new_importer)
+            await db.flush()  # Get the ID
+            declaration.importer_id = new_importer.id
+
+    # Story 3.10: Create or update exporter master data
+    if declaration.draft_data and "exporter" in declaration.draft_data:
+        exporter_data = declaration.draft_data["exporter"]
+
+        if declaration.exporter_id:
+            # Update existing exporter
+            from sqlalchemy import select
+            stmt = select(Exporter).where(Exporter.id == declaration.exporter_id)
+            result = await db.execute(stmt)
+            exporter = result.scalars().first()
+
+            if exporter:
+                exporter.name = exporter_data.get("name", exporter.name)
+                exporter.name_normalized = master_data_service.normalize_company_name(exporter_data.get("name", exporter.name))
+                exporter.country_code = exporter_data.get("country_code", exporter.country_code).upper()
+                exporter.address_line1 = exporter_data.get("address_line1")
+                exporter.address_line2 = exporter_data.get("address_line2")
+                exporter.address_line3 = exporter_data.get("address_line3")
+                exporter.last_reviewed_by_user_id = current_user.id
+                exporter.last_reviewed_at = datetime.now(timezone.utc)
+        else:
+            # Create new exporter
+            new_exporter = Exporter(
+                name=exporter_data.get("name", ""),
+                name_normalized=master_data_service.normalize_company_name(exporter_data.get("name", "")),
+                country_code=exporter_data.get("country_code", "").upper(),
+                address_line1=exporter_data.get("address_line1"),
+                address_line2=exporter_data.get("address_line2"),
+                address_line3=exporter_data.get("address_line3"),
+                organization_id=declaration.organization_id,
+                first_seen_declaration_id=declaration.id,
+                last_seen_declaration_id=declaration.id,
+                declaration_count=1,
+                is_verified=True,
+                confidence_score=1.0,
+                last_reviewed_by_user_id=current_user.id,
+                last_reviewed_at=datetime.now(timezone.utc)
+            )
+            db.add(new_exporter)
+            await db.flush()  # Get the ID
+            declaration.exporter_id = new_exporter.id
+
     await db.commit()
     await db.refresh(declaration)
 
