@@ -614,7 +614,7 @@ export function DeclarationForm({
                     type="button"
                     size="sm"
                     variant="outline"
-                    onClick={() => appendContainer('')}
+                    onClick={() => appendContainer('' as any)}
                   >
                     <Plus className="h-4 w-4 mr-1" />
                     Add Container

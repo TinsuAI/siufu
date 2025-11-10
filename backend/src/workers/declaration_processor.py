@@ -33,6 +33,7 @@ from src.repositories.declaration_repository import DeclarationRepository
 from src.services.ocr_service import OCRService
 from src.services.llm_service import LLMService
 from src.services import master_data_service
+from src.services.income_validation_service import IncomeValidationService
 
 logger = logging.getLogger(__name__)
 
@@ -556,9 +557,51 @@ async def _process_declaration_async(declaration_id: str) -> Dict[str, Any]:
             }
         )
 
-        # Stage 3: Store extracted data in database
+        # Stage 3: Cross-document validation (Story 3.11)
+        validation_start = time.time()
+        logger.info(f"Stage 3: Running cross-document validation", extra={"declaration_id": declaration_id})
+
+        # Update progress to VALIDATING status
+        await repo.update_status_and_progress(
+            UUID(declaration_id),
+            DeclarationStatus.VALIDATING,
+            0.7
+        )
+        sentry_sdk.set_tag("processing_stage", "VALIDATING")
+
+        # Run validation service
+        validation_service = IncomeValidationService()
+        extracted_dict = extracted_data.model_dump()
+        validation_warnings = validation_service.validate_declaration(extracted_dict)
+
+        # Log validation results
+        validation_duration = time.time() - validation_start
+        await add_processing_log(
+            db,
+            UUID(declaration_id),
+            "info",
+            f"Cross-document validation complete - {len(validation_warnings)} warnings found",
+            {
+                "duration_seconds": round(validation_duration, 2),
+                "warning_count": len(validation_warnings),
+                "error_count": len([w for w in validation_warnings if w["severity"] == "error"]),
+                "warning_severity_count": len([w for w in validation_warnings if w["severity"] == "warning"]),
+                "info_count": len([w for w in validation_warnings if w["severity"] == "info"])
+            }
+        )
+
+        logger.info(
+            f"Validation complete",
+            extra={
+                "declaration_id": declaration_id,
+                "duration_seconds": validation_duration,
+                "warning_count": len(validation_warnings)
+            }
+        )
+
+        # Stage 3a: Store extracted data in database
         stage_start = time.time()
-        logger.info(f"Stage 3: Matching master data and storing extracted data", extra={"declaration_id": declaration_id})
+        logger.info(f"Stage 3a: Matching master data and storing extracted data", extra={"declaration_id": declaration_id})
 
         # Store extracted data and confidence scores in declaration
         declaration = await repo.get_by_id(UUID(declaration_id))
@@ -654,6 +697,9 @@ async def _process_declaration_async(declaration_id: str) -> Dict[str, Any]:
 
         declaration.extracted_data = extracted_dict
 
+        # Store validation warnings (Story 3.11)
+        declaration.validation_warnings = validation_warnings
+
         # Build confidence scores dict from extracted data
         confidence_scores = {
             "overall": extracted_data.overall_confidence
@@ -713,7 +759,7 @@ async def _process_declaration_async(declaration_id: str) -> Dict[str, Any]:
         sentry_sdk.set_tag("processing_stage", "READY_FOR_REVIEW")
 
         # Log completion
-        total_duration = ocr_duration + llm_duration + storage_duration
+        total_duration = ocr_duration + llm_duration + validation_duration + storage_duration
         await add_processing_log(
             db,
             UUID(declaration_id),

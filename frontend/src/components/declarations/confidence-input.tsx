@@ -25,9 +25,14 @@ import { cn } from '@/lib/utils'
 import { NullFieldPlaceholder } from './null-field-placeholder'
 
 interface ConfidenceInputProps
-  extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'onChange'> {
+  extends Omit<
+    React.InputHTMLAttributes<HTMLInputElement>,
+    'value' | 'defaultValue'
+  > {
   confidenceScore?: number
   showNullIndicator?: boolean
+  value?: string | number | readonly string[] | null | undefined
+  defaultValue?: string | number | readonly string[] | null | undefined
 }
 
 export const ConfidenceInput = React.forwardRef<
@@ -103,9 +108,9 @@ export const ConfidenceInput = React.forwardRef<
 
     const valueProps =
       value !== undefined
-        ? { value }
+        ? { value: value ?? '' }
         : defaultValue !== undefined
-          ? { defaultValue }
+          ? { defaultValue: defaultValue ?? '' }
           : {}
 
     return (

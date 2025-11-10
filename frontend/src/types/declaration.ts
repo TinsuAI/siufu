@@ -179,8 +179,15 @@ export interface UploadedFile {
  */
 export interface ValidationWarning {
   message: string
-  severity: 'error' | 'warning'
+  severity: 'error' | 'warning' | 'info'
   field?: string // Optional field reference
+  rule?: string // Rule identifier (e.g., "quantity_mismatch", "amount_discrepancy")
+  details?: {
+    source_docs?: string[] // Documents involved (e.g., ["INVOICE", "CO"])
+    expected_value?: any // Expected value
+    actual_value?: any // Actual value found
+    confidence?: number // Confidence score (0.0-1.0)
+  }
 }
 
 /**

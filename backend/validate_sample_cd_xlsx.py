@@ -123,7 +123,7 @@ def validate_extracted_data(ground_truth):
             return None
         try:
             return float(val)
-        except:
+        except (ValueError, TypeError):
             return None
 
     # Validate numeric fields (non-negative, reasonable ranges)
@@ -162,7 +162,7 @@ def validate_extracted_data(ground_truth):
                     year = int(parts[2])
                     if year < 2020 or year > 2030:
                         warnings.append(f"{field_name}: Year {year} seems unusual")
-                except:
+                except (ValueError, IndexError):
                     pass
 
     # Validate code fields
@@ -276,7 +276,7 @@ def extract_ground_truth_from_cd_xlsx(xlsx_path):
         try:
             # Handle European format: "12.144,8" -> 12144.8
             return float(str(val).replace('.', '').replace(',', '.'))
-        except:
+        except (ValueError, TypeError, AttributeError):
             return None
 
     # ==================== DECLARATION HEADER ====================

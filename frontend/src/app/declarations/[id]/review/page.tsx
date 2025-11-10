@@ -34,6 +34,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import { Badge } from '@/components/ui/badge'
 import { Download } from 'lucide-react'
 
 interface DeclarationReviewPageProps {
@@ -316,53 +318,106 @@ export default function DeclarationReviewPage({
 
         {/* Main Content */}
         <div className="container mx-auto px-6 py-8 max-w-7xl">
-          {/* Validation Warnings */}
-          {declaration.validation_warnings &&
-            declaration.validation_warnings.length > 0 && (
-              <div className="mb-6">
-                <ValidationWarningsPanel
-                  warnings={declaration.validation_warnings}
-                />
+          <Tabs defaultValue="declaration" className="w-full">
+            <TabsList className="mb-6">
+              <TabsTrigger value="declaration">Declaration Form</TabsTrigger>
+              <TabsTrigger value="validation" className="relative">
+                Cross-Document Validation
+                {declaration.validation_warnings &&
+                  declaration.validation_warnings.length > 0 && (
+                    <Badge
+                      variant="destructive"
+                      className="ml-2 h-5 min-w-5 px-1.5"
+                    >
+                      {declaration.validation_warnings.length}
+                    </Badge>
+                  )}
+              </TabsTrigger>
+              <TabsTrigger value="corrections">Corrections Log</TabsTrigger>
+            </TabsList>
+
+            {/* Declaration Form Tab */}
+            <TabsContent value="declaration" className="space-y-6">
+              {/* Declaration Form */}
+              <DeclarationFormV2
+                declarationId={id}
+                initialData={declaration.draft_data}
+                extractedData={declaration.extracted_data}
+                confidenceScores={declaration.confidence_scores}
+                sourceMetadata={declaration.source_metadata}
+                importerId={declaration.importer_id}
+                exporterId={declaration.exporter_id}
+                importerDeclarationCount={
+                  declaration.importer_summary?.declaration_count
+                }
+                exporterDeclarationCount={
+                  declaration.exporter_summary?.declaration_count
+                }
+                importerSummary={declaration.importer_summary}
+                exporterSummary={declaration.exporter_summary}
+                onChange={handleFormChange}
+                isSubmitting={autoSave.isSaving}
+              />
+
+              {/* Optional: Retry Save Link */}
+              {autoSave.isError && (
+                <div className="mt-6 text-center">
+                  <button
+                    onClick={autoSave.save}
+                    className="text-blue-600 hover:text-blue-700 underline text-sm"
+                  >
+                    Retry Save
+                  </button>
+                </div>
+              )}
+            </TabsContent>
+
+            {/* Cross-Document Validation Tab */}
+            <TabsContent value="validation">
+              <div className="space-y-4">
+                {declaration.validation_warnings &&
+                declaration.validation_warnings.length > 0 ? (
+                  <ValidationWarningsPanel
+                    warnings={declaration.validation_warnings}
+                    declarationId={id}
+                    defaultOpen={true}
+                  />
+                ) : (
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-8 text-center">
+                    <div className="flex justify-center mb-4">
+                      <div className="rounded-full bg-green-100 p-3">
+                        <svg
+                          className="h-8 w-8 text-green-600"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                          />
+                        </svg>
+                      </div>
+                    </div>
+                    <h3 className="text-lg font-semibold text-green-900 mb-2">
+                      No Validation Issues Found
+                    </h3>
+                    <p className="text-green-700 text-sm max-w-md mx-auto">
+                      All cross-document validations passed successfully. The
+                      data appears consistent across all uploaded documents.
+                    </p>
+                  </div>
+                )}
               </div>
-            )}
+            </TabsContent>
 
-          {/* Corrections Log Panel */}
-          <div className="mb-6">
-            <CorrectionsLogPanel declarationId={id} />
-          </div>
-
-          {/* Declaration Form */}
-          <DeclarationFormV2
-            declarationId={id}
-            initialData={declaration.draft_data}
-            extractedData={declaration.extracted_data}
-            confidenceScores={declaration.confidence_scores}
-            sourceMetadata={declaration.source_metadata}
-            importerId={declaration.importer_id}
-            exporterId={declaration.exporter_id}
-            importerDeclarationCount={
-              declaration.importer_summary?.declaration_count
-            }
-            exporterDeclarationCount={
-              declaration.exporter_summary?.declaration_count
-            }
-            importerSummary={declaration.importer_summary}
-            exporterSummary={declaration.exporter_summary}
-            onChange={handleFormChange}
-            isSubmitting={autoSave.isSaving}
-          />
-
-          {/* Optional: Retry Save Link */}
-          {autoSave.isError && (
-            <div className="mt-6 text-center">
-              <button
-                onClick={autoSave.save}
-                className="text-blue-600 hover:text-blue-700 underline text-sm"
-              >
-                Retry Save
-              </button>
-            </div>
-          )}
+            {/* Corrections Log Tab */}
+            <TabsContent value="corrections">
+              <CorrectionsLogPanel declarationId={id} />
+            </TabsContent>
+          </Tabs>
         </div>
 
         {/* Reject Dialog */}
