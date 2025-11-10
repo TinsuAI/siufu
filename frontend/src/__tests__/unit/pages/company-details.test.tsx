@@ -8,7 +8,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import CompanyDetailsPage from '@/app/companies/[id]/page'
+import CompanyDetailsPage from '@/app/[locale]/companies/[id]/page'
 import * as hooks from '@/hooks/use-companies'
 import type { ImporterDetail, ExporterDetail } from '@/types/company'
 

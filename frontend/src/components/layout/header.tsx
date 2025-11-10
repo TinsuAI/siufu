@@ -1,23 +1,25 @@
 'use client'
 
-import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { Link, usePathname } from '@/navigation'
+import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { useHealth } from '@/hooks/use-health'
 import { useAuth, useLogout } from '@/hooks/use-auth'
+import { LanguageSwitcher } from './language-switcher'
 
 export function Header() {
+  const t = useTranslations()
   const pathname = usePathname()
   const { data: health, isError } = useHealth()
   const { user, isAuthenticated } = useAuth()
   const logoutMutation = useLogout()
 
   const navItems = [
-    { href: '/declarations', label: 'Declarations' },
-    { href: '/companies', label: 'Companies' },
-    { href: '/upload', label: 'Upload' },
+    { href: '/declarations', label: t('common.nav.declarations') },
+    { href: '/companies', label: t('common.nav.companies') },
+    { href: '/upload', label: t('common.nav.upload') },
   ]
 
   const handleLogout = () => {
@@ -65,6 +67,8 @@ export function Header() {
             API: {isError ? 'Offline' : health?.status || 'Loading...'}
           </Badge>
 
+          <LanguageSwitcher />
+
           {isAuthenticated && user ? (
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2">
@@ -86,13 +90,15 @@ export function Header() {
                 onClick={handleLogout}
                 disabled={logoutMutation.isPending}
               >
-                {logoutMutation.isPending ? 'Logging out...' : 'Logout'}
+                {logoutMutation.isPending
+                  ? `${t('common.nav.logout')}...`
+                  : t('common.nav.logout')}
               </Button>
             </div>
           ) : (
             <Link href="/login">
               <Button variant="ghost" size="sm">
-                Login
+                {t('auth.login.title')}
               </Button>
             </Link>
           )}

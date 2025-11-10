@@ -2,7 +2,6 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import '@/polyfills/promise-with-resolvers'
-import { Header } from '@/components/layout/header'
 import { QueryProvider } from '@/components/providers/query-provider'
 import { PDFProvider } from '@/components/providers/pdf-provider'
 
@@ -20,13 +19,10 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en">
+    <html>
       <body className={inter.className}>
         <QueryProvider>
-          <PDFProvider>
-            <Header />
-            <main className="min-h-[calc(100vh-4rem)]">{children}</main>
-          </PDFProvider>
+          <PDFProvider>{children}</PDFProvider>
         </QueryProvider>
       </body>
     </html>

@@ -13,7 +13,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderWithProviders } from '@/test-utils'
-import DeclarationsListPage from '@/app/declarations/page'
+import DeclarationsListPage from '@/app/[locale]/declarations/page'
 import * as api from '@/lib/api'
 
 // Mock the API client

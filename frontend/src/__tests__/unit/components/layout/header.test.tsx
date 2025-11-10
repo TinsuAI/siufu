@@ -3,24 +3,44 @@ import { render, screen } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Header } from '@/components/layout/header'
 
-// Mock next/navigation
-vi.mock('next/navigation', () => {
-  const push = vi.fn()
-  const replace = vi.fn()
-  const refresh = vi.fn()
-  const back = vi.fn()
+// Mock next-intl navigation (used by header)
+vi.mock('@/navigation', () => ({
+  Link: ({
+    children,
+    href,
+    ...props
+  }: {
+    children: React.ReactNode
+    href: string
+    [key: string]: unknown
+  }) => (
+    <a href={href} {...props}>
+      {children}
+    </a>
+  ),
+  usePathname: () => '/declarations',
+  useRouter: () => ({
+    push: vi.fn(),
+    replace: vi.fn(),
+    refresh: vi.fn(),
+    back: vi.fn(),
+    prefetch: vi.fn(),
+  }),
+}))
 
-  return {
-    usePathname: () => '/declarations',
-    useRouter: () => ({
-      push,
-      replace,
-      refresh,
-      back,
-      prefetch: vi.fn(),
-    }),
-  }
-})
+// Mock next-intl hooks
+vi.mock('next-intl', () => ({
+  useTranslations: () => (key: string) => {
+    // Simple translation mock - return the last part of the key
+    const parts = key.split('.')
+    return parts[parts.length - 1]
+  },
+}))
+
+// Mock next/navigation for params
+vi.mock('next/navigation', () => ({
+  useParams: () => ({ locale: 'en' }),
+}))
 
 // Mock the health hook
 vi.mock('@/hooks/use-health', () => ({
@@ -62,8 +82,9 @@ describe('Header', () => {
     renderHeader()
 
     expect(screen.getByText('Customs Declaration Platform')).toBeInTheDocument()
-    expect(screen.getByText('Declarations')).toBeInTheDocument()
-    expect(screen.getByText('Upload')).toBeInTheDocument()
+    // Translations now return the last part of the key
+    expect(screen.getByText('declarations')).toBeInTheDocument()
+    expect(screen.getByText('upload')).toBeInTheDocument()
   })
 
   it('should render user menu with profile details and logout action', () => {
@@ -71,7 +92,8 @@ describe('Header', () => {
 
     expect(screen.getByText('Test User')).toBeInTheDocument()
     expect(screen.getByText(/admin/i)).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /logout/i })).toBeInTheDocument()
+    // Translation returns 'logout'
+    expect(screen.getByRole('button', { name: 'logout' })).toBeInTheDocument()
   })
 
   it('should display API health status', () => {

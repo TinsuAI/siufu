@@ -1,0 +1,30 @@
+{
+  "nav": {
+    "dashboard": "Dashboard",
+    "upload": "Upload",
+    "declarations": "Declarations",
+    "companies": "Companies",
+    "analytics": "Analytics",
+    "knowledgeBase": "Knowledge Base",
+    "settings": "Settings",
+    "profile": "Profile",
+    "help": "Help",
+    "logout": "Logout"
+  },
+  "actions": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "submit": "Submit",
+    "edit": "Edit",
+    "delete": "Delete",
+    "create": "Create",
+    "search": "Search"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "confirm": "Confirm",
+    "close": "Close"
+  }
+}

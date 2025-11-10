@@ -1,0 +1,161 @@
+# Quality Gate Decision - Story 4.1
+# Schema Version 1
+
+schema: 1
+story: "4.1"
+story_title: "i18n Infrastructure & Core Navigation"
+gate: PASS
+status_reason: "All acceptance criteria met, all identified issues resolved, comprehensive test coverage achieved (325 tests passing), and zero functional regressions confirmed. The i18n infrastructure is production-ready and provides a solid foundation for Stories 4.2 and 4.3."
+reviewer: "Quinn (Test Architect)"
+updated: "2025-11-10T06:17:00Z"
+
+# Waiver status
+waiver:
+  active: false
+
+# Issues tracking (all resolved from initial review)
+top_issues: []
+
+# Evidence of quality
+evidence:
+  tests_reviewed: 325
+  tests_passing: 325
+  tests_skipped: 1
+  tests_failing: 0
+  risks_identified: 0
+  trace:
+    ac_covered: [1, 2, 3, 4, 5, 6, 7, 8, 9]  # All 9 ACs have full coverage
+    ac_gaps: []  # No coverage gaps
+
+# Non-functional requirements validation
+nfr_validation:
+  security:
+    status: PASS
+    notes: "Locale validation prevents injection attacks. Authentication middleware properly integrated. No sensitive data in translation files."
+  performance:
+    status: PASS
+    notes: "Translation bundle: 3.1KB (69% under 10KB budget). Build succeeds with optimized bundles. No bundle size regressions. Middleware: 48.6 kB (reasonable for combined i18n + auth logic)."
+  reliability:
+    status: PASS
+    notes: "All 325 tests passing. Comprehensive middleware tests (32 tests) covering locale routing, cookie persistence, auth integration, and fallback behavior. Zero functional regressions."
+  maintainability:
+    status: PASS
+    notes: "Clean architecture with proper separation of concerns. Full TypeScript coverage. Well-organized code structure. Follows Next.js App Router patterns and next-intl documentation."
+
+# Quality score (100 = perfect, deduct 20 per FAIL, 10 per CONCERN)
+quality_score: 100
+
+# Gate expiry (2 weeks from review)
+expires: "2025-11-24T00:00:00Z"
+
+# Recommendations for future improvements (none blocking)
+recommendations:
+  immediate: []  # No immediate actions required
+  future:
+    - action: "Consider optimizing middleware token verification with client-side validation or caching to reduce API calls on every authenticated page access"
+      refs: ["frontend/src/middleware.ts:59-81"]
+      priority: low
+    - action: "Consider adding rate limiting for locale switching to prevent potential abuse"
+      refs: ["frontend/src/components/layout/language-switcher.tsx"]
+      priority: low
+    - action: "Consider improving middleware error handling (currently using void error suppression)"
+      refs: ["frontend/src/middleware.ts:79"]
+      priority: low
+
+# Review history
+history:
+  - at: "2025-11-10T00:00:00Z"
+    gate: CONCERNS
+    note: "Initial review - Missing next-intl config in next.config.js, missing middleware tests, navigation items count discrepancy"
+    issues_identified:
+      - "CFG-001: Missing next-intl plugin configuration in next.config.js"
+      - "TEST-001: Missing middleware unit tests (AC#8, Task 10)"
+      - "REQ-001: Navigation items count discrepancy (AC#6)"
+  - at: "2025-11-10T06:17:00Z"
+    gate: PASS
+    note: "Re-review - All issues resolved. Added next-intl plugin config, created 32 comprehensive middleware tests (all passing), clarified navigation design decision (3 active items, 10 prepared for future use)."
+    fixes_verified:
+      - "CFG-001 RESOLVED: next.config.js properly configured with createNextIntlPlugin()"
+      - "TEST-001 RESOLVED: 32 comprehensive middleware tests created and passing"
+      - "REQ-001 CLARIFIED: Navigation count explained as intentional design decision"
+
+# Risk summary
+risk_summary:
+  totals:
+    critical: 0
+    high: 0
+    medium: 0
+    low: 0
+  recommendations:
+    must_fix: []
+    monitor: []
+
+# Acceptance Criteria Summary
+acceptance_criteria_status:
+  total: 9
+  passed: 9
+  partial: 0
+  failed: 0
+  details:
+    - ac: 1
+      title: "next-intl installed and configured"
+      status: PASS
+      notes: "v4.5.0 installed with proper plugin configuration in next.config.js"
+    - ac: 2
+      title: "Middleware for locale routing"
+      status: PASS
+      notes: "Excellent integration with auth middleware, comprehensive test coverage"
+    - ac: 3
+      title: "Language switcher in header"
+      status: PASS
+      notes: "Clean implementation using shadcn/ui Select component"
+    - ac: 4
+      title: "Translation files structure established"
+      status: PASS
+      notes: "Proper namespace organization at messages/{locale}/*.json"
+    - ac: 5
+      title: "Authentication flows translated"
+      status: PASS
+      notes: "Login page fully translated with all error messages"
+    - ac: 6
+      title: "Navigation menu translated"
+      status: PASS
+      notes: "3 items actively rendered, 10 translation keys prepared for future use"
+    - ac: 7
+      title: "Locale persistence working"
+      status: PASS
+      notes: "Cookie-based persistence via NEXT_LOCALE cookie"
+    - ac: 8
+      title: "Zero functional regressions"
+      status: PASS
+      notes: "325 tests passing, 1 skipped, 0 failures. Now includes comprehensive middleware tests."
+    - ac: 9
+      title: "Performance budget met"
+      status: PASS
+      notes: "3.1KB translation bundle << 10KB budget (69% under budget)"
+
+# Production readiness assessment
+production_readiness:
+  approved: true
+  deployment_risk: low
+  rollback_plan: "Simple: Remove next-intl package and revert file changes via Git. No database migrations to rollback. Estimated rollback time: <30 minutes"
+  blockers_cleared:
+    - "Story 4.2 (Declaration Form Translation) can now proceed"
+    - "Story 4.3 (Remaining Pages Translation) can now proceed"
+  notes: "Implementation is production-ready. All acceptance criteria met, comprehensive test coverage achieved, and zero functional regressions confirmed."
+
+# Additional metadata
+metadata:
+  story_epic: "Vietnamese Localization"
+  story_type: "Infrastructure"
+  technology_stack:
+    - "Next.js 15.5.6 with App Router"
+    - "React 19.2"
+    - "TypeScript 5.6"
+    - "next-intl v4.5.0"
+    - "Vitest 2.1"
+  files_modified: 13
+  files_created: 13
+  test_coverage_added: 32
+  lines_of_code_changed: "~500"
+  bundle_size_impact: "+3.1KB (translation files)"

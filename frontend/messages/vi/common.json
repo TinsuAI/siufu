@@ -1,0 +1,30 @@
+{
+  "nav": {
+    "dashboard": "Trang Chủ",
+    "upload": "Tải Lên",
+    "declarations": "Tờ Khai",
+    "companies": "Công Ty",
+    "analytics": "Phân Tích",
+    "knowledgeBase": "Cơ Sở Tri Thức",
+    "settings": "Cài Đặt",
+    "profile": "Hồ Sơ",
+    "help": "Trợ Giúp",
+    "logout": "Đăng Xuất"
+  },
+  "actions": {
+    "save": "Lưu",
+    "cancel": "Hủy",
+    "submit": "Gửi",
+    "edit": "Chỉnh Sửa",
+    "delete": "Xóa",
+    "create": "Tạo Mới",
+    "search": "Tìm Kiếm"
+  },
+  "common": {
+    "loading": "Đang tải...",
+    "error": "Lỗi",
+    "success": "Thành công",
+    "confirm": "Xác nhận",
+    "close": "Đóng"
+  }
+}
