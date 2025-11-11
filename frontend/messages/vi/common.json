@@ -1,4 +1,7 @@
 {
+  "app": {
+    "title": "Siufu"
+  },
   "nav": {
     "dashboard": "Trang Chủ",
     "upload": "Tải Lên",
@@ -18,7 +21,14 @@
     "edit": "Chỉnh Sửa",
     "delete": "Xóa",
     "create": "Tạo Mới",
-    "search": "Tìm Kiếm"
+    "search": "Tìm Kiếm",
+    "view": "Xem",
+    "download": "Tải Về",
+    "export": "Xuất File",
+    "previous": "Trước",
+    "next": "Tiếp",
+    "yes": "Có",
+    "no": "Không"
   },
   "common": {
     "loading": "Đang tải...",
@@ -26,5 +36,44 @@
     "success": "Thành công",
     "confirm": "Xác nhận",
     "close": "Đóng"
+  },
+  "declarations": {
+    "title": "Lịch Sử Tờ Khai",
+    "createNew": "Tạo Tờ Khai Mới",
+    "table": {
+      "declarationId": "Mã Tờ Khai",
+      "uploadDate": "Ngày Tải Lên",
+      "status": "Trạng Thái",
+      "productsCount": "Số Lượng Sản Phẩm",
+      "actions": "Hành Động"
+    },
+    "filters": {
+      "search": "Tìm kiếm theo Mã Tờ Khai...",
+      "allStatuses": "Tất Cả Trạng Thái"
+    },
+    "actions": {
+      "review": "Xem Xét",
+      "download": "Tải Về",
+      "delete": "Xóa"
+    },
+    "pagination": {
+      "showing": "Hiển thị {{start}}-{{end}} trong {{total}} tờ khai",
+      "page": "Trang"
+    },
+    "messages": {
+      "loading": "Đang tải tờ khai...",
+      "noDeclarations": "Không tìm thấy tờ khai. Tải lên tờ khai đầu tiên để bắt đầu.",
+      "uploadDeclaration": "Tải Lên Tờ Khai",
+      "error": "Lỗi tải tờ khai: {{message}}",
+      "deleteSuccess": "Xóa tờ khai thành công",
+      "deleteError": "Xóa tờ khai thất bại",
+      "exportSuccess": "Xuất tờ khai thành công",
+      "exportError": "Xuất tờ khai thất bại",
+      "deleting": "Đang xóa..."
+    },
+    "dialog": {
+      "deleteTitle": "Xóa Tờ Khai",
+      "deleteDescription": "Bạn có chắc chắn muốn xóa tờ khai này? Hành động này không thể hoàn tác."
+    }
   }
 }

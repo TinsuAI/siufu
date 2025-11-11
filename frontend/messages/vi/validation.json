@@ -1,0 +1,30 @@
+{
+  "warningTypes": {
+    "crossDocumentInconsistency": "Không nhất quán giữa các tài liệu",
+    "missingField": "Thiếu trường thông tin",
+    "invalidFormat": "Định dạng không hợp lệ",
+    "quantityMismatch": "Số lượng không khớp",
+    "amountDiscrepancy": "Chênh lệch số tiền",
+    "hsCodeMismatch": "Mã HS không khớp",
+    "dateInconsistency": "Ngày tháng không nhất quán"
+  },
+  "messages": {
+    "invoiceTotalMismatch": "Tổng hóa đơn không khớp với vận đơn",
+    "hsCodeNotFound": "Mã HS không khớp giữa các tài liệu",
+    "quantityMismatch": "Số lượng không khớp giữa {{source1}} và {{source2}}",
+    "amountMismatch": "Chênh lệch số tiền: Mong đợi {{expected}}, tìm thấy {{actual}}",
+    "missingRequiredField": "Trường bắt buộc '{{field}}' bị thiếu",
+    "invalidDateFormat": "Định dạng ngày không hợp lệ trong {{field}}"
+  },
+  "severity": {
+    "error": "Lỗi",
+    "warning": "Cảnh Báo",
+    "info": "Thông Tin"
+  },
+  "details": {
+    "sourceDocs": "Tài liệu nguồn",
+    "expectedValue": "Giá trị mong đợi",
+    "actualValue": "Giá trị thực tế",
+    "confidence": "Độ tin cậy"
+  }
+}

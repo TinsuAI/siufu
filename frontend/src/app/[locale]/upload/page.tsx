@@ -3,6 +3,7 @@
 import React, { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Loader2, AlertCircle, FileUp } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import { FileDropZone } from '@/components/upload/file-dropzone'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -20,39 +21,41 @@ import {
  * Configuration for each file drop zone
  * Updated in Story 3.3.1: Removed GOODLIST and TARIFF zones
  */
-const FILE_ZONES: Array<{
+const getFileZones = (
+  t: (key: string) => string
+): Array<{
   fileType: FileType
   label: string
   description: string
   multiple?: boolean
-}> = [
+}> => [
   {
     fileType: 'AN',
     label: `${FILE_TYPE_LABELS.AN} (${FILE_NAME_PATTERNS.AN})`,
-    description: 'Document notifying arrival of goods',
+    description: t('descriptions.AN'),
   },
   {
     fileType: 'BOL',
     label: `${FILE_TYPE_LABELS.BOL} (${FILE_NAME_PATTERNS.BOL})`,
-    description: 'Legal document between shipper and carrier',
+    description: t('descriptions.BOL'),
   },
   {
     fileType: 'CO',
-    label: `${FILE_TYPE_LABELS.CO} (${FILE_NAME_PATTERNS.CO}) - Multiple files supported`,
-    description:
-      'Certificate stating country of origin (multiple files allowed)',
+    label: t('documentTypes.CO'),
+    description: t('descriptions.CO'),
     multiple: true,
   },
   {
     fileType: 'INVOICE',
     label: `${FILE_TYPE_LABELS.INVOICE} (${FILE_NAME_PATTERNS.INVOICE})`,
-    description: 'Commercial invoice for goods',
+    description: t('descriptions.INVOICE'),
   },
 ]
 
 export default function UploadPage() {
   const router = useRouter()
   const { isAuthenticated } = useAuth()
+  const t = useTranslations('upload')
 
   // Upload store state
   const {
@@ -145,18 +148,14 @@ export default function UploadPage() {
 
   const uploadCount = uploadedCount()
   const isProcessButtonDisabled = !allFilesUploaded() || isUploading
+  const FILE_ZONES = getFileZones(t)
 
   return (
     <div className="container mx-auto px-6 py-8 max-w-7xl">
       {/* Page Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-slate-800 mb-2">
-          Upload Declaration Documents
-        </h1>
-        <p className="text-slate-600">
-          Upload all 4 required document types to process a new customs
-          declaration. Certificate of Origin supports multiple files.
-        </p>
+        <h1 className="text-3xl font-bold text-slate-800 mb-2">{t('title')}</h1>
+        <p className="text-slate-600">{t('subtitle')}</p>
       </div>
 
       {/* Upload Progress */}
@@ -165,11 +164,12 @@ export default function UploadPage() {
           <FileUp className="h-5 w-5 text-blue-600" />
           <div>
             <p className="text-sm font-medium text-blue-900">
-              Upload Progress: {uploadCount} of 4 required documents uploaded
+              {t('progress.label')}:{' '}
+              {t('progress.count', { count: uploadCount })}
             </p>
             {uploadCount === 4 && (
               <p className="text-xs text-blue-700 mt-0.5">
-                All documents uploaded! Ready to process.
+                {t('progress.complete')}
               </p>
             )}
           </div>
@@ -187,11 +187,10 @@ export default function UploadPage() {
             <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
             <div className="flex-1">
               <h3 className="text-sm font-medium text-red-900 mb-1">
-                Upload Failed
+                {t('messages.uploadFailed')}
               </h3>
               <p className="text-sm text-red-700">
-                {uploadMutation.error?.message ||
-                  'An error occurred while uploading files.'}
+                {uploadMutation.error?.message || t('messages.uploadError')}
               </p>
               <Button
                 onClick={handleRetry}
@@ -199,7 +198,7 @@ export default function UploadPage() {
                 size="sm"
                 className="mt-3 border-red-300 text-red-700 hover:bg-red-100"
               >
-                Retry Upload
+                {t('buttons.retry')}
               </Button>
             </div>
           </div>
@@ -269,52 +268,45 @@ export default function UploadPage() {
           {isUploading ? (
             <>
               <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-              Uploading...
+              {t('buttons.uploading')}
             </>
           ) : (
-            'Process Declaration'
+            t('buttons.process')
           )}
         </Button>
 
         {!allFilesUploaded() && !isUploading && (
           <p className="text-sm text-slate-500" aria-live="polite">
-            Please upload all 4 required document types to continue
+            {t('messages.uploadRequired')}
           </p>
         )}
       </div>
 
       {/* Help Text */}
       <Card className="mt-8 p-6 bg-slate-50 border-slate-200">
-        <h3 className="text-sm font-medium text-slate-800 mb-3">Help & Tips</h3>
+        <h3 className="text-sm font-medium text-slate-800 mb-3">
+          {t('helpAndTips.title')}
+        </h3>
         <ul className="text-sm text-slate-600 space-y-2">
           <li className="flex items-start gap-2">
             <span className="text-slate-400">•</span>
-            <span>
-              You can drag and drop files directly onto each zone or click to
-              browse
-            </span>
+            <span>{t('helpAndTips.dragDrop')}</span>
           </li>
           <li className="flex items-start gap-2">
             <span className="text-slate-400">•</span>
-            <span>
-              Certificate of Origin supports multiple files - add as many as
-              needed
-            </span>
+            <span>{t('helpAndTips.multipleFiles')}</span>
           </li>
           <li className="flex items-start gap-2">
             <span className="text-slate-400">•</span>
-            <span>Files are validated for type and size before upload</span>
+            <span>{t('helpAndTips.validation')}</span>
           </li>
           <li className="flex items-start gap-2">
             <span className="text-slate-400">•</span>
-            <span>Maximum file sizes: PDFs (10 MB), Images (5 MB)</span>
+            <span>{t('helpAndTips.maxSizes')}</span>
           </li>
           <li className="flex items-start gap-2">
             <span className="text-slate-400">•</span>
-            <span>
-              All required documents must be uploaded before processing can
-              begin
-            </span>
+            <span>{t('helpAndTips.requiredDocs')}</span>
           </li>
         </ul>
       </Card>

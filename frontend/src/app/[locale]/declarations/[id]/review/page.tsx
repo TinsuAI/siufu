@@ -10,6 +10,7 @@
 import React, { useState, useEffect } from 'react'
 import { use } from 'react'
 import { useRouter } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import {
   DeclarationFormV2,
   DeclarationFormData,
@@ -47,6 +48,7 @@ export default function DeclarationReviewPage({
 }: DeclarationReviewPageProps) {
   const { id } = use(params)
   const router = useRouter()
+  const t = useTranslations('declarations.review')
   const { toast } = useToast()
   const [formData, setFormData] = React.useState<DeclarationFormData | null>(
     null
@@ -109,8 +111,8 @@ export default function DeclarationReviewPage({
   const handleRejectConfirm = () => {
     if (rejectionReason.trim().length < 10) {
       toast({
-        title: 'Invalid Reason',
-        description: 'Rejection reason must be at least 10 characters.',
+        title: t('toasts.invalidReason.title'),
+        description: t('toasts.invalidReason.description'),
         variant: 'error',
       })
       return
@@ -128,19 +130,19 @@ export default function DeclarationReviewPage({
   useEffect(() => {
     if (isApproveSuccess) {
       toast({
-        title: 'Success',
-        description: 'Declaration approved successfully',
+        title: t('toasts.approveSuccess.title'),
+        description: t('toasts.approveSuccess.description'),
         variant: 'success',
       })
     }
-  }, [isApproveSuccess, toast])
+  }, [isApproveSuccess, toast, t])
 
   // Show success toast on rejection and redirect
   useEffect(() => {
     if (isRejectSuccess) {
       toast({
-        title: 'Success',
-        description: 'Declaration rejected. Reason recorded.',
+        title: t('toasts.rejectSuccess.title'),
+        description: t('toasts.rejectSuccess.description'),
         variant: 'success',
       })
       setRejectDialogOpen(false)
@@ -149,49 +151,49 @@ export default function DeclarationReviewPage({
         router.push('/declarations')
       }, 1000)
     }
-  }, [isRejectSuccess, toast, router])
+  }, [isRejectSuccess, toast, router, t])
 
   // Show success message on export
   useEffect(() => {
     if (isExportSuccess) {
       toast({
-        title: 'Success',
-        description: 'Declaration approved and exported successfully',
+        title: t('toasts.exportSuccess.title'),
+        description: t('toasts.exportSuccess.description'),
         variant: 'success',
       })
     }
-  }, [isExportSuccess, toast])
+  }, [isExportSuccess, toast, t])
 
   // Show error toasts
   useEffect(() => {
     if (isApproveError) {
       toast({
-        title: 'Approval Failed',
-        description: 'Failed to approve declaration. Please try again.',
+        title: t('toasts.approveError.title'),
+        description: t('toasts.approveError.description'),
         variant: 'error',
       })
     }
-  }, [isApproveError, toast])
+  }, [isApproveError, toast, t])
 
   useEffect(() => {
     if (isRejectError) {
       toast({
-        title: 'Rejection Failed',
-        description: 'Failed to reject declaration. Please try again.',
+        title: t('toasts.rejectError.title'),
+        description: t('toasts.rejectError.description'),
         variant: 'error',
       })
     }
-  }, [isRejectError, toast])
+  }, [isRejectError, toast, t])
 
   useEffect(() => {
     if (isExportError) {
       toast({
-        title: 'Export Failed',
-        description: 'Failed to export declaration. Please try again.',
+        title: t('toasts.exportError.title'),
+        description: t('toasts.exportError.description'),
         variant: 'error',
       })
     }
-  }, [isExportError, toast])
+  }, [isExportError, toast, t])
 
   // Check if approve button should be disabled
   const isApproveBtnDisabled = autoSave.isSaving || isUpdating || isApproving
@@ -204,7 +206,7 @@ export default function DeclarationReviewPage({
         <div className="flex items-center justify-center min-h-[400px]">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-slate-600">Loading declaration...</p>
+            <p className="text-slate-600">{t('loadingDeclaration')}</p>
           </div>
         </div>
       </div>
@@ -217,10 +219,10 @@ export default function DeclarationReviewPage({
       <div className="container mx-auto px-6 py-8">
         <div className="bg-red-50 border border-red-200 rounded-lg p-6">
           <h2 className="text-xl font-semibold text-red-700 mb-2">
-            Error Loading Declaration
+            {t('errorLoading')}
           </h2>
           <p className="text-red-600">
-            {error?.message || 'An unexpected error occurred'}
+            {error?.message || t('unexpectedError')}
           </p>
         </div>
       </div>
@@ -233,11 +235,9 @@ export default function DeclarationReviewPage({
       <div className="container mx-auto px-6 py-8">
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
           <h2 className="text-xl font-semibold text-yellow-700 mb-2">
-            Declaration Not Found
+            {t('notFound')}
           </h2>
-          <p className="text-yellow-600">
-            The requested declaration could not be found.
-          </p>
+          <p className="text-yellow-600">{t('notFoundMessage')}</p>
         </div>
       </div>
     )
@@ -253,10 +253,11 @@ export default function DeclarationReviewPage({
               {/* Left: Title and Info */}
               <div>
                 <h1 className="text-2xl font-bold text-slate-800">
-                  Review Declaration
+                  {t('title')}
                 </h1>
                 <p className="text-sm text-slate-600">
-                  ID: {declaration.id} • Status: {declaration.status}
+                  {t('idLabel')}: {declaration.id} • {t('statusLabel')}:{' '}
+                  {declaration.status}
                 </p>
               </div>
 
@@ -276,7 +277,9 @@ export default function DeclarationReviewPage({
                       className="px-6 py-2 border border-red-600 text-red-600 rounded-md hover:bg-red-50 font-medium"
                       disabled={isRejecting}
                     >
-                      {isRejecting ? 'Rejecting...' : 'Reject'}
+                      {isRejecting
+                        ? t('buttons.rejecting')
+                        : t('buttons.reject')}
                     </button>
 
                     <Tooltip>
@@ -287,13 +290,15 @@ export default function DeclarationReviewPage({
                             className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                             disabled={isApproveBtnDisabled}
                           >
-                            {isApproving ? 'Approving...' : 'Approve'}
+                            {isApproving
+                              ? t('buttons.approving')
+                              : t('buttons.approve')}
                           </button>
                         </span>
                       </TooltipTrigger>
                       {isApproveBtnDisabled && (
                         <TooltipContent>
-                          <p>Please wait for auto-save to complete</p>
+                          <p>{t('tooltips.waitForAutoSave')}</p>
                         </TooltipContent>
                       )}
                     </Tooltip>
@@ -308,7 +313,9 @@ export default function DeclarationReviewPage({
                     disabled={isExporting}
                   >
                     <Download size={18} />
-                    {isExporting ? 'Downloading...' : 'Download Excel'}
+                    {isExporting
+                      ? t('buttons.downloading')
+                      : t('buttons.downloadExcel')}
                   </button>
                 )}
               </div>
@@ -320,9 +327,11 @@ export default function DeclarationReviewPage({
         <div className="container mx-auto px-6 py-8 max-w-7xl">
           <Tabs defaultValue="declaration" className="w-full">
             <TabsList className="mb-6">
-              <TabsTrigger value="declaration">Declaration Form</TabsTrigger>
+              <TabsTrigger value="declaration">
+                {t('tabs.declarationForm')}
+              </TabsTrigger>
               <TabsTrigger value="validation" className="relative">
-                Cross-Document Validation
+                {t('tabs.validation')}
                 {declaration.validation_warnings &&
                   declaration.validation_warnings.length > 0 && (
                     <Badge
@@ -333,7 +342,9 @@ export default function DeclarationReviewPage({
                     </Badge>
                   )}
               </TabsTrigger>
-              <TabsTrigger value="corrections">Corrections Log</TabsTrigger>
+              <TabsTrigger value="corrections">
+                {t('tabs.corrections')}
+              </TabsTrigger>
             </TabsList>
 
             {/* Declaration Form Tab */}
@@ -366,7 +377,7 @@ export default function DeclarationReviewPage({
                     onClick={autoSave.save}
                     className="text-blue-600 hover:text-blue-700 underline text-sm"
                   >
-                    Retry Save
+                    {t('buttons.retrySave')}
                   </button>
                 </div>
               )}
@@ -402,11 +413,10 @@ export default function DeclarationReviewPage({
                       </div>
                     </div>
                     <h3 className="text-lg font-semibold text-green-900 mb-2">
-                      No Validation Issues Found
+                      {t('validationMessages.noIssues')}
                     </h3>
                     <p className="text-green-700 text-sm max-w-md mx-auto">
-                      All cross-document validations passed successfully. The
-                      data appears consistent across all uploaded documents.
+                      {t('validationMessages.noIssuesDescription')}
                     </p>
                   </div>
                 )}
@@ -424,16 +434,15 @@ export default function DeclarationReviewPage({
         <Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Reject Declaration</DialogTitle>
+              <DialogTitle>{t('rejectDialog.title')}</DialogTitle>
               <DialogDescription>
-                Please provide a reason for rejecting this declaration (minimum
-                10 characters).
+                {t('rejectDialog.description')}
               </DialogDescription>
             </DialogHeader>
 
             <textarea
               className="w-full border border-slate-300 rounded-md p-3 text-sm min-h-[120px] focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Enter rejection reason..."
+              placeholder={t('rejectDialog.placeholder')}
               value={rejectionReason}
               onChange={(e) => setRejectionReason(e.target.value)}
             />
@@ -443,14 +452,16 @@ export default function DeclarationReviewPage({
                 onClick={() => setRejectDialogOpen(false)}
                 className="px-4 py-2 border border-slate-300 rounded-md text-slate-700 hover:bg-slate-50"
               >
-                Cancel
+                {t('rejectDialog.cancel')}
               </button>
               <button
                 onClick={handleRejectConfirm}
                 className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50"
                 disabled={isRejecting || rejectionReason.trim().length < 10}
               >
-                {isRejecting ? 'Rejecting...' : 'Confirm Reject'}
+                {isRejecting
+                  ? t('buttons.rejecting')
+                  : t('rejectDialog.confirm')}
               </button>
             </DialogFooter>
           </DialogContent>

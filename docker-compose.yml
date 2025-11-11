@@ -4,7 +4,7 @@ services:
   # PostgreSQL 18.0 Database
   postgres:
     image: postgres:18.0-alpine
-    container_name: logai-focus-postgres
+    container_name: siufu-postgres
     environment:
       POSTGRES_DB: customs_db
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -19,12 +19,12 @@ services:
       retries: 5
     restart: unless-stopped
     networks:
-      - logai-network
+      - siufu-network
 
   # Redis 7.4.1 Cache & Message Broker
   redis:
     image: redis:7.4.1-alpine
-    container_name: logai-focus-redis
+    container_name: siufu-redis
     volumes:
       - redis-data:/data
     ports:
@@ -36,14 +36,14 @@ services:
       retries: 5
     restart: unless-stopped
     networks:
-      - logai-network
+      - siufu-network
 
   # FastAPI Backend
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: logai-focus-backend
+    container_name: siufu-backend
     ports:
       - "8780:8000"
     env_file:
@@ -55,6 +55,7 @@ services:
     volumes:
       - uploaded-files:/app/data/uploads
       - exports:/app/data/exports
+      - screenshots:/app/data/screenshots
       - ./secrets/gcp-sa-key.json:/app/secrets/gcp-sa-key.json:ro
     depends_on:
       postgres:
@@ -63,14 +64,14 @@ services:
         condition: service_healthy
     restart: unless-stopped
     networks:
-      - logai-network
+      - siufu-network
 
   # Celery Worker
   celery-worker:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: logai-focus-celery-worker
+    container_name: siufu-celery-worker
     command: celery -A src.core.celery_app worker --loglevel=info
     env_file:
       - .env
@@ -97,7 +98,7 @@ services:
       start_period: 10s
     restart: unless-stopped
     networks:
-      - logai-network
+      - siufu-network
 
   # Next.js Frontend
   frontend:
@@ -106,7 +107,7 @@ services:
       dockerfile: Dockerfile
       args:
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
-    container_name: logai-focus-frontend
+    container_name: siufu-frontend
     ports:
       - "8779:3000"
     environment:
@@ -115,7 +116,7 @@ services:
       - backend
     restart: unless-stopped
     networks:
-      - logai-network
+      - siufu-network
 
 volumes:
   postgres-data:
@@ -126,7 +127,9 @@ volumes:
     driver: local
   exports:
     driver: local
+  screenshots:
+    driver: local
 
 networks:
-  logai-network:
+  siufu-network:
     driver: bridge

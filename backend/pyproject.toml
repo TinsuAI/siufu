@@ -1,7 +1,7 @@
 [project]
-name = "logai-backend"
+name = "siufu-backend"
 version = "1.0.0"
-description = "Backend API for Customs Declaration Automation Platform"
+description = "Backend API for Siufu - Customs Declaration Automation Platform"
 requires-python = ">=3.12"
 
 [tool.ruff]

@@ -1,4 +1,7 @@
 {
+  "app": {
+    "title": "Siufu"
+  },
   "nav": {
     "dashboard": "Dashboard",
     "upload": "Upload",
@@ -18,7 +21,14 @@
     "edit": "Edit",
     "delete": "Delete",
     "create": "Create",
-    "search": "Search"
+    "search": "Search",
+    "view": "View",
+    "download": "Download",
+    "export": "Export",
+    "previous": "Previous",
+    "next": "Next",
+    "yes": "Yes",
+    "no": "No"
   },
   "common": {
     "loading": "Loading...",
@@ -26,5 +36,44 @@
     "success": "Success",
     "confirm": "Confirm",
     "close": "Close"
+  },
+  "declarations": {
+    "title": "Declaration History",
+    "createNew": "Create New Declaration",
+    "table": {
+      "declarationId": "Declaration ID",
+      "uploadDate": "Upload Date",
+      "status": "Status",
+      "productsCount": "Products Count",
+      "actions": "Actions"
+    },
+    "filters": {
+      "search": "Search by Declaration ID...",
+      "allStatuses": "All Statuses"
+    },
+    "actions": {
+      "review": "Review",
+      "download": "Download",
+      "delete": "Delete"
+    },
+    "pagination": {
+      "showing": "Showing {{start}}-{{end}} of {{total}} declarations",
+      "page": "Page"
+    },
+    "messages": {
+      "loading": "Loading declarations...",
+      "noDeclarations": "No declarations found. Upload your first declaration to get started.",
+      "uploadDeclaration": "Upload Declaration",
+      "error": "Error loading declarations: {{message}}",
+      "deleteSuccess": "Declaration deleted successfully",
+      "deleteError": "Failed to delete declaration",
+      "exportSuccess": "Declaration exported successfully",
+      "exportError": "Failed to export declaration",
+      "deleting": "Deleting..."
+    },
+    "dialog": {
+      "deleteTitle": "Delete Declaration",
+      "deleteDescription": "Are you sure you want to delete this declaration? This action cannot be undone."
+    }
   }
 }

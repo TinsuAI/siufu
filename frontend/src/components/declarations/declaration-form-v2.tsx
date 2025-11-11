@@ -16,6 +16,7 @@ import React from 'react'
 import { useForm, useFieldArray } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
+import { useTranslations } from 'next-intl'
 import { Collapsible, CollapsibleContent } from '@/components/ui/collapsible'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
@@ -211,6 +212,9 @@ export function DeclarationFormV2({
   importerSummary = null,
   exporterSummary = null,
 }: DeclarationFormV2Props) {
+  // Translation hooks
+  const tDecl = useTranslations('declarations')
+
   const [openSections, setOpenSections] = React.useState<Set<string>>(
     new Set(['declaration_header']) // Only Declaration Header open by default
   )
@@ -368,7 +372,7 @@ export function DeclarationFormV2({
                 className="flex w-full items-center justify-between hover:opacity-80 cursor-pointer"
               >
                 <CardTitle className="flex items-center gap-3">
-                  Declaration Header
+                  {tDecl('header.title')}
                   <CompletionBadge
                     completed={declarationHeaderCompletion.completed}
                     total={declarationHeaderCompletion.total}
@@ -385,7 +389,7 @@ export function DeclarationFormV2({
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label>Declaration Number (Read-only)</Label>
+                    <Label>{tDecl('header.declarationNumber.label')}</Label>
                     <ConfidenceInput
                       {...register('declaration_header.declaration_number')}
                       value={formValues.declaration_header?.declaration_number}
@@ -398,7 +402,7 @@ export function DeclarationFormV2({
                   </div>
                   <div>
                     <div className="flex items-center">
-                      <Label>Declaration Type Code</Label>
+                      <Label>{tDecl('header.declarationTypeCode.label')}</Label>
                       <FieldFlagButton
                         declarationId={declarationId}
                         fieldName="declaration_header.declaration_type_code"
@@ -416,7 +420,9 @@ export function DeclarationFormV2({
                       value={
                         formValues.declaration_header?.declaration_type_code
                       }
-                      placeholder="e.g., A11 2 [4]"
+                      placeholder={tDecl(
+                        'header.declarationTypeCode.placeholder'
+                      )}
                       confidenceScore={getFieldConfidence(
                         confidenceScores,
                         'declaration_header.declaration_type_code'
@@ -428,7 +434,7 @@ export function DeclarationFormV2({
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <div className="flex items-center">
-                      <Label>Customs Office Code</Label>
+                      <Label>{tDecl('header.customsOfficeCode.label')}</Label>
                       <FieldFlagButton
                         declarationId={declarationId}
                         fieldName="declaration_header.customs_office_code"
@@ -443,7 +449,9 @@ export function DeclarationFormV2({
                     <ConfidenceInput
                       {...register('declaration_header.customs_office_code')}
                       value={formValues.declaration_header?.customs_office_code}
-                      placeholder="e.g., HQHOALAC"
+                      placeholder={tDecl(
+                        'header.customsOfficeCode.placeholder'
+                      )}
                       confidenceScore={getFieldConfidence(
                         confidenceScores,
                         'declaration_header.customs_office_code'
@@ -452,7 +460,9 @@ export function DeclarationFormV2({
                   </div>
                   <div>
                     <div className="flex items-center">
-                      <Label>Processing Division Code</Label>
+                      <Label>
+                        {tDecl('header.processingDivisionCode.label')}
+                      </Label>
                       <FieldFlagButton
                         declarationId={declarationId}
                         fieldName="declaration_header.processing_division_code"
@@ -473,7 +483,9 @@ export function DeclarationFormV2({
                       value={
                         formValues.declaration_header?.processing_division_code
                       }
-                      placeholder="e.g., 00"
+                      placeholder={tDecl(
+                        'header.processingDivisionCode.placeholder'
+                      )}
                       confidenceScore={getFieldConfidence(
                         confidenceScores,
                         'declaration_header.processing_division_code'
@@ -485,7 +497,7 @@ export function DeclarationFormV2({
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <div className="flex items-center">
-                      <Label>Registration Date</Label>
+                      <Label>{tDecl('header.registrationDate.label')}</Label>
                       <FieldFlagButton
                         declarationId={declarationId}
                         fieldName="declaration_header.registration_date"
@@ -500,7 +512,7 @@ export function DeclarationFormV2({
                     <ConfidenceInput
                       {...register('declaration_header.registration_date')}
                       value={formValues.declaration_header?.registration_date}
-                      placeholder="DD/MM/YYYY"
+                      placeholder={tDecl('header.registrationDate.placeholder')}
                       confidenceScore={getFieldConfidence(
                         confidenceScores,
                         'declaration_header.registration_date'
@@ -509,7 +521,9 @@ export function DeclarationFormV2({
                   </div>
                   <div>
                     <div className="flex items-center">
-                      <Label>Representative HS Code</Label>
+                      <Label>
+                        {tDecl('header.representativeHsCode.label')}
+                      </Label>
                       <FieldFlagButton
                         declarationId={declarationId}
                         fieldName="declaration_header.representative_hs_code"
@@ -527,7 +541,9 @@ export function DeclarationFormV2({
                       value={
                         formValues.declaration_header?.representative_hs_code
                       }
-                      placeholder="First 4 digits"
+                      placeholder={tDecl(
+                        'header.representativeHsCode.placeholder'
+                      )}
                       confidenceScore={getFieldConfidence(
                         confidenceScores,
                         'declaration_header.representative_hs_code'
@@ -549,7 +565,7 @@ export function DeclarationFormV2({
                 className="flex w-full items-center justify-between hover:opacity-80 cursor-pointer"
               >
                 <CardTitle className="flex items-center gap-3">
-                  Importer Information
+                  {tDecl('importer.title')}
                   <CompletionBadge
                     completed={importerCompletion.completed}
                     total={importerCompletion.total}
@@ -576,7 +592,7 @@ export function DeclarationFormV2({
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <div className="flex items-center">
-                      <Label>Tax Code</Label>
+                      <Label>{tDecl('importer.taxCode.label')}</Label>
                       <FieldFlagButton
                         declarationId={declarationId}
                         fieldName="importer.tax_code"
@@ -587,7 +603,7 @@ export function DeclarationFormV2({
                     <ConfidenceInput
                       {...register('importer.tax_code')}
                       value={formValues.importer?.tax_code}
-                      placeholder="10-digit tax ID"
+                      placeholder={tDecl('importer.taxCode.placeholder')}
                       confidenceScore={getFieldConfidence(
                         confidenceScores,
                         'importer.tax_code'
@@ -596,7 +612,7 @@ export function DeclarationFormV2({
                   </div>
                   <div>
                     <div className="flex items-center">
-                      <Label>Name</Label>
+                      <Label>{tDecl('importer.name.label')}</Label>
                       <FieldFlagButton
                         declarationId={declarationId}
                         fieldName="importer.name"
@@ -607,7 +623,7 @@ export function DeclarationFormV2({
                     <ConfidenceInput
                       {...register('importer.name')}
                       value={formValues.importer?.name}
-                      placeholder="Full legal name"
+                      placeholder={tDecl('importer.name.placeholder')}
                       confidenceScore={getFieldConfidence(
                         confidenceScores,
                         'importer.name'
@@ -619,7 +635,7 @@ export function DeclarationFormV2({
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <div className="flex items-center">
-                      <Label>Postal Code</Label>
+                      <Label>{tDecl('importer.postalCode.label')}</Label>
                       <FieldFlagButton
                         declarationId={declarationId}
                         fieldName="importer.postal_code"
@@ -630,7 +646,7 @@ export function DeclarationFormV2({
                     <ConfidenceInput
                       {...register('importer.postal_code')}
                       value={formValues.importer?.postal_code}
-                      placeholder="Postal code"
+                      placeholder={tDecl('importer.postalCode.placeholder')}
                       confidenceScore={getFieldConfidence(
                         confidenceScores,
                         'importer.postal_code'
@@ -639,7 +655,7 @@ export function DeclarationFormV2({
                   </div>
                   <div>
                     <div className="flex items-center">
-                      <Label>Phone</Label>
+                      <Label>{tDecl('importer.phone.label')}</Label>
                       <FieldFlagButton
                         declarationId={declarationId}
                         fieldName="importer.phone"
@@ -650,7 +666,7 @@ export function DeclarationFormV2({
                     <ConfidenceInput
                       {...register('importer.phone')}
                       value={formValues.importer?.phone}
-                      placeholder="Phone number"
+                      placeholder={tDecl('importer.phone.placeholder')}
                       confidenceScore={getFieldConfidence(
                         confidenceScores,
                         'importer.phone'
@@ -661,7 +677,7 @@ export function DeclarationFormV2({
 
                 <div>
                   <div className="flex items-center">
-                    <Label>Address</Label>
+                    <Label>{tDecl('importer.address.label')}</Label>
                     <FieldFlagButton
                       declarationId={declarationId}
                       fieldName="importer.address"
@@ -672,7 +688,7 @@ export function DeclarationFormV2({
                   <ConfidenceInput
                     {...register('importer.address')}
                     value={formValues.importer?.address}
-                    placeholder="Full address in Vietnam"
+                    placeholder={tDecl('importer.address.placeholder')}
                     confidenceScore={getFieldConfidence(
                       confidenceScores,
                       'importer.address'
@@ -693,7 +709,7 @@ export function DeclarationFormV2({
                 className="flex w-full items-center justify-between hover:opacity-80 cursor-pointer"
               >
                 <CardTitle className="flex items-center gap-3">
-                  Exporter Information
+                  {tDecl('exporter.title')}
                   <CompletionBadge
                     completed={exporterCompletion.completed}
                     total={exporterCompletion.total}
@@ -719,7 +735,7 @@ export function DeclarationFormV2({
               <CardContent className="space-y-4">
                 <div>
                   <div className="flex items-center">
-                    <Label>Name</Label>
+                    <Label>{tDecl('exporter.name.label')}</Label>
                     <FieldFlagButton
                       declarationId={declarationId}
                       fieldName="exporter.name"
@@ -730,7 +746,7 @@ export function DeclarationFormV2({
                   <ConfidenceInput
                     {...register('exporter.name')}
                     value={formValues.exporter?.name}
-                    placeholder="Full legal name of exporter"
+                    placeholder={tDecl('exporter.name.placeholder')}
                     confidenceScore={getFieldConfidence(
                       confidenceScores,
                       'exporter.name'
@@ -740,7 +756,7 @@ export function DeclarationFormV2({
 
                 <div>
                   <div className="flex items-center">
-                    <Label>Address Line 1</Label>
+                    <Label>{tDecl('exporter.addressLine1.label')}</Label>
                     <FieldFlagButton
                       declarationId={declarationId}
                       fieldName="exporter.address_line1"
@@ -751,7 +767,7 @@ export function DeclarationFormV2({
                   <ConfidenceInput
                     {...register('exporter.address_line1')}
                     value={formValues.exporter?.address_line1}
-                    placeholder="Primary address line"
+                    placeholder={tDecl('exporter.addressLine1.placeholder')}
                     confidenceScore={getFieldConfidence(
                       confidenceScores,
                       'exporter.address_line1'
@@ -761,7 +777,7 @@ export function DeclarationFormV2({
 
                 <div>
                   <div className="flex items-center">
-                    <Label>Address Line 2</Label>
+                    <Label>{tDecl('exporter.addressLine2.label')}</Label>
                     <FieldFlagButton
                       declarationId={declarationId}
                       fieldName="exporter.address_line2"
@@ -772,7 +788,7 @@ export function DeclarationFormV2({
                   <ConfidenceInput
                     {...register('exporter.address_line2')}
                     value={formValues.exporter?.address_line2}
-                    placeholder="Additional address line"
+                    placeholder={tDecl('exporter.addressLine2.placeholder')}
                     confidenceScore={getFieldConfidence(
                       confidenceScores,
                       'exporter.address_line2'
@@ -783,7 +799,7 @@ export function DeclarationFormV2({
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <div className="flex items-center">
-                      <Label>Address Line 3</Label>
+                      <Label>{tDecl('exporter.addressLine3.label')}</Label>
                       <FieldFlagButton
                         declarationId={declarationId}
                         fieldName="exporter.address_line3"
@@ -794,7 +810,7 @@ export function DeclarationFormV2({
                     <ConfidenceInput
                       {...register('exporter.address_line3')}
                       value={formValues.exporter?.address_line3}
-                      placeholder="City, province, country"
+                      placeholder={tDecl('exporter.addressLine3.placeholder')}
                       confidenceScore={getFieldConfidence(
                         confidenceScores,
                         'exporter.address_line3'
@@ -803,7 +819,7 @@ export function DeclarationFormV2({
                   </div>
                   <div>
                     <div className="flex items-center">
-                      <Label>Country Code</Label>
+                      <Label>{tDecl('exporter.countryCode.label')}</Label>
                       <FieldFlagButton
                         declarationId={declarationId}
                         fieldName="exporter.country_code"
@@ -814,7 +830,7 @@ export function DeclarationFormV2({
                     <ConfidenceInput
                       {...register('exporter.country_code')}
                       value={formValues.exporter?.country_code}
-                      placeholder="e.g., CN, US"
+                      placeholder={tDecl('exporter.countryCode.placeholder')}
                       maxLength={2}
                       confidenceScore={getFieldConfidence(
                         confidenceScores,
@@ -837,7 +853,7 @@ export function DeclarationFormV2({
                 className="flex w-full items-center justify-between hover:opacity-80 cursor-pointer"
               >
                 <CardTitle className="flex items-center gap-3">
-                  Shipping & Transport
+                  {tDecl('shipping.title')}
                   <CompletionBadge
                     completed={shippingTransportCompletion.completed}
                     total={shippingTransportCompletion.total}
@@ -855,7 +871,9 @@ export function DeclarationFormV2({
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <div className="flex items-center">
-                      <Label>Bill of Lading Number</Label>
+                      <Label>
+                        {tDecl('shipping.billOfLadingNumber.label')}
+                      </Label>
                       <FieldFlagButton
                         declarationId={declarationId}
                         fieldName="shipping_transport.bill_of_lading_number"
@@ -873,7 +891,9 @@ export function DeclarationFormV2({
                       value={
                         formValues.shipping_transport?.bill_of_lading_number
                       }
-                      placeholder="B/L or AWB number"
+                      placeholder={tDecl(
+                        'shipping.billOfLadingNumber.placeholder'
+                      )}
                       confidenceScore={getFieldConfidence(
                         confidenceScores,
                         'shipping_transport.bill_of_lading_number'
@@ -882,7 +902,7 @@ export function DeclarationFormV2({
                   </div>
                   <div>
                     <div className="flex items-center">
-                      <Label>Warehouse Code</Label>
+                      <Label>{tDecl('shipping.warehouseCode.label')}</Label>
                       <FieldFlagButton
                         declarationId={declarationId}
                         fieldName="shipping_transport.warehouse_code"
@@ -897,7 +917,7 @@ export function DeclarationFormV2({
                     <ConfidenceInput
                       {...register('shipping_transport.warehouse_code')}
                       value={formValues.shipping_transport?.warehouse_code}
-                      placeholder="Warehouse/CFS code"
+                      placeholder={tDecl('shipping.warehouseCode.placeholder')}
                       confidenceScore={getFieldConfidence(
                         confidenceScores,
                         'shipping_transport.warehouse_code'
@@ -908,7 +928,7 @@ export function DeclarationFormV2({
 
                 <div>
                   <div className="flex items-center">
-                    <Label>Warehouse Name</Label>
+                    <Label>{tDecl('shipping.warehouseName.label')}</Label>
                     <FieldFlagButton
                       declarationId={declarationId}
                       fieldName="shipping_transport.warehouse_name"
@@ -923,7 +943,7 @@ export function DeclarationFormV2({
                   <ConfidenceInput
                     {...register('shipping_transport.warehouse_name')}
                     value={formValues.shipping_transport?.warehouse_name}
-                    placeholder="Warehouse name"
+                    placeholder={tDecl('shipping.warehouseName.placeholder')}
                     confidenceScore={getFieldConfidence(
                       confidenceScores,
                       'shipping_transport.warehouse_name'
@@ -934,7 +954,9 @@ export function DeclarationFormV2({
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <div className="flex items-center">
-                      <Label>Port of Discharge Code</Label>
+                      <Label>
+                        {tDecl('shipping.portOfDischargeCode.label')}
+                      </Label>
                       <FieldFlagButton
                         declarationId={declarationId}
                         fieldName="shipping_transport.port_of_discharge_code"
@@ -952,7 +974,9 @@ export function DeclarationFormV2({
                       value={
                         formValues.shipping_transport?.port_of_discharge_code
                       }
-                      placeholder="UN/LOCODE"
+                      placeholder={tDecl(
+                        'shipping.portOfDischargeCode.placeholder'
+                      )}
                       confidenceScore={getFieldConfidence(
                         confidenceScores,
                         'shipping_transport.port_of_discharge_code'
@@ -961,7 +985,9 @@ export function DeclarationFormV2({
                   </div>
                   <div>
                     <div className="flex items-center">
-                      <Label>Port of Discharge Name</Label>
+                      <Label>
+                        {tDecl('shipping.portOfDischargeName.label')}
+                      </Label>
                       <FieldFlagButton
                         declarationId={declarationId}
                         fieldName="shipping_transport.port_of_discharge_name"
@@ -979,7 +1005,9 @@ export function DeclarationFormV2({
                       value={
                         formValues.shipping_transport?.port_of_discharge_name
                       }
-                      placeholder="Port name"
+                      placeholder={tDecl(
+                        'shipping.portOfDischargeName.placeholder'
+                      )}
                       confidenceScore={getFieldConfidence(
                         confidenceScores,
                         'shipping_transport.port_of_discharge_name'
@@ -991,7 +1019,7 @@ export function DeclarationFormV2({
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <div className="flex items-center">
-                      <Label>Port of Loading Code</Label>
+                      <Label>{tDecl('shipping.portOfLoadingCode.label')}</Label>
                       <FieldFlagButton
                         declarationId={declarationId}
                         fieldName="shipping_transport.port_of_loading_code"
@@ -1009,7 +1037,9 @@ export function DeclarationFormV2({
                       value={
                         formValues.shipping_transport?.port_of_loading_code
                       }
-                      placeholder="UN/LOCODE"
+                      placeholder={tDecl(
+                        'shipping.portOfLoadingCode.placeholder'
+                      )}
                       confidenceScore={getFieldConfidence(
                         confidenceScores,
                         'shipping_transport.port_of_loading_code'
@@ -1018,7 +1048,7 @@ export function DeclarationFormV2({
                   </div>
                   <div>
                     <div className="flex items-center">
-                      <Label>Port of Loading Name</Label>
+                      <Label>{tDecl('shipping.portOfLoadingName.label')}</Label>
                       <FieldFlagButton
                         declarationId={declarationId}
                         fieldName="shipping_transport.port_of_loading_name"
@@ -1036,7 +1066,9 @@ export function DeclarationFormV2({
                       value={
                         formValues.shipping_transport?.port_of_loading_name
                       }
-                      placeholder="Port name"
+                      placeholder={tDecl(
+                        'shipping.portOfLoadingName.placeholder'
+                      )}
                       confidenceScore={getFieldConfidence(
                         confidenceScores,
                         'shipping_transport.port_of_loading_name'
@@ -1048,7 +1080,7 @@ export function DeclarationFormV2({
                 <div className="grid grid-cols-3 gap-4">
                   <div>
                     <div className="flex items-center">
-                      <Label>Transport Mode Code</Label>
+                      <Label>{tDecl('shipping.transportModeCode.label')}</Label>
                       <FieldFlagButton
                         declarationId={declarationId}
                         fieldName="shipping_transport.transport_mode_code"
@@ -1063,7 +1095,9 @@ export function DeclarationFormV2({
                     <ConfidenceInput
                       {...register('shipping_transport.transport_mode_code')}
                       value={formValues.shipping_transport?.transport_mode_code}
-                      placeholder="e.g., 9999"
+                      placeholder={tDecl(
+                        'shipping.transportModeCode.placeholder'
+                      )}
                       confidenceScore={getFieldConfidence(
                         confidenceScores,
                         'shipping_transport.transport_mode_code'
@@ -1072,7 +1106,7 @@ export function DeclarationFormV2({
                   </div>
                   <div>
                     <div className="flex items-center">
-                      <Label>Vessel Name</Label>
+                      <Label>{tDecl('shipping.vesselName.label')}</Label>
                       <FieldFlagButton
                         declarationId={declarationId}
                         fieldName="shipping_transport.vessel_name"
@@ -1087,7 +1121,7 @@ export function DeclarationFormV2({
                     <ConfidenceInput
                       {...register('shipping_transport.vessel_name')}
                       value={formValues.shipping_transport?.vessel_name}
-                      placeholder="Vessel name and voyage"
+                      placeholder={tDecl('shipping.vesselName.placeholder')}
                       confidenceScore={getFieldConfidence(
                         confidenceScores,
                         'shipping_transport.vessel_name'
@@ -1096,7 +1130,7 @@ export function DeclarationFormV2({
                   </div>
                   <div>
                     <div className="flex items-center">
-                      <Label>Arrival Date</Label>
+                      <Label>{tDecl('shipping.arrivalDate.label')}</Label>
                       <FieldFlagButton
                         declarationId={declarationId}
                         fieldName="shipping_transport.arrival_date"
@@ -1111,7 +1145,7 @@ export function DeclarationFormV2({
                     <ConfidenceInput
                       {...register('shipping_transport.arrival_date')}
                       value={formValues.shipping_transport?.arrival_date}
-                      placeholder="DD/MM/YYYY"
+                      placeholder={tDecl('shipping.arrivalDate.placeholder')}
                       confidenceScore={getFieldConfidence(
                         confidenceScores,
                         'shipping_transport.arrival_date'
@@ -1133,7 +1167,7 @@ export function DeclarationFormV2({
                 className="flex w-full items-center justify-between hover:opacity-80 cursor-pointer"
               >
                 <CardTitle className="flex items-center gap-3">
-                  Package & Container
+                  {tDecl('package.title')}
                   <CompletionBadge
                     completed={packageContainerCompletion.completed}
                     total={packageContainerCompletion.total}
@@ -1151,7 +1185,7 @@ export function DeclarationFormV2({
                 <div className="grid grid-cols-3 gap-4">
                   <div>
                     <div className="flex items-center">
-                      <Label>Total Packages</Label>
+                      <Label>{tDecl('package.totalPackages.label')}</Label>
                       <FieldFlagButton
                         declarationId={declarationId}
                         fieldName="package_container.total_packages"
@@ -1169,7 +1203,7 @@ export function DeclarationFormV2({
                       })}
                       type="number"
                       value={formValues.package_container?.total_packages}
-                      placeholder="Number"
+                      placeholder={tDecl('package.totalPackages.placeholder')}
                       confidenceScore={getFieldConfidence(
                         confidenceScores,
                         'package_container.total_packages'
@@ -1178,7 +1212,7 @@ export function DeclarationFormV2({
                   </div>
                   <div>
                     <div className="flex items-center">
-                      <Label>Package Unit</Label>
+                      <Label>{tDecl('package.packageUnit.label')}</Label>
                       <FieldFlagButton
                         declarationId={declarationId}
                         fieldName="package_container.package_unit"
@@ -1193,7 +1227,7 @@ export function DeclarationFormV2({
                     <ConfidenceInput
                       {...register('package_container.package_unit')}
                       value={formValues.package_container?.package_unit}
-                      placeholder="e.g., PK, CT"
+                      placeholder={tDecl('package.packageUnit.placeholder')}
                       confidenceScore={getFieldConfidence(
                         confidenceScores,
                         'package_container.package_unit'
@@ -1202,7 +1236,7 @@ export function DeclarationFormV2({
                   </div>
                   <div>
                     <div className="flex items-center">
-                      <Label>Container Count</Label>
+                      <Label>{tDecl('package.containerCount.label')}</Label>
                       <FieldFlagButton
                         declarationId={declarationId}
                         fieldName="package_container.container_count"
@@ -1220,7 +1254,7 @@ export function DeclarationFormV2({
                       })}
                       type="number"
                       value={formValues.package_container?.container_count}
-                      placeholder="Number"
+                      placeholder={tDecl('package.containerCount.placeholder')}
                       confidenceScore={getFieldConfidence(
                         confidenceScores,
                         'package_container.container_count'
@@ -1231,7 +1265,7 @@ export function DeclarationFormV2({
 
                 <div>
                   <div className="flex items-center">
-                    <Label>Package Marks</Label>
+                    <Label>{tDecl('package.packageMarks.label')}</Label>
                     <FieldFlagButton
                       declarationId={declarationId}
                       fieldName="package_container.package_marks"
@@ -1246,7 +1280,7 @@ export function DeclarationFormV2({
                   <ConfidenceInput
                     {...register('package_container.package_marks')}
                     value={formValues.package_container?.package_marks}
-                    placeholder="Shipping marks and numbers"
+                    placeholder={tDecl('package.packageMarks.placeholder')}
                     confidenceScore={getFieldConfidence(
                       confidenceScores,
                       'package_container.package_marks'
@@ -1257,7 +1291,7 @@ export function DeclarationFormV2({
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <div className="flex items-center">
-                      <Label>Gross Weight (kg)</Label>
+                      <Label>{tDecl('package.grossWeightKg.label')}</Label>
                       <FieldFlagButton
                         declarationId={declarationId}
                         fieldName="package_container.gross_weight_kg"
@@ -1276,7 +1310,7 @@ export function DeclarationFormV2({
                       type="number"
                       step="0.01"
                       value={formValues.package_container?.gross_weight_kg}
-                      placeholder="Weight"
+                      placeholder={tDecl('package.grossWeightKg.placeholder')}
                       confidenceScore={getFieldConfidence(
                         confidenceScores,
                         'package_container.gross_weight_kg'
@@ -1285,7 +1319,7 @@ export function DeclarationFormV2({
                   </div>
                   <div>
                     <div className="flex items-center">
-                      <Label>Weight Unit</Label>
+                      <Label>{tDecl('package.weightUnit.label')}</Label>
                       <FieldFlagButton
                         declarationId={declarationId}
                         fieldName="package_container.gross_weight_unit"
@@ -1300,7 +1334,7 @@ export function DeclarationFormV2({
                     <ConfidenceInput
                       {...register('package_container.gross_weight_unit')}
                       value={formValues.package_container?.gross_weight_unit}
-                      placeholder="e.g., KGM"
+                      placeholder={tDecl('package.weightUnit.placeholder')}
                       confidenceScore={getFieldConfidence(
                         confidenceScores,
                         'package_container.gross_weight_unit'
@@ -1322,7 +1356,7 @@ export function DeclarationFormV2({
                 className="flex w-full items-center justify-between hover:opacity-80 cursor-pointer"
               >
                 <CardTitle className="flex items-center gap-3">
-                  Invoice Details
+                  {tDecl('invoice.title')}
                   <CompletionBadge
                     completed={invoiceCompletion.completed}
                     total={invoiceCompletion.total}
@@ -1340,7 +1374,7 @@ export function DeclarationFormV2({
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <div className="flex items-center">
-                      <Label>Invoice Number</Label>
+                      <Label>{tDecl('invoice.invoiceNumber.label')}</Label>
                       <FieldFlagButton
                         declarationId={declarationId}
                         fieldName="invoice.invoice_number"
@@ -1351,7 +1385,7 @@ export function DeclarationFormV2({
                     <ConfidenceInput
                       {...register('invoice.invoice_number')}
                       value={formValues.invoice?.invoice_number}
-                      placeholder="Commercial invoice number"
+                      placeholder={tDecl('invoice.invoiceNumber.placeholder')}
                       confidenceScore={getFieldConfidence(
                         confidenceScores,
                         'invoice.invoice_number'
@@ -1360,7 +1394,7 @@ export function DeclarationFormV2({
                   </div>
                   <div>
                     <div className="flex items-center">
-                      <Label>Invoice Date</Label>
+                      <Label>{tDecl('invoice.invoiceDate.label')}</Label>
                       <FieldFlagButton
                         declarationId={declarationId}
                         fieldName="invoice.invoice_date"
@@ -1371,7 +1405,7 @@ export function DeclarationFormV2({
                     <ConfidenceInput
                       {...register('invoice.invoice_date')}
                       value={formValues.invoice?.invoice_date}
-                      placeholder="DD/MM/YYYY"
+                      placeholder={tDecl('invoice.invoiceDate.placeholder')}
                       confidenceScore={getFieldConfidence(
                         confidenceScores,
                         'invoice.invoice_date'
@@ -1383,7 +1417,7 @@ export function DeclarationFormV2({
                 <div className="grid grid-cols-3 gap-4">
                   <div>
                     <div className="flex items-center">
-                      <Label>Payment Method Code</Label>
+                      <Label>{tDecl('invoice.paymentMethodCode.label')}</Label>
                       <FieldFlagButton
                         declarationId={declarationId}
                         fieldName="invoice.payment_method_code"
@@ -1396,7 +1430,9 @@ export function DeclarationFormV2({
                     <ConfidenceInput
                       {...register('invoice.payment_method_code')}
                       value={formValues.invoice?.payment_method_code}
-                      placeholder="e.g., KC"
+                      placeholder={tDecl(
+                        'invoice.paymentMethodCode.placeholder'
+                      )}
                       confidenceScore={getFieldConfidence(
                         confidenceScores,
                         'invoice.payment_method_code'
@@ -1405,7 +1441,7 @@ export function DeclarationFormV2({
                   </div>
                   <div>
                     <div className="flex items-center">
-                      <Label>Invoice Total</Label>
+                      <Label>{tDecl('invoice.invoiceTotal.label')}</Label>
                       <FieldFlagButton
                         declarationId={declarationId}
                         fieldName="invoice.invoice_total"
@@ -1420,7 +1456,7 @@ export function DeclarationFormV2({
                       type="number"
                       step="0.01"
                       value={formValues.invoice?.invoice_total}
-                      placeholder="Total value"
+                      placeholder={tDecl('invoice.invoiceTotal.placeholder')}
                       confidenceScore={getFieldConfidence(
                         confidenceScores,
                         'invoice.invoice_total'
@@ -1429,7 +1465,7 @@ export function DeclarationFormV2({
                   </div>
                   <div>
                     <div className="flex items-center">
-                      <Label>Currency</Label>
+                      <Label>{tDecl('invoice.currency.label')}</Label>
                       <FieldFlagButton
                         declarationId={declarationId}
                         fieldName="invoice.invoice_currency"
@@ -1440,7 +1476,7 @@ export function DeclarationFormV2({
                     <ConfidenceInput
                       {...register('invoice.invoice_currency')}
                       value={formValues.invoice?.invoice_currency}
-                      placeholder="e.g., USD"
+                      placeholder={tDecl('invoice.currency.placeholder')}
                       maxLength={3}
                       confidenceScore={getFieldConfidence(
                         confidenceScores,
@@ -1453,7 +1489,7 @@ export function DeclarationFormV2({
                 <div className="grid grid-cols-3 gap-4">
                   <div>
                     <div className="flex items-center">
-                      <Label>Incoterm</Label>
+                      <Label>{tDecl('invoice.incoterm.label')}</Label>
                       <FieldFlagButton
                         declarationId={declarationId}
                         fieldName="invoice.invoice_incoterm"
@@ -1464,7 +1500,7 @@ export function DeclarationFormV2({
                     <ConfidenceInput
                       {...register('invoice.invoice_incoterm')}
                       value={formValues.invoice?.invoice_incoterm}
-                      placeholder="e.g., FOB, CIF"
+                      placeholder={tDecl('invoice.incoterm.placeholder')}
                       confidenceScore={getFieldConfidence(
                         confidenceScores,
                         'invoice.invoice_incoterm'
@@ -1473,7 +1509,9 @@ export function DeclarationFormV2({
                   </div>
                   <div>
                     <div className="flex items-center">
-                      <Label>Total Taxable Value (VND)</Label>
+                      <Label>
+                        {tDecl('invoice.totalTaxableValueVnd.label')}
+                      </Label>
                       <FieldFlagButton
                         declarationId={declarationId}
                         fieldName="invoice.total_taxable_value_vnd"
@@ -1492,7 +1530,9 @@ export function DeclarationFormV2({
                       type="number"
                       step="0.01"
                       value={formValues.invoice?.total_taxable_value_vnd}
-                      placeholder="Calculated value"
+                      placeholder={tDecl(
+                        'invoice.totalTaxableValueVnd.placeholder'
+                      )}
                       confidenceScore={getFieldConfidence(
                         confidenceScores,
                         'invoice.total_taxable_value_vnd'
@@ -1501,7 +1541,7 @@ export function DeclarationFormV2({
                   </div>
                   <div>
                     <div className="flex items-center">
-                      <Label>Exchange Rate</Label>
+                      <Label>{tDecl('invoice.exchangeRate.label')}</Label>
                       <FieldFlagButton
                         declarationId={declarationId}
                         fieldName="invoice.exchange_rate"
@@ -1516,7 +1556,7 @@ export function DeclarationFormV2({
                       type="number"
                       step="0.01"
                       value={formValues.invoice?.exchange_rate}
-                      placeholder="USD to VND rate"
+                      placeholder={tDecl('invoice.exchangeRate.placeholder')}
                       confidenceScore={getFieldConfidence(
                         confidenceScores,
                         'invoice.exchange_rate'
@@ -1538,7 +1578,7 @@ export function DeclarationFormV2({
                 className="flex w-full items-center justify-between hover:opacity-80 cursor-pointer"
               >
                 <CardTitle className="flex items-center gap-3">
-                  Certificate of Origin
+                  {tDecl('certificateOfOrigin.title')}
                   <CompletionBadge
                     completed={certificateOfOriginCompletion.completed}
                     total={certificateOfOriginCompletion.total}
@@ -1556,7 +1596,9 @@ export function DeclarationFormV2({
                 <div className="grid grid-cols-3 gap-4">
                   <div>
                     <div className="flex items-center">
-                      <Label>Form Type</Label>
+                      <Label>
+                        {tDecl('certificateOfOrigin.formType.label')}
+                      </Label>
                       <FieldFlagButton
                         declarationId={declarationId}
                         fieldName="certificate_of_origin.co_form_type"
@@ -1571,7 +1613,9 @@ export function DeclarationFormV2({
                     <ConfidenceInput
                       {...register('certificate_of_origin.co_form_type')}
                       value={formValues.certificate_of_origin?.co_form_type}
-                      placeholder="e.g., Form E, Form AK"
+                      placeholder={tDecl(
+                        'certificateOfOrigin.formType.placeholder'
+                      )}
                       confidenceScore={getFieldConfidence(
                         confidenceScores,
                         'certificate_of_origin.co_form_type'
@@ -1580,7 +1624,9 @@ export function DeclarationFormV2({
                   </div>
                   <div>
                     <div className="flex items-center">
-                      <Label>C/O Number</Label>
+                      <Label>
+                        {tDecl('certificateOfOrigin.coNumber.label')}
+                      </Label>
                       <FieldFlagButton
                         declarationId={declarationId}
                         fieldName="certificate_of_origin.co_number"
@@ -1595,7 +1641,9 @@ export function DeclarationFormV2({
                     <ConfidenceInput
                       {...register('certificate_of_origin.co_number')}
                       value={formValues.certificate_of_origin?.co_number}
-                      placeholder="Certificate number"
+                      placeholder={tDecl(
+                        'certificateOfOrigin.coNumber.placeholder'
+                      )}
                       confidenceScore={getFieldConfidence(
                         confidenceScores,
                         'certificate_of_origin.co_number'
@@ -1604,7 +1652,7 @@ export function DeclarationFormV2({
                   </div>
                   <div>
                     <div className="flex items-center">
-                      <Label>C/O Date</Label>
+                      <Label>{tDecl('certificateOfOrigin.coDate.label')}</Label>
                       <FieldFlagButton
                         declarationId={declarationId}
                         fieldName="certificate_of_origin.co_date"
@@ -1619,7 +1667,9 @@ export function DeclarationFormV2({
                     <ConfidenceInput
                       {...register('certificate_of_origin.co_date')}
                       value={formValues.certificate_of_origin?.co_date}
-                      placeholder="DD/MM/YYYY"
+                      placeholder={tDecl(
+                        'certificateOfOrigin.coDate.placeholder'
+                      )}
                       confidenceScore={getFieldConfidence(
                         confidenceScores,
                         'certificate_of_origin.co_date'
@@ -1641,7 +1691,7 @@ export function DeclarationFormV2({
                 className="flex w-full items-center justify-between hover:opacity-80 cursor-pointer"
               >
                 <CardTitle className="flex items-center gap-3">
-                  Product Line Items ({productFields.length})
+                  {tDecl('products.title')} ({productFields.length})
                 </CardTitle>
                 {openSections.has('products') ? (
                   <ChevronUp className="h-5 w-5" />
@@ -1680,7 +1730,7 @@ export function DeclarationFormV2({
                     }
                   >
                     <Plus className="h-4 w-4 mr-1" />
-                    Add Product
+                    {tDecl('products.addButton')}
                   </Button>
                 </div>
 
@@ -1691,7 +1741,11 @@ export function DeclarationFormV2({
                       className="border rounded-lg p-4 space-y-4 bg-gray-50"
                     >
                       <div className="flex items-center justify-between">
-                        <h4 className="font-medium">Product {index + 1}</h4>
+                        <h4 className="font-medium">
+                          {tDecl('products.productNumber', {
+                            number: index + 1,
+                          })}
+                        </h4>
                         {productFields.length > 1 && (
                           <Button
                             type="button"
@@ -1700,7 +1754,7 @@ export function DeclarationFormV2({
                             onClick={() => removeProduct(index)}
                           >
                             <Trash2 className="h-4 w-4 mr-1" />
-                            Remove
+                            {tDecl('products.removeButton')}
                           </Button>
                         )}
                       </div>
@@ -1708,7 +1762,7 @@ export function DeclarationFormV2({
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <div className="flex items-center">
-                            <Label>Item Number</Label>
+                            <Label>{tDecl('products.itemNumber.label')}</Label>
                             <FieldFlagButton
                               declarationId={declarationId}
                               fieldName={`products.${index}.item_number`}
@@ -1726,7 +1780,9 @@ export function DeclarationFormV2({
                             })}
                             type="number"
                             value={formValues.products?.[index]?.item_number}
-                            placeholder="Sequential number"
+                            placeholder={tDecl(
+                              'products.itemNumber.placeholder'
+                            )}
                             confidenceScore={getFieldConfidence(
                               confidenceScores,
                               `products.${index}.item_number`
@@ -1735,7 +1791,7 @@ export function DeclarationFormV2({
                         </div>
                         <div>
                           <div className="flex items-center">
-                            <Label>HS Code (8 digits)</Label>
+                            <Label>{tDecl('products.hsCode.label')}</Label>
                             <FieldFlagButton
                               declarationId={declarationId}
                               fieldName={`products.${index}.hs_code`}
@@ -1750,7 +1806,7 @@ export function DeclarationFormV2({
                           <ConfidenceInput
                             {...register(`products.${index}.hs_code`)}
                             value={formValues.products?.[index]?.hs_code}
-                            placeholder="8 digits"
+                            placeholder={tDecl('products.hsCode.placeholder')}
                             maxLength={8}
                             confidenceScore={getFieldConfidence(
                               confidenceScores,
@@ -1762,7 +1818,9 @@ export function DeclarationFormV2({
 
                       <div>
                         <div className="flex items-center">
-                          <Label>Product Description</Label>
+                          <Label>
+                            {tDecl('products.productDescription.label')}
+                          </Label>
                           <FieldFlagButton
                             declarationId={declarationId}
                             fieldName={`products.${index}.product_description`}
@@ -1780,7 +1838,9 @@ export function DeclarationFormV2({
                           value={
                             formValues.products?.[index]?.product_description
                           }
-                          placeholder="Full product description"
+                          placeholder={tDecl(
+                            'products.productDescription.placeholder'
+                          )}
                           confidenceScore={getFieldConfidence(
                             confidenceScores,
                             `products.${index}.product_description`
@@ -1791,7 +1851,7 @@ export function DeclarationFormV2({
                       <div className="grid grid-cols-4 gap-4">
                         <div>
                           <div className="flex items-center">
-                            <Label>Quantity 1</Label>
+                            <Label>{tDecl('products.quantity1.label')}</Label>
                             <FieldFlagButton
                               declarationId={declarationId}
                               fieldName={`products.${index}.quantity_1`}
@@ -1810,7 +1870,9 @@ export function DeclarationFormV2({
                             type="number"
                             step="0.01"
                             value={formValues.products?.[index]?.quantity_1}
-                            placeholder="Primary qty"
+                            placeholder={tDecl(
+                              'products.quantity1.placeholder'
+                            )}
                             confidenceScore={getFieldConfidence(
                               confidenceScores,
                               `products.${index}.quantity_1`
@@ -1819,7 +1881,7 @@ export function DeclarationFormV2({
                         </div>
                         <div>
                           <div className="flex items-center">
-                            <Label>Unit 1</Label>
+                            <Label>{tDecl('products.unit1.label')}</Label>
                             <FieldFlagButton
                               declarationId={declarationId}
                               fieldName={`products.${index}.quantity_unit_1`}
@@ -1837,7 +1899,7 @@ export function DeclarationFormV2({
                             value={
                               formValues.products?.[index]?.quantity_unit_1
                             }
-                            placeholder="e.g., PCE, KGM"
+                            placeholder={tDecl('products.unit1.placeholder')}
                             confidenceScore={getFieldConfidence(
                               confidenceScores,
                               `products.${index}.quantity_unit_1`
@@ -1846,7 +1908,7 @@ export function DeclarationFormV2({
                         </div>
                         <div>
                           <div className="flex items-center">
-                            <Label>Quantity 2</Label>
+                            <Label>{tDecl('products.quantity2.label')}</Label>
                             <FieldFlagButton
                               declarationId={declarationId}
                               fieldName={`products.${index}.quantity_2`}
@@ -1865,7 +1927,9 @@ export function DeclarationFormV2({
                             type="number"
                             step="0.01"
                             value={formValues.products?.[index]?.quantity_2}
-                            placeholder="Secondary qty"
+                            placeholder={tDecl(
+                              'products.quantity2.placeholder'
+                            )}
                             confidenceScore={getFieldConfidence(
                               confidenceScores,
                               `products.${index}.quantity_2`
@@ -1874,7 +1938,7 @@ export function DeclarationFormV2({
                         </div>
                         <div>
                           <div className="flex items-center">
-                            <Label>Unit 2</Label>
+                            <Label>{tDecl('products.unit2.label')}</Label>
                             <FieldFlagButton
                               declarationId={declarationId}
                               fieldName={`products.${index}.quantity_unit_2`}
@@ -1892,7 +1956,7 @@ export function DeclarationFormV2({
                             value={
                               formValues.products?.[index]?.quantity_unit_2
                             }
-                            placeholder="Unit"
+                            placeholder={tDecl('products.unit2.placeholder')}
                             confidenceScore={getFieldConfidence(
                               confidenceScores,
                               `products.${index}.quantity_unit_2`
@@ -1904,7 +1968,7 @@ export function DeclarationFormV2({
                       <div className="grid grid-cols-3 gap-4">
                         <div>
                           <div className="flex items-center">
-                            <Label>Unit Price</Label>
+                            <Label>{tDecl('products.unitPrice.label')}</Label>
                             <FieldFlagButton
                               declarationId={declarationId}
                               fieldName={`products.${index}.invoice_unit_price`}
@@ -1929,7 +1993,9 @@ export function DeclarationFormV2({
                             value={
                               formValues.products?.[index]?.invoice_unit_price
                             }
-                            placeholder="Unit price"
+                            placeholder={tDecl(
+                              'products.unitPrice.placeholder'
+                            )}
                             confidenceScore={getFieldConfidence(
                               confidenceScores,
                               `products.${index}.invoice_unit_price`
@@ -1938,7 +2004,7 @@ export function DeclarationFormV2({
                         </div>
                         <div>
                           <div className="flex items-center">
-                            <Label>Currency</Label>
+                            <Label>{tDecl('products.currency.label')}</Label>
                             <FieldFlagButton
                               declarationId={declarationId}
                               fieldName={`products.${index}.invoice_unit_price_currency`}
@@ -1960,7 +2026,7 @@ export function DeclarationFormV2({
                               formValues.products?.[index]
                                 ?.invoice_unit_price_currency
                             }
-                            placeholder="e.g., USD"
+                            placeholder={tDecl('products.currency.placeholder')}
                             maxLength={3}
                             confidenceScore={getFieldConfidence(
                               confidenceScores,
@@ -1970,7 +2036,7 @@ export function DeclarationFormV2({
                         </div>
                         <div>
                           <div className="flex items-center">
-                            <Label>Line Total</Label>
+                            <Label>{tDecl('products.lineTotal.label')}</Label>
                             <FieldFlagButton
                               declarationId={declarationId}
                               fieldName={`products.${index}.invoice_line_total`}
@@ -1995,7 +2061,9 @@ export function DeclarationFormV2({
                             value={
                               formValues.products?.[index]?.invoice_line_total
                             }
-                            placeholder="Total"
+                            placeholder={tDecl(
+                              'products.lineTotal.placeholder'
+                            )}
                             confidenceScore={getFieldConfidence(
                               confidenceScores,
                               `products.${index}.invoice_line_total`
@@ -2007,7 +2075,9 @@ export function DeclarationFormV2({
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <div className="flex items-center">
-                            <Label>Taxable Value (VND)</Label>
+                            <Label>
+                              {tDecl('products.taxableValueVnd.label')}
+                            </Label>
                             <FieldFlagButton
                               declarationId={declarationId}
                               fieldName={`products.${index}.taxable_value_vnd`}
@@ -2032,7 +2102,9 @@ export function DeclarationFormV2({
                             value={
                               formValues.products?.[index]?.taxable_value_vnd
                             }
-                            placeholder="Calculated"
+                            placeholder={tDecl(
+                              'products.taxableValueVnd.placeholder'
+                            )}
                             confidenceScore={getFieldConfidence(
                               confidenceScores,
                               `products.${index}.taxable_value_vnd`
@@ -2041,7 +2113,9 @@ export function DeclarationFormV2({
                         </div>
                         <div>
                           <div className="flex items-center">
-                            <Label>Unit Price (VND)</Label>
+                            <Label>
+                              {tDecl('products.unitPriceVnd.label')}
+                            </Label>
                             <FieldFlagButton
                               declarationId={declarationId}
                               fieldName={`products.${index}.unit_price_vnd`}
@@ -2060,7 +2134,9 @@ export function DeclarationFormV2({
                             type="number"
                             step="0.01"
                             value={formValues.products?.[index]?.unit_price_vnd}
-                            placeholder="Calculated"
+                            placeholder={tDecl(
+                              'products.unitPriceVnd.placeholder'
+                            )}
                             confidenceScore={getFieldConfidence(
                               confidenceScores,
                               `products.${index}.unit_price_vnd`
@@ -2072,7 +2148,9 @@ export function DeclarationFormV2({
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <div className="flex items-center">
-                            <Label>Country of Origin Code</Label>
+                            <Label>
+                              {tDecl('products.countryOfOriginCode.label')}
+                            </Label>
                             <FieldFlagButton
                               declarationId={declarationId}
                               fieldName={`products.${index}.country_of_origin_code`}
@@ -2094,7 +2172,9 @@ export function DeclarationFormV2({
                               formValues.products?.[index]
                                 ?.country_of_origin_code
                             }
-                            placeholder="e.g., CN, US"
+                            placeholder={tDecl(
+                              'products.countryOfOriginCode.placeholder'
+                            )}
                             maxLength={2}
                             confidenceScore={getFieldConfidence(
                               confidenceScores,
@@ -2104,7 +2184,7 @@ export function DeclarationFormV2({
                         </div>
                         <div>
                           <div className="flex items-center">
-                            <Label>Country Name</Label>
+                            <Label>{tDecl('products.countryName.label')}</Label>
                             <FieldFlagButton
                               declarationId={declarationId}
                               fieldName={`products.${index}.country_of_origin_name`}
@@ -2126,7 +2206,9 @@ export function DeclarationFormV2({
                               formValues.products?.[index]
                                 ?.country_of_origin_name
                             }
-                            placeholder="e.g., CHINA"
+                            placeholder={tDecl(
+                              'products.countryName.placeholder'
+                            )}
                             confidenceScore={getFieldConfidence(
                               confidenceScores,
                               `products.${index}.country_of_origin_name`
@@ -2138,7 +2220,9 @@ export function DeclarationFormV2({
                       <div className="grid grid-cols-3 gap-4">
                         <div>
                           <div className="flex items-center">
-                            <Label>Preferential Code</Label>
+                            <Label>
+                              {tDecl('products.preferentialCode.label')}
+                            </Label>
                             <FieldFlagButton
                               declarationId={declarationId}
                               fieldName={`products.${index}.preferential_code`}
@@ -2156,7 +2240,9 @@ export function DeclarationFormV2({
                             value={
                               formValues.products?.[index]?.preferential_code
                             }
-                            placeholder="e.g., B05"
+                            placeholder={tDecl(
+                              'products.preferentialCode.placeholder'
+                            )}
                             confidenceScore={getFieldConfidence(
                               confidenceScores,
                               `products.${index}.preferential_code`
@@ -2165,7 +2251,9 @@ export function DeclarationFormV2({
                         </div>
                         <div>
                           <div className="flex items-center">
-                            <Label>Manufacturer</Label>
+                            <Label>
+                              {tDecl('products.manufacturer.label')}
+                            </Label>
                             <FieldFlagButton
                               declarationId={declarationId}
                               fieldName={`products.${index}.manufacturer_name`}
@@ -2183,7 +2271,9 @@ export function DeclarationFormV2({
                             value={
                               formValues.products?.[index]?.manufacturer_name
                             }
-                            placeholder="Manufacturer name"
+                            placeholder={tDecl(
+                              'products.manufacturer.placeholder'
+                            )}
                             confidenceScore={getFieldConfidence(
                               confidenceScores,
                               `products.${index}.manufacturer_name`
@@ -2192,7 +2282,7 @@ export function DeclarationFormV2({
                         </div>
                         <div>
                           <div className="flex items-center">
-                            <Label>Brand Name</Label>
+                            <Label>{tDecl('products.brandName.label')}</Label>
                             <FieldFlagButton
                               declarationId={declarationId}
                               fieldName={`products.${index}.brand_name`}
@@ -2207,7 +2297,9 @@ export function DeclarationFormV2({
                           <ConfidenceInput
                             {...register(`products.${index}.brand_name`)}
                             value={formValues.products?.[index]?.brand_name}
-                            placeholder="Brand/trademark"
+                            placeholder={tDecl(
+                              'products.brandName.placeholder'
+                            )}
                             confidenceScore={getFieldConfidence(
                               confidenceScores,
                               `products.${index}.brand_name`
@@ -2218,7 +2310,7 @@ export function DeclarationFormV2({
 
                       <div>
                         <div className="flex items-center">
-                          <Label>Condition</Label>
+                          <Label>{tDecl('products.condition.label')}</Label>
                           <FieldFlagButton
                             declarationId={declarationId}
                             fieldName={`products.${index}.condition`}
@@ -2233,7 +2325,7 @@ export function DeclarationFormV2({
                         <ConfidenceInput
                           {...register(`products.${index}.condition`)}
                           value={formValues.products?.[index]?.condition}
-                          placeholder="e.g., Mới 100%"
+                          placeholder={tDecl('products.condition.placeholder')}
                           confidenceScore={getFieldConfidence(
                             confidenceScores,
                             `products.${index}.condition`
@@ -2257,7 +2349,7 @@ export function DeclarationFormV2({
                 className="flex w-full items-center justify-between hover:opacity-80 cursor-pointer"
               >
                 <CardTitle className="flex items-center gap-3">
-                  Import Duty
+                  {tDecl('importDuty.title')}
                   <CompletionBadge
                     completed={importDutyCompletion.completed}
                     total={importDutyCompletion.total}
@@ -2275,7 +2367,7 @@ export function DeclarationFormV2({
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <div className="flex items-center">
-                      <Label>Rate (%)</Label>
+                      <Label>{tDecl('importDuty.rate.label')}</Label>
                       <FieldFlagButton
                         declarationId={declarationId}
                         fieldName="import_duty.rate"
@@ -2288,7 +2380,7 @@ export function DeclarationFormV2({
                       type="number"
                       step="0.01"
                       value={formValues.import_duty?.rate}
-                      placeholder="Duty rate"
+                      placeholder={tDecl('importDuty.rate.placeholder')}
                       confidenceScore={getFieldConfidence(
                         confidenceScores,
                         'import_duty.rate'
@@ -2297,7 +2389,7 @@ export function DeclarationFormV2({
                   </div>
                   <div>
                     <div className="flex items-center">
-                      <Label>Rate Type</Label>
+                      <Label>{tDecl('importDuty.rateType.label')}</Label>
                       <FieldFlagButton
                         declarationId={declarationId}
                         fieldName="import_duty.rate_type"
@@ -2308,7 +2400,7 @@ export function DeclarationFormV2({
                     <ConfidenceInput
                       {...register('import_duty.rate_type')}
                       value={formValues.import_duty?.rate_type}
-                      placeholder="C, S, or M"
+                      placeholder={tDecl('importDuty.rateType.placeholder')}
                       confidenceScore={getFieldConfidence(
                         confidenceScores,
                         'import_duty.rate_type'
@@ -2320,7 +2412,7 @@ export function DeclarationFormV2({
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <div className="flex items-center">
-                      <Label>Amount (VND)</Label>
+                      <Label>{tDecl('importDuty.amount.label')}</Label>
                       <FieldFlagButton
                         declarationId={declarationId}
                         fieldName="import_duty.amount"
@@ -2335,7 +2427,7 @@ export function DeclarationFormV2({
                       type="number"
                       step="0.01"
                       value={formValues.import_duty?.amount}
-                      placeholder="Calculated amount"
+                      placeholder={tDecl('importDuty.amount.placeholder')}
                       confidenceScore={getFieldConfidence(
                         confidenceScores,
                         'import_duty.amount'
@@ -2344,7 +2436,7 @@ export function DeclarationFormV2({
                   </div>
                   <div>
                     <div className="flex items-center">
-                      <Label>Exemption Amount (VND)</Label>
+                      <Label>{tDecl('importDuty.exemptionAmount.label')}</Label>
                       <FieldFlagButton
                         declarationId={declarationId}
                         fieldName="import_duty.exemption_amount"
@@ -2363,7 +2455,9 @@ export function DeclarationFormV2({
                       type="number"
                       step="0.01"
                       value={formValues.import_duty?.exemption_amount}
-                      placeholder="Exemption"
+                      placeholder={tDecl(
+                        'importDuty.exemptionAmount.placeholder'
+                      )}
                       confidenceScore={getFieldConfidence(
                         confidenceScores,
                         'import_duty.exemption_amount'
@@ -2385,7 +2479,7 @@ export function DeclarationFormV2({
                 className="flex w-full items-center justify-between hover:opacity-80 cursor-pointer"
               >
                 <CardTitle className="flex items-center gap-3">
-                  VAT & Other Taxes
+                  {tDecl('vat.title')}
                   <CompletionBadge
                     completed={vatCompletion.completed}
                     total={vatCompletion.total}
@@ -2403,7 +2497,7 @@ export function DeclarationFormV2({
                 <div className="grid grid-cols-3 gap-4">
                   <div>
                     <div className="flex items-center">
-                      <Label>Tax Name</Label>
+                      <Label>{tDecl('vat.taxName.label')}</Label>
                       <FieldFlagButton
                         declarationId={declarationId}
                         fieldName="vat.name"
@@ -2414,7 +2508,7 @@ export function DeclarationFormV2({
                     <ConfidenceInput
                       {...register('vat.name')}
                       value={formValues.vat?.name}
-                      placeholder="e.g., Thuế GTGT"
+                      placeholder={tDecl('vat.taxName.placeholder')}
                       confidenceScore={getFieldConfidence(
                         confidenceScores,
                         'vat.name'
@@ -2423,7 +2517,7 @@ export function DeclarationFormV2({
                   </div>
                   <div>
                     <div className="flex items-center">
-                      <Label>Rate Code</Label>
+                      <Label>{tDecl('vat.rateCode.label')}</Label>
                       <FieldFlagButton
                         declarationId={declarationId}
                         fieldName="vat.rate_code"
@@ -2434,7 +2528,7 @@ export function DeclarationFormV2({
                     <ConfidenceInput
                       {...register('vat.rate_code')}
                       value={formValues.vat?.rate_code}
-                      placeholder="e.g., VB245"
+                      placeholder={tDecl('vat.rateCode.placeholder')}
                       confidenceScore={getFieldConfidence(
                         confidenceScores,
                         'vat.rate_code'
@@ -2443,7 +2537,7 @@ export function DeclarationFormV2({
                   </div>
                   <div>
                     <div className="flex items-center">
-                      <Label>Rate (%)</Label>
+                      <Label>{tDecl('vat.rate.label')}</Label>
                       <FieldFlagButton
                         declarationId={declarationId}
                         fieldName="vat.rate"
@@ -2456,7 +2550,7 @@ export function DeclarationFormV2({
                       type="number"
                       step="0.01"
                       value={formValues.vat?.rate}
-                      placeholder="VAT rate"
+                      placeholder={tDecl('vat.rate.placeholder')}
                       confidenceScore={getFieldConfidence(
                         confidenceScores,
                         'vat.rate'
@@ -2468,7 +2562,7 @@ export function DeclarationFormV2({
                 <div className="grid grid-cols-3 gap-4">
                   <div>
                     <div className="flex items-center">
-                      <Label>Taxable Value (VND)</Label>
+                      <Label>{tDecl('vat.taxableValueVnd.label')}</Label>
                       <FieldFlagButton
                         declarationId={declarationId}
                         fieldName="vat.taxable_value_vnd"
@@ -2483,7 +2577,7 @@ export function DeclarationFormV2({
                       type="number"
                       step="0.01"
                       value={formValues.vat?.taxable_value_vnd}
-                      placeholder="Taxable value"
+                      placeholder={tDecl('vat.taxableValueVnd.placeholder')}
                       confidenceScore={getFieldConfidence(
                         confidenceScores,
                         'vat.taxable_value_vnd'
@@ -2492,7 +2586,7 @@ export function DeclarationFormV2({
                   </div>
                   <div>
                     <div className="flex items-center">
-                      <Label>Amount (VND)</Label>
+                      <Label>{tDecl('vat.amount.label')}</Label>
                       <FieldFlagButton
                         declarationId={declarationId}
                         fieldName="vat.amount"
@@ -2505,7 +2599,7 @@ export function DeclarationFormV2({
                       type="number"
                       step="0.01"
                       value={formValues.vat?.amount}
-                      placeholder="VAT amount"
+                      placeholder={tDecl('vat.amount.placeholder')}
                       confidenceScore={getFieldConfidence(
                         confidenceScores,
                         'vat.amount'
@@ -2514,7 +2608,7 @@ export function DeclarationFormV2({
                   </div>
                   <div>
                     <div className="flex items-center">
-                      <Label>Exemption (VND)</Label>
+                      <Label>{tDecl('vat.exemption.label')}</Label>
                       <FieldFlagButton
                         declarationId={declarationId}
                         fieldName="vat.exemption_amount"
@@ -2529,7 +2623,7 @@ export function DeclarationFormV2({
                       type="number"
                       step="0.01"
                       value={formValues.vat?.exemption_amount}
-                      placeholder="Exemption"
+                      placeholder={tDecl('vat.exemption.placeholder')}
                       confidenceScore={getFieldConfidence(
                         confidenceScores,
                         'vat.exemption_amount'
@@ -2551,7 +2645,7 @@ export function DeclarationFormV2({
                 className="flex w-full items-center justify-between hover:opacity-80 cursor-pointer"
               >
                 <CardTitle className="flex items-center gap-3">
-                  Tax Summary
+                  {tDecl('taxSummary.title')}
                   <CompletionBadge
                     completed={taxSummaryCompletion.completed}
                     total={taxSummaryCompletion.total}
@@ -2569,7 +2663,9 @@ export function DeclarationFormV2({
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <div className="flex items-center">
-                      <Label>Total Tax Amount (VND)</Label>
+                      <Label>
+                        {tDecl('taxSummary.totalTaxAmountVnd.label')}
+                      </Label>
                       <FieldFlagButton
                         declarationId={declarationId}
                         fieldName="tax_summary.total_tax_amount_vnd"
@@ -2588,7 +2684,9 @@ export function DeclarationFormV2({
                       type="number"
                       step="0.01"
                       value={formValues.tax_summary?.total_tax_amount_vnd}
-                      placeholder="Total taxes"
+                      placeholder={tDecl(
+                        'taxSummary.totalTaxAmountVnd.placeholder'
+                      )}
                       confidenceScore={getFieldConfidence(
                         confidenceScores,
                         'tax_summary.total_tax_amount_vnd'
@@ -2597,7 +2695,9 @@ export function DeclarationFormV2({
                   </div>
                   <div>
                     <div className="flex items-center">
-                      <Label>Payment Deadline Code</Label>
+                      <Label>
+                        {tDecl('taxSummary.paymentDeadlineCode.label')}
+                      </Label>
                       <FieldFlagButton
                         declarationId={declarationId}
                         fieldName="tax_summary.tax_payment_deadline_code"
@@ -2612,7 +2712,9 @@ export function DeclarationFormV2({
                     <ConfidenceInput
                       {...register('tax_summary.tax_payment_deadline_code')}
                       value={formValues.tax_summary?.tax_payment_deadline_code}
-                      placeholder="e.g., D"
+                      placeholder={tDecl(
+                        'taxSummary.paymentDeadlineCode.placeholder'
+                      )}
                       confidenceScore={getFieldConfidence(
                         confidenceScores,
                         'tax_summary.tax_payment_deadline_code'
@@ -2624,7 +2726,7 @@ export function DeclarationFormV2({
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <div className="flex items-center">
-                      <Label>Taxpayer Type</Label>
+                      <Label>{tDecl('taxSummary.taxpayerType.label')}</Label>
                       <FieldFlagButton
                         declarationId={declarationId}
                         fieldName="tax_summary.taxpayer_type"
@@ -2637,7 +2739,7 @@ export function DeclarationFormV2({
                     <ConfidenceInput
                       {...register('tax_summary.taxpayer_type')}
                       value={formValues.tax_summary?.taxpayer_type}
-                      placeholder="e.g., 1"
+                      placeholder={tDecl('taxSummary.taxpayerType.placeholder')}
                       confidenceScore={getFieldConfidence(
                         confidenceScores,
                         'tax_summary.taxpayer_type'
@@ -2646,7 +2748,9 @@ export function DeclarationFormV2({
                   </div>
                   <div>
                     <div className="flex items-center">
-                      <Label>Tax Classification</Label>
+                      <Label>
+                        {tDecl('taxSummary.taxClassification.label')}
+                      </Label>
                       <FieldFlagButton
                         declarationId={declarationId}
                         fieldName="tax_summary.tax_classification"
@@ -2661,7 +2765,9 @@ export function DeclarationFormV2({
                     <ConfidenceInput
                       {...register('tax_summary.tax_classification')}
                       value={formValues.tax_summary?.tax_classification}
-                      placeholder="e.g., A"
+                      placeholder={tDecl(
+                        'taxSummary.taxClassification.placeholder'
+                      )}
                       confidenceScore={getFieldConfidence(
                         confidenceScores,
                         'tax_summary.tax_classification'

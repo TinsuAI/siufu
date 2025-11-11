@@ -1,0 +1,54 @@
+{
+  "title": "Công Ty",
+  "subtitle": "Quản lý dữ liệu chính người nhập khẩu và xuất khẩu",
+  "tabs": {
+    "importers": "Người Nhập Khẩu",
+    "exporters": "Người Xuất Khẩu"
+  },
+  "search": {
+    "placeholderImporters": "Tìm kiếm theo tên hoặc mã số thuế...",
+    "placeholderExporters": "Tìm kiếm theo tên..."
+  },
+  "filters": {
+    "all": "Tất Cả Công Ty",
+    "verified": "Chỉ Đã Xác Minh",
+    "unverified": "Chỉ Chưa Xác Minh"
+  },
+  "sort": {
+    "name": "Tên",
+    "declarationCount": "Số Tờ Khai",
+    "lastSeen": "Sử Dụng Gần Nhất"
+  },
+  "sortOrder": {
+    "ascending": "Tăng Dần",
+    "descending": "Giảm Dần"
+  },
+  "company": {
+    "taxCode": "Mã Số Thuế",
+    "country": "Quốc Gia",
+    "verified": "Đã Xác Minh",
+    "unverified": "Chưa Xác Minh",
+    "declarations": "{{count}} tờ khai",
+    "lastSeen": "Sử dụng gần nhất: {{date}}"
+  },
+  "actions": {
+    "addCompany": "Thêm Công Ty",
+    "viewDetails": "Xem Chi Tiết",
+    "edit": "Chỉnh Sửa",
+    "merge": "Gộp",
+    "delete": "Xóa"
+  },
+  "messages": {
+    "loading": "Đang tải công ty...",
+    "error": "Lỗi tải công ty: {{message}}",
+    "noCompanies": "Không tìm thấy công ty. Công ty sẽ xuất hiện ở đây sau khi xử lý tờ khai.",
+    "deleteSuccess": "Xóa công ty thành công",
+    "deleteError": "Xóa công ty thất bại: {{message}}",
+    "deleteConfirm": "Bạn có chắc chắn muốn xóa công ty này? Điều này sẽ hủy liên kết tất cả các tờ khai liên quan."
+  },
+  "pagination": {
+    "page": "Trang {{current}} trên {{total}} ({{count}} công ty)",
+    "previous": "Trước",
+    "next": "Tiếp"
+  }
+}

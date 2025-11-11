@@ -7,6 +7,7 @@
 'use client'
 
 import React from 'react'
+import { useTranslations } from 'next-intl'
 import {
   Collapsible,
   CollapsibleContent,
@@ -26,10 +27,12 @@ import {
   ChevronDown,
   ChevronUp,
   Image as ImageIcon,
+  ExternalLink,
 } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { getCorrections, downloadCorrectionsCSV } from '@/lib/api'
 import { formatDistanceToNow } from 'date-fns'
+import { ImageViewer } from '@/components/ui/image-viewer'
 
 interface CorrectionsLogPanelProps {
   declarationId: string
@@ -50,6 +53,14 @@ export function CorrectionsLogPanel({
   declarationId,
 }: CorrectionsLogPanelProps) {
   const [isOpen, setIsOpen] = React.useState(false)
+  const [viewingScreenshots, setViewingScreenshots] = React.useState<{
+    images: string[]
+    initialIndex: number
+  } | null>(null)
+  const t = useTranslations('declarations.correctionsLog')
+
+  const API_BASE_URL =
+    process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'
 
   // Query for corrections
   const { data, isLoading, isError } = useQuery({
@@ -71,7 +82,7 @@ export function CorrectionsLogPanel({
       await downloadCorrectionsCSV(declarationId)
     } catch {
       // Error handling - show user-friendly message
-      alert('Failed to export corrections. Please try again.')
+      alert(t('exportError'))
     }
   }
 
@@ -84,7 +95,7 @@ export function CorrectionsLogPanel({
       <div className="flex items-center justify-between">
         <CollapsibleTrigger className="flex items-center gap-2 hover:opacity-80">
           <h3 className="text-lg font-semibold">
-            Corrections Log ({corrections.length} flagged fields)
+            {t('title')} ({corrections.length} {t('flaggedFields')})
           </h3>
           {isOpen ? (
             <ChevronUp className="h-5 w-5" />
@@ -101,37 +112,31 @@ export function CorrectionsLogPanel({
             className="ml-auto"
           >
             <Download className="h-4 w-4 mr-2" />
-            Export CSV
+            {t('exportCSV')}
           </Button>
         )}
       </div>
 
       <CollapsibleContent className="mt-4">
         {isLoading && (
-          <p className="text-sm text-muted-foreground">
-            Loading corrections...
-          </p>
+          <p className="text-sm text-muted-foreground">{t('loading')}</p>
         )}
 
-        {isError && (
-          <p className="text-sm text-red-600">
-            Failed to load corrections. Please try again.
-          </p>
-        )}
+        {isError && <p className="text-sm text-red-600">{t('error')}</p>}
 
         {hasCorrections && (
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Field Name</TableHead>
-                  <TableHead>Original → Corrected</TableHead>
-                  <TableHead>Expected Value</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead>Notes</TableHead>
-                  <TableHead>Screenshots</TableHead>
-                  <TableHead>Flagged By</TableHead>
-                  <TableHead>Time</TableHead>
+                  <TableHead>{t('tableHeaders.fieldName')}</TableHead>
+                  <TableHead>{t('tableHeaders.originalCorrected')}</TableHead>
+                  <TableHead>{t('tableHeaders.expectedValue')}</TableHead>
+                  <TableHead>{t('tableHeaders.category')}</TableHead>
+                  <TableHead>{t('tableHeaders.notes')}</TableHead>
+                  <TableHead>{t('tableHeaders.screenshots')}</TableHead>
+                  <TableHead>{t('tableHeaders.flaggedBy')}</TableHead>
+                  <TableHead>{t('tableHeaders.time')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -143,7 +148,7 @@ export function CorrectionsLogPanel({
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <span className="text-muted-foreground line-through">
-                          {correction.original_value || '(null)'}
+                          {correction.original_value || t('null')}
                         </span>
                         <span>→</span>
                         <span className="font-medium">
@@ -170,12 +175,27 @@ export function CorrectionsLogPanel({
                     <TableCell>
                       {correction.screenshots &&
                       correction.screenshots.length > 0 ? (
-                        <div className="flex items-center gap-1">
-                          <ImageIcon className="h-4 w-4 text-blue-600" />
-                          <span className="text-sm text-blue-600">
-                            {correction.screenshots.length}
-                          </span>
-                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() =>
+                            setViewingScreenshots({
+                              images: (correction.screenshots || []).map(
+                                (url: string) => `${API_BASE_URL}${url}`
+                              ),
+                              initialIndex: 0,
+                            })
+                          }
+                          className="h-auto p-1"
+                        >
+                          <div className="flex items-center gap-1">
+                            <ImageIcon className="h-4 w-4 text-blue-600" />
+                            <span className="text-sm text-blue-600">
+                              {correction.screenshots.length}
+                            </span>
+                            <ExternalLink className="h-3 w-3 text-blue-600" />
+                          </div>
+                        </Button>
                       ) : (
                         <span className="text-muted-foreground text-sm">-</span>
                       )}
@@ -193,6 +213,15 @@ export function CorrectionsLogPanel({
           </div>
         )}
       </CollapsibleContent>
+
+      {/* Screenshot Viewer */}
+      <ImageViewer
+        images={viewingScreenshots?.images || []}
+        initialIndex={viewingScreenshots?.initialIndex || 0}
+        isOpen={!!viewingScreenshots}
+        onClose={() => setViewingScreenshots(null)}
+        alt="Correction Screenshot"
+      />
     </Collapsible>
   )
 }

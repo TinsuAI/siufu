@@ -46,8 +46,8 @@ COPY --from=deps /usr/local/bin /usr/local/bin
 # Copy application code
 COPY . .
 
-# Create directories for uploads and exports
-RUN mkdir -p /app/data/uploads /app/data/exports /app/secrets && \
+# Create directories for uploads, exports, and screenshots
+RUN mkdir -p /app/data/uploads /app/data/exports /app/data/screenshots /app/secrets && \
     chown -R appuser:appuser /app
 
 USER appuser

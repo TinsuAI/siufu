@@ -1,0 +1,54 @@
+{
+  "title": "Companies",
+  "subtitle": "Manage importer and exporter master data",
+  "tabs": {
+    "importers": "Importers",
+    "exporters": "Exporters"
+  },
+  "search": {
+    "placeholderImporters": "Search by name or tax code...",
+    "placeholderExporters": "Search by name..."
+  },
+  "filters": {
+    "all": "All Companies",
+    "verified": "Verified Only",
+    "unverified": "Unverified Only"
+  },
+  "sort": {
+    "name": "Name",
+    "declarationCount": "Declaration Count",
+    "lastSeen": "Last Seen"
+  },
+  "sortOrder": {
+    "ascending": "Ascending",
+    "descending": "Descending"
+  },
+  "company": {
+    "taxCode": "Tax Code",
+    "country": "Country",
+    "verified": "Verified",
+    "unverified": "Unverified",
+    "declarations": "{{count}} declarations",
+    "lastSeen": "Last seen: {{date}}"
+  },
+  "actions": {
+    "addCompany": "Add Company",
+    "viewDetails": "View Details",
+    "edit": "Edit",
+    "merge": "Merge",
+    "delete": "Delete"
+  },
+  "messages": {
+    "loading": "Loading companies...",
+    "error": "Error loading companies: {{message}}",
+    "noCompanies": "No companies found. Companies will appear here after processing declarations.",
+    "deleteSuccess": "Company deleted successfully",
+    "deleteError": "Failed to delete company: {{message}}",
+    "deleteConfirm": "Are you sure you want to delete this company? This will unlink all associated declarations."
+  },
+  "pagination": {
+    "page": "Page {{current}} of {{total}} ({{count}} companies)",
+    "previous": "Previous",
+    "next": "Next"
+  }
+}

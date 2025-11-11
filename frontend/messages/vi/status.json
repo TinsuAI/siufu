@@ -1,0 +1,19 @@
+{
+  "stages": {
+    "UPLOADING": "Đang Tải Lên",
+    "OCR_PROCESSING": "Đang Xử Lý OCR",
+    "AI_EXTRACTION": "Đang Trích Xuất AI",
+    "VALIDATING": "Đang Xác Thực",
+    "GENERATING_EXCEL": "Đang Tạo Excel",
+    "READY_FOR_REVIEW": "Sẵn Sàng Xem Xét"
+  },
+  "statuses": {
+    "UPLOADED": "Đã Tải Lên",
+    "PROCESSING": "Đang Xử Lý",
+    "VALIDATING": "Đang Xác Thực",
+    "READY_FOR_REVIEW": "Sẵn Sàng Xem Xét",
+    "APPROVED": "Đã Phê Duyệt",
+    "REJECTED": "Bị Từ Chối",
+    "FAILED": "Thất Bại"
+  }
+}

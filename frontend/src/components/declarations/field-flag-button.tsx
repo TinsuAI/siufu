@@ -25,10 +25,11 @@ import {
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { createCorrection, getCorrections } from '@/lib/api'
+import { createCorrection, getCorrections, uploadScreenshots } from '@/lib/api'
 import type { CorrectionCategory, CorrectionCreate } from '@/types/declaration'
 import { FieldLabel } from './field-label'
 import { useSourceMetadata } from './source-metadata-context'
+import { ImageViewer } from '@/components/ui/image-viewer'
 
 interface FieldFlagButtonProps {
   declarationId: string
@@ -59,7 +60,15 @@ export function FieldFlagButton({
   const [expectedValue, setExpectedValue] = useState('')
   const [notes, setNotes] = useState('')
   const [screenshots, setScreenshots] = useState<File[]>([])
+  const [existingScreenshots, setExistingScreenshots] = useState<string[]>([])
+  const [viewingScreenshots, setViewingScreenshots] = useState<{
+    images: string[]
+    initialIndex: number
+  } | null>(null)
   const sourceMetadata = useSourceMetadata()
+
+  const API_BASE_URL =
+    process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'
   const formattedLabel =
     label ||
     fieldName
@@ -90,13 +99,15 @@ export function FieldFlagButton({
       setCategory(existingCorrection.correction_category)
       setExpectedValue(existingCorrection.expected_value)
       setNotes(existingCorrection.notes)
-      // Note: screenshots are URLs, not files, so we don't pre-populate them
+      // Pre-populate existing screenshots
+      setExistingScreenshots(existingCorrection.screenshots || [])
     } else if (!open) {
       // Reset form when closing
       setCategory('')
       setExpectedValue('')
       setNotes('')
       setScreenshots([])
+      setExistingScreenshots([])
     }
   }
 
@@ -132,35 +143,54 @@ export function FieldFlagButton({
     setScreenshots((prev) => prev.filter((_, i) => i !== index))
   }
 
+  const removeExistingScreenshot = (index: number) => {
+    setExistingScreenshots((prev) => prev.filter((_, i) => i !== index))
+  }
+
   const handleSave = async () => {
     if (!category || !expectedValue || !notes) return
 
-    // Convert corrected value to string
-    const correctedValueStr =
-      correctedValue === null || correctedValue === undefined
-        ? ''
-        : String(correctedValue)
+    try {
+      // Convert corrected value to string
+      const correctedValueStr =
+        correctedValue === null || correctedValue === undefined
+          ? ''
+          : String(correctedValue)
 
-    // Convert original value to string or null
-    const originalValueStr =
-      originalValue === null || originalValue === undefined
-        ? null
-        : String(originalValue)
+      // Convert original value to string or null
+      const originalValueStr =
+        originalValue === null || originalValue === undefined
+          ? null
+          : String(originalValue)
 
-    // TODO: Upload screenshots to backend first, then include URLs in correction data
-    // For now, we'll just save the correction without screenshots
-    await createCorrectionMutation.mutateAsync({
-      declarationId,
-      correctionData: {
-        field_name: fieldName,
-        original_value: originalValueStr,
-        corrected_value: correctedValueStr,
-        correction_category: category,
-        expected_value: expectedValue,
-        notes: notes,
-        // screenshots: [], // Will be added after backend support
-      },
-    })
+      // Upload new screenshots first if any
+      let newScreenshotUrls: string[] = []
+      if (screenshots.length > 0) {
+        const uploadResult = await uploadScreenshots(screenshots)
+        newScreenshotUrls = uploadResult.urls
+      }
+
+      // Combine existing screenshots (not deleted) with newly uploaded ones
+      const allScreenshotUrls = [...existingScreenshots, ...newScreenshotUrls]
+
+      // Save the correction with screenshot URLs
+      await createCorrectionMutation.mutateAsync({
+        declarationId,
+        correctionData: {
+          field_name: fieldName,
+          original_value: originalValueStr,
+          corrected_value: correctedValueStr,
+          correction_category: category,
+          expected_value: expectedValue,
+          notes: notes,
+          screenshots:
+            allScreenshotUrls.length > 0 ? allScreenshotUrls : undefined,
+        },
+      })
+    } catch (error) {
+      // Error will be handled by mutation's onError
+      throw error
+    }
   }
 
   const isFlagged = !!existingCorrection
@@ -282,34 +312,92 @@ export function FieldFlagButton({
             {/* Screenshot Upload */}
             <div className="space-y-2">
               <Label htmlFor="screenshots" className="text-sm font-medium">
-                Screenshots (optional, max 3)
+                Screenshots (optional, max 3 total)
               </Label>
               <div className="space-y-2">
+                {/* Show existing screenshots */}
+                {existingScreenshots.length > 0 && (
+                  <div className="space-y-1 mb-2">
+                    <p className="text-xs text-muted-foreground">
+                      Existing screenshots:
+                    </p>
+                    {existingScreenshots.map((url, index) => {
+                      const filename =
+                        url.split('/').pop() || `screenshot-${index + 1}`
+                      return (
+                        <div
+                          key={`existing-${index}`}
+                          className="flex items-center justify-between bg-blue-50 p-2 rounded text-sm border border-blue-200"
+                        >
+                          <span className="flex items-center gap-2 truncate">
+                            <Upload className="h-4 w-4 text-blue-600" />
+                            <span className="truncate text-blue-700">
+                              {filename}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setViewingScreenshots({
+                                  images: existingScreenshots.map(
+                                    (s) => `${API_BASE_URL}${s}`
+                                  ),
+                                  initialIndex: index,
+                                })
+                              }}
+                              className="text-xs text-blue-600 hover:underline"
+                            >
+                              View
+                            </button>
+                          </span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeExistingScreenshot(index)}
+                            className="h-6 w-6 p-0"
+                            type="button"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+
                 <Input
                   id="screenshots"
                   type="file"
                   accept="image/*"
                   multiple
                   onChange={handleFileChange}
-                  disabled={screenshots.length >= 3}
+                  disabled={
+                    existingScreenshots.length + screenshots.length >= 3
+                  }
                   className="cursor-pointer"
                 />
                 <p className="text-xs text-muted-foreground">
                   Upload screenshots showing where the correct data appears in
-                  the document
+                  the document (
+                  {existingScreenshots.length + screenshots.length}/3)
                 </p>
 
-                {/* Preview uploaded screenshots */}
+                {/* Preview newly uploaded screenshots */}
                 {screenshots.length > 0 && (
                   <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">
+                      New uploads:
+                    </p>
                     {screenshots.map((file, index) => (
                       <div
-                        key={index}
-                        className="flex items-center justify-between bg-slate-50 p-2 rounded text-sm"
+                        key={`new-${index}`}
+                        className="flex items-center justify-between bg-green-50 p-2 rounded text-sm border border-green-200"
                       >
                         <span className="flex items-center gap-2 truncate">
-                          <Upload className="h-4 w-4 text-slate-500" />
-                          <span className="truncate">{file.name}</span>
+                          <Upload className="h-4 w-4 text-green-600" />
+                          <span className="truncate text-green-700">
+                            {file.name}
+                          </span>
                         </span>
                         <Button
                           variant="ghost"
@@ -362,6 +450,15 @@ export function FieldFlagButton({
           </div>
         </PopoverContent>
       </Popover>
+
+      {/* Screenshot Viewer */}
+      <ImageViewer
+        images={viewingScreenshots?.images || []}
+        initialIndex={viewingScreenshots?.initialIndex || 0}
+        isOpen={!!viewingScreenshots}
+        onClose={() => setViewingScreenshots(null)}
+        alt="Field Screenshot"
+      />
     </div>
   )
 }

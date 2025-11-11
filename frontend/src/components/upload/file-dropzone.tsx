@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useRef, useState } from 'react'
+import { useTranslations } from 'next-intl'
 import { Check, Upload, X, AlertCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -83,6 +84,7 @@ export function FileDropZone({
   disabled = false,
   multiple = false,
 }: FileDropZoneProps) {
+  const t = useTranslations('upload.dropzone')
   const [isDragOver, setIsDragOver] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -356,7 +358,7 @@ export function FileDropZone({
                 />
                 <span className="text-sm font-medium text-green-700 bg-green-100 px-2 py-1 rounded">
                   {currentFiles.length}{' '}
-                  {currentFiles.length === 1 ? 'file' : 'files'}
+                  {currentFiles.length === 1 ? t('file') : t('files')}
                 </span>
               </div>
             )}
@@ -407,9 +409,7 @@ export function FileDropZone({
                 <div className="flex items-center justify-center py-2 border-t border-slate-200 mt-2">
                   <Upload className="h-6 w-6 mr-2 text-slate-400" />
                   <p className="text-sm text-slate-600">
-                    {isDragOver
-                      ? 'Drop more files here'
-                      : 'Click or drag to add more files'}
+                    {isDragOver ? t('dropMoreFiles') : t('clickOrDragMore')}
                   </p>
                 </div>
               </div>
@@ -424,15 +424,19 @@ export function FileDropZone({
                 />
                 <p className="text-sm text-slate-600 text-center mb-1">
                   {isDragOver
-                    ? `Drop ${multiple ? 'files' : 'file'} here`
-                    : `Drag and drop ${multiple ? 'files' : 'file'} here or click to browse`}
+                    ? multiple
+                      ? t('dropMultiple')
+                      : t('dropSingle')
+                    : multiple
+                      ? t('dragAndDropMultiple')
+                      : t('dragAndDropSingle')}
                 </p>
                 <p className="text-xs text-slate-500 text-center">
                   {acceptedFormatsString}
                 </p>
                 {multiple && (
                   <p className="text-xs text-slate-400 text-center mt-1">
-                    Multiple files supported
+                    {t('multipleSupported')}
                   </p>
                 )}
               </>

@@ -1,0 +1,50 @@
+{
+  "title": "Tải Lên Tài Liệu Tờ Khai",
+  "subtitle": "Tải lên tất cả 4 loại tài liệu bắt buộc để xử lý tờ khai hải quan mới. Chứng Nhận Xuất Xứ hỗ trợ nhiều file.",
+  "progress": {
+    "label": "Tiến Độ Tải Lên",
+    "count": "Đã tải lên {{count}} trong 4 tài liệu bắt buộc",
+    "complete": "Đã tải lên tất cả tài liệu! Sẵn sàng xử lý."
+  },
+  "documentTypes": {
+    "AN": "Thông Báo Nhập Khẩu (AN)",
+    "BOL": "Vận Đơn (BOL)",
+    "CO": "Chứng Nhận Xuất Xứ (C/O) - Hỗ trợ nhiều file",
+    "INVOICE": "Hóa Đơn Thương Mại"
+  },
+  "descriptions": {
+    "AN": "Tài liệu thông báo hàng hóa đến cảng",
+    "BOL": "Chứng từ pháp lý giữa người gửi và vận tải",
+    "CO": "Chứng nhận nước xuất xứ (cho phép nhiều file)",
+    "INVOICE": "Hóa đơn thương mại cho hàng hóa"
+  },
+  "buttons": {
+    "process": "Xử Lý Tờ Khai",
+    "uploading": "Đang tải lên...",
+    "retry": "Thử Lại"
+  },
+  "messages": {
+    "uploadRequired": "Vui lòng tải lên tất cả 4 loại tài liệu bắt buộc để tiếp tục",
+    "uploadFailed": "Tải Lên Thất Bại",
+    "uploadError": "Đã xảy ra lỗi khi tải lên file."
+  },
+  "helpAndTips": {
+    "title": "Trợ Giúp & Mẹo",
+    "dragDrop": "Bạn có thể kéo thả file trực tiếp vào từng vùng hoặc nhấp để chọn file",
+    "multipleFiles": "Chứng Nhận Xuất Xứ hỗ trợ nhiều file - thêm bao nhiêu file cũng được",
+    "validation": "File được kiểm tra loại và kích thước trước khi tải lên",
+    "maxSizes": "Kích thước tối đa: PDF (10 MB), Hình ảnh (5 MB)",
+    "requiredDocs": "Tất cả các tài liệu bắt buộc phải được tải lên trước khi bắt đầu xử lý"
+  },
+  "dropzone": {
+    "file": "file",
+    "files": "file",
+    "dropMoreFiles": "Thả thêm file vào đây",
+    "clickOrDragMore": "Nhấp hoặc kéo để thêm file",
+    "dragAndDropSingle": "Kéo thả file vào đây hoặc nhấp để chọn",
+    "dragAndDropMultiple": "Kéo thả file vào đây hoặc nhấp để chọn",
+    "dropSingle": "Thả file vào đây",
+    "dropMultiple": "Thả file vào đây",
+    "multipleSupported": "Hỗ trợ nhiều file"
+  }
+}

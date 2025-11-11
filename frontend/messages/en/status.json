@@ -1,0 +1,19 @@
+{
+  "stages": {
+    "UPLOADING": "Uploading",
+    "OCR_PROCESSING": "OCR Processing",
+    "AI_EXTRACTION": "AI Extraction",
+    "VALIDATING": "Validation",
+    "GENERATING_EXCEL": "Generating Excel",
+    "READY_FOR_REVIEW": "Ready for Review"
+  },
+  "statuses": {
+    "UPLOADED": "Uploaded",
+    "PROCESSING": "Processing",
+    "VALIDATING": "Validating",
+    "READY_FOR_REVIEW": "Ready for Review",
+    "APPROVED": "Approved",
+    "REJECTED": "Rejected",
+    "FAILED": "Failed"
+  }
+}

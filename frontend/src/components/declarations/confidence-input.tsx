@@ -10,6 +10,7 @@
 'use client'
 
 import React from 'react'
+import { useTranslations } from 'next-intl'
 import { Input } from '@/components/ui/input'
 import {
   Tooltip,
@@ -51,6 +52,7 @@ export const ConfidenceInput = React.forwardRef<
     },
     ref
   ) => {
+    const t = useTranslations('declarations.confidenceInput')
     const innerRef = React.useRef<HTMLInputElement | null>(null)
 
     React.useImperativeHandle(ref, () => innerRef.current as HTMLInputElement)
@@ -127,7 +129,7 @@ export const ConfidenceInput = React.forwardRef<
                 ref={composedRef}
                 className={inputClassName}
                 placeholder={
-                  renderIsNull ? 'Enter manually...' : props.placeholder
+                  renderIsNull ? t('placeholder') : props.placeholder
                 }
                 onChange={handleChange}
               />
@@ -137,10 +139,10 @@ export const ConfidenceInput = React.forwardRef<
                 {renderIsNull ? (
                   <>
                     <p className="text-sm font-medium text-red-600">
-                      Missing Data
+                      {t('tooltip.missingDataTitle')}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      This field was not extracted - manual entry required
+                      {t('tooltip.missingDataDescription')}
                     </p>
                   </>
                 ) : (
@@ -149,7 +151,7 @@ export const ConfidenceInput = React.forwardRef<
                       {label}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      Field extracted with AI - review accuracy
+                      {t('tooltip.fieldExtractedDescription')}
                     </p>
                   </>
                 )}

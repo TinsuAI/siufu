@@ -1,0 +1,448 @@
+{
+  "header": {
+    "title": "Declaration Header",
+    "declarationNumber": {
+      "label": "Declaration Number (Read-only)",
+      "placeholder": ""
+    },
+    "declarationTypeCode": {
+      "label": "Declaration Type Code",
+      "placeholder": "e.g., A11 2 [4]"
+    },
+    "customsOfficeCode": {
+      "label": "Customs Office Code",
+      "placeholder": "e.g., HQHOALAC"
+    },
+    "processingDivisionCode": {
+      "label": "Processing Division Code",
+      "placeholder": "e.g., 00"
+    },
+    "registrationDate": {
+      "label": "Registration Date",
+      "placeholder": "DD/MM/YYYY"
+    },
+    "representativeHsCode": {
+      "label": "Representative HS Code",
+      "placeholder": "First 4 digits"
+    }
+  },
+  "importer": {
+    "title": "Importer Information",
+    "taxCode": {
+      "label": "Tax Code",
+      "placeholder": "10-digit tax ID"
+    },
+    "name": {
+      "label": "Name",
+      "placeholder": "Full legal name"
+    },
+    "postalCode": {
+      "label": "Postal Code",
+      "placeholder": "Postal code"
+    },
+    "phone": {
+      "label": "Phone",
+      "placeholder": "Phone number"
+    },
+    "address": {
+      "label": "Address",
+      "placeholder": "Full address in Vietnam"
+    }
+  },
+  "exporter": {
+    "title": "Exporter Information",
+    "name": {
+      "label": "Name",
+      "placeholder": "Full legal name of exporter"
+    },
+    "addressLine1": {
+      "label": "Address Line 1",
+      "placeholder": "Primary address line"
+    },
+    "addressLine2": {
+      "label": "Address Line 2",
+      "placeholder": "Additional address line"
+    },
+    "addressLine3": {
+      "label": "Address Line 3",
+      "placeholder": "City, province, country"
+    },
+    "countryCode": {
+      "label": "Country Code",
+      "placeholder": "e.g., CN, US"
+    }
+  },
+  "shipping": {
+    "title": "Shipping & Transport",
+    "billOfLadingNumber": {
+      "label": "Bill of Lading Number",
+      "placeholder": "B/L or AWB number"
+    },
+    "warehouseCode": {
+      "label": "Warehouse Code",
+      "placeholder": "Warehouse/CFS code"
+    },
+    "warehouseName": {
+      "label": "Warehouse Name",
+      "placeholder": "Warehouse name"
+    },
+    "portOfDischargeCode": {
+      "label": "Port of Discharge Code",
+      "placeholder": "UN/LOCODE"
+    },
+    "portOfDischargeName": {
+      "label": "Port of Discharge Name",
+      "placeholder": "Port name"
+    },
+    "portOfLoadingCode": {
+      "label": "Port of Loading Code",
+      "placeholder": "UN/LOCODE"
+    },
+    "portOfLoadingName": {
+      "label": "Port of Loading Name",
+      "placeholder": "Port name"
+    },
+    "transportModeCode": {
+      "label": "Transport Mode Code",
+      "placeholder": "e.g., 9999"
+    },
+    "vesselName": {
+      "label": "Vessel Name",
+      "placeholder": "Vessel name and voyage"
+    },
+    "arrivalDate": {
+      "label": "Arrival Date",
+      "placeholder": "DD/MM/YYYY"
+    }
+  },
+  "package": {
+    "title": "Package & Container",
+    "totalPackages": {
+      "label": "Total Packages",
+      "placeholder": "Number"
+    },
+    "packageUnit": {
+      "label": "Package Unit",
+      "placeholder": "e.g., PK, CT"
+    },
+    "containerCount": {
+      "label": "Container Count",
+      "placeholder": "Number"
+    },
+    "packageMarks": {
+      "label": "Package Marks",
+      "placeholder": "Shipping marks and numbers"
+    },
+    "grossWeightKg": {
+      "label": "Gross Weight (kg)",
+      "placeholder": "Weight"
+    },
+    "weightUnit": {
+      "label": "Weight Unit",
+      "placeholder": "e.g., KGM"
+    }
+  },
+  "invoice": {
+    "title": "Invoice Details",
+    "invoiceNumber": {
+      "label": "Invoice Number",
+      "placeholder": "Commercial invoice number"
+    },
+    "invoiceDate": {
+      "label": "Invoice Date",
+      "placeholder": "DD/MM/YYYY"
+    },
+    "paymentMethodCode": {
+      "label": "Payment Method Code",
+      "placeholder": "e.g., KC"
+    },
+    "invoiceTotal": {
+      "label": "Invoice Total",
+      "placeholder": "Total value"
+    },
+    "currency": {
+      "label": "Currency",
+      "placeholder": "e.g., USD"
+    },
+    "incoterm": {
+      "label": "Incoterm",
+      "placeholder": "e.g., FOB, CIF"
+    },
+    "totalTaxableValueVnd": {
+      "label": "Total Taxable Value (VND)",
+      "placeholder": "Calculated value"
+    },
+    "exchangeRate": {
+      "label": "Exchange Rate",
+      "placeholder": "USD to VND rate"
+    }
+  },
+  "certificateOfOrigin": {
+    "title": "Certificate of Origin",
+    "formType": {
+      "label": "Form Type",
+      "placeholder": "e.g., Form E, Form AK"
+    },
+    "coNumber": {
+      "label": "C/O Number",
+      "placeholder": "Certificate number"
+    },
+    "coDate": {
+      "label": "C/O Date",
+      "placeholder": "DD/MM/YYYY"
+    }
+  },
+  "products": {
+    "title": "Product Line Items",
+    "addButton": "Add Product",
+    "removeButton": "Remove",
+    "productNumber": "Product {number}",
+    "itemNumber": {
+      "label": "Item Number",
+      "placeholder": "Sequential number"
+    },
+    "hsCode": {
+      "label": "HS Code (8 digits)",
+      "placeholder": "8 digits"
+    },
+    "productDescription": {
+      "label": "Product Description",
+      "placeholder": "Full product description"
+    },
+    "quantity1": {
+      "label": "Quantity 1",
+      "placeholder": "Primary qty"
+    },
+    "unit1": {
+      "label": "Unit 1",
+      "placeholder": "e.g., PCE, KGM"
+    },
+    "quantity2": {
+      "label": "Quantity 2",
+      "placeholder": "Secondary qty"
+    },
+    "unit2": {
+      "label": "Unit 2",
+      "placeholder": "Unit"
+    },
+    "unitPrice": {
+      "label": "Unit Price",
+      "placeholder": "Unit price"
+    },
+    "currency": {
+      "label": "Currency",
+      "placeholder": "e.g., USD"
+    },
+    "lineTotal": {
+      "label": "Line Total",
+      "placeholder": "Total"
+    },
+    "taxableValueVnd": {
+      "label": "Taxable Value (VND)",
+      "placeholder": "Calculated"
+    },
+    "unitPriceVnd": {
+      "label": "Unit Price (VND)",
+      "placeholder": "Calculated"
+    },
+    "countryOfOriginCode": {
+      "label": "Country of Origin Code",
+      "placeholder": "e.g., CN, US"
+    },
+    "countryName": {
+      "label": "Country Name",
+      "placeholder": "e.g., CHINA"
+    },
+    "preferentialCode": {
+      "label": "Preferential Code",
+      "placeholder": "e.g., B05"
+    },
+    "manufacturer": {
+      "label": "Manufacturer",
+      "placeholder": "Manufacturer name"
+    },
+    "brandName": {
+      "label": "Brand Name",
+      "placeholder": "Brand/trademark"
+    },
+    "condition": {
+      "label": "Condition",
+      "placeholder": "e.g., Mới 100%"
+    }
+  },
+  "importDuty": {
+    "title": "Import Duty",
+    "rate": {
+      "label": "Rate (%)",
+      "placeholder": "Duty rate"
+    },
+    "rateType": {
+      "label": "Rate Type",
+      "placeholder": "C, S, or M"
+    },
+    "amount": {
+      "label": "Amount (VND)",
+      "placeholder": "Calculated amount"
+    },
+    "exemptionAmount": {
+      "label": "Exemption Amount (VND)",
+      "placeholder": "Exemption"
+    }
+  },
+  "vat": {
+    "title": "VAT & Other Taxes",
+    "taxName": {
+      "label": "Tax Name",
+      "placeholder": "e.g., Thuế GTGT"
+    },
+    "rateCode": {
+      "label": "Rate Code",
+      "placeholder": "e.g., VB245"
+    },
+    "rate": {
+      "label": "Rate (%)",
+      "placeholder": "VAT rate"
+    },
+    "taxableValueVnd": {
+      "label": "Taxable Value (VND)",
+      "placeholder": "Taxable value"
+    },
+    "amount": {
+      "label": "Amount (VND)",
+      "placeholder": "VAT amount"
+    },
+    "exemption": {
+      "label": "Exemption (VND)",
+      "placeholder": "Exemption"
+    }
+  },
+  "taxSummary": {
+    "title": "Tax Summary",
+    "totalTaxAmountVnd": {
+      "label": "Total Tax Amount (VND)",
+      "placeholder": "Total taxes"
+    },
+    "paymentDeadlineCode": {
+      "label": "Payment Deadline Code",
+      "placeholder": "e.g., D"
+    },
+    "taxpayerType": {
+      "label": "Taxpayer Type",
+      "placeholder": "e.g., 1"
+    },
+    "taxClassification": {
+      "label": "Tax Classification",
+      "placeholder": "e.g., A"
+    }
+  },
+  "metadata": {
+    "title": "Special Cases"
+  },
+  "validation": {
+    "required": "This field is required",
+    "invalidHsCode": "HS Code must be 8 digits",
+    "invalidPhone": "Invalid phone number format",
+    "invalidDate": "Invalid date format (DD/MM/YYYY)",
+    "invalidAmount": "Amount must be greater than 0",
+    "invalidEmail": "Invalid email address",
+    "invalidTaxCode": "Tax code must be 10 digits"
+  },
+  "review": {
+    "title": "Review Declaration",
+    "loadingDeclaration": "Loading declaration...",
+    "errorLoading": "Error Loading Declaration",
+    "unexpectedError": "An unexpected error occurred",
+    "notFound": "Declaration Not Found",
+    "notFoundMessage": "The requested declaration could not be found.",
+    "idLabel": "ID",
+    "statusLabel": "Status",
+    "buttons": {
+      "reject": "Reject",
+      "rejecting": "Rejecting...",
+      "approve": "Approve",
+      "approving": "Approving...",
+      "downloadExcel": "Download Excel",
+      "downloading": "Downloading...",
+      "retrySave": "Retry Save"
+    },
+    "tooltips": {
+      "waitForAutoSave": "Please wait for auto-save to complete"
+    },
+    "tabs": {
+      "declarationForm": "Declaration Form",
+      "validation": "Cross-Document Validation",
+      "corrections": "Corrections Log"
+    },
+    "validationMessages": {
+      "noIssues": "No Validation Issues Found",
+      "noIssuesDescription": "All cross-document validations passed successfully. The data appears consistent across all uploaded documents."
+    },
+    "rejectDialog": {
+      "title": "Reject Declaration",
+      "description": "Please provide a reason for rejecting this declaration (minimum 10 characters).",
+      "placeholder": "Enter rejection reason...",
+      "cancel": "Cancel",
+      "confirm": "Confirm Reject"
+    },
+    "toasts": {
+      "approveSuccess": {
+        "title": "Success",
+        "description": "Declaration approved successfully"
+      },
+      "rejectSuccess": {
+        "title": "Success",
+        "description": "Declaration rejected. Reason recorded."
+      },
+      "exportSuccess": {
+        "title": "Success",
+        "description": "Declaration approved and exported successfully"
+      },
+      "approveError": {
+        "title": "Approval Failed",
+        "description": "Failed to approve declaration. Please try again."
+      },
+      "rejectError": {
+        "title": "Rejection Failed",
+        "description": "Failed to reject declaration. Please try again."
+      },
+      "exportError": {
+        "title": "Export Failed",
+        "description": "Failed to export declaration. Please try again."
+      },
+      "invalidReason": {
+        "title": "Invalid Reason",
+        "description": "Rejection reason must be at least 10 characters."
+      }
+    }
+  },
+  "correctionsLog": {
+    "title": "Corrections Log",
+    "flaggedFields": "flagged fields",
+    "exportCSV": "Export CSV",
+    "loading": "Loading corrections...",
+    "error": "Failed to load corrections. Please try again.",
+    "exportError": "Failed to export corrections. Please try again.",
+    "tableHeaders": {
+      "fieldName": "Field Name",
+      "originalCorrected": "Original → Corrected",
+      "expectedValue": "Expected Value",
+      "category": "Category",
+      "notes": "Notes",
+      "screenshots": "Screenshots",
+      "flaggedBy": "Flagged By",
+      "time": "Time"
+    },
+    "null": "(null)"
+  },
+  "confidenceInput": {
+    "placeholder": "Enter manually...",
+    "tooltip": {
+      "missingDataTitle": "Missing Data",
+      "missingDataDescription": "This field was not extracted - manual entry required",
+      "fieldExtractedDescription": "Field extracted with AI - review accuracy"
+    }
+  },
+  "nullFieldPlaceholder": {
+    "text": "Not extracted - manual entry required"
+  }
+}

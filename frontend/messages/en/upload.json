@@ -1,0 +1,50 @@
+{
+  "title": "Upload Declaration Documents",
+  "subtitle": "Upload all 4 required document types to process a new customs declaration. Certificate of Origin supports multiple files.",
+  "progress": {
+    "label": "Upload Progress",
+    "count": "{{count}} of 4 required documents uploaded",
+    "complete": "All documents uploaded! Ready to process."
+  },
+  "documentTypes": {
+    "AN": "Advance Notice (AN)",
+    "BOL": "Bill of Lading (BOL)",
+    "CO": "Certificate of Origin (C/O) - Multiple files supported",
+    "INVOICE": "Commercial Invoice"
+  },
+  "descriptions": {
+    "AN": "Document notifying arrival of goods",
+    "BOL": "Legal document between shipper and carrier",
+    "CO": "Certificate stating country of origin (multiple files allowed)",
+    "INVOICE": "Commercial invoice for goods"
+  },
+  "buttons": {
+    "process": "Process Declaration",
+    "uploading": "Uploading...",
+    "retry": "Retry Upload"
+  },
+  "messages": {
+    "uploadRequired": "Please upload all 4 required document types to continue",
+    "uploadFailed": "Upload Failed",
+    "uploadError": "An error occurred while uploading files."
+  },
+  "helpAndTips": {
+    "title": "Help & Tips",
+    "dragDrop": "You can drag and drop files directly onto each zone or click to browse",
+    "multipleFiles": "Certificate of Origin supports multiple files - add as many as needed",
+    "validation": "Files are validated for type and size before upload",
+    "maxSizes": "Maximum file sizes: PDFs (10 MB), Images (5 MB)",
+    "requiredDocs": "All required documents must be uploaded before processing can begin"
+  },
+  "dropzone": {
+    "file": "file",
+    "files": "files",
+    "dropMoreFiles": "Drop more files here",
+    "clickOrDragMore": "Click or drag to add more files",
+    "dragAndDropSingle": "Drag and drop file here or click to browse",
+    "dragAndDropMultiple": "Drag and drop files here or click to browse",
+    "dropSingle": "Drop file here",
+    "dropMultiple": "Drop files here",
+    "multipleSupported": "Multiple files supported"
+  }
+}

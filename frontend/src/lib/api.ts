@@ -622,6 +622,36 @@ export async function createCorrection(
 }
 
 /**
+ * Upload screenshot images for correction flags
+ * @param files - Array of image files (max 3)
+ * @returns Object with urls array
+ */
+export async function uploadScreenshots(
+  files: File[]
+): Promise<{ urls: string[] }> {
+  const formData = new FormData()
+  files.forEach((file) => {
+    formData.append('files', file)
+  })
+
+  const url = `${API_BASE_URL}/screenshots/upload`
+  const response = await fetch(url, {
+    method: 'POST',
+    body: formData,
+    credentials: 'include',
+  })
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({
+      message: 'Failed to upload screenshots',
+    }))
+    throw new Error(error.message || `HTTP ${response.status}`)
+  }
+
+  return response.json()
+}
+
+/**
  * Get all corrections for a declaration (JSON format)
  * @param declarationId - Declaration UUID
  * @returns List of corrections

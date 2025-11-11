@@ -1,0 +1,30 @@
+{
+  "warningTypes": {
+    "crossDocumentInconsistency": "Cross-document inconsistency",
+    "missingField": "Missing field",
+    "invalidFormat": "Invalid format",
+    "quantityMismatch": "Quantity mismatch",
+    "amountDiscrepancy": "Amount discrepancy",
+    "hsCodeMismatch": "HS code mismatch",
+    "dateInconsistency": "Date inconsistency"
+  },
+  "messages": {
+    "invoiceTotalMismatch": "Invoice total doesn't match BOL",
+    "hsCodeNotFound": "HS code mismatch between documents",
+    "quantityMismatch": "Quantity mismatch between {{source1}} and {{source2}}",
+    "amountMismatch": "Amount discrepancy: Expected {{expected}}, found {{actual}}",
+    "missingRequiredField": "Required field '{{field}}' is missing",
+    "invalidDateFormat": "Invalid date format in {{field}}"
+  },
+  "severity": {
+    "error": "Error",
+    "warning": "Warning",
+    "info": "Info"
+  },
+  "details": {
+    "sourceDocs": "Source documents",
+    "expectedValue": "Expected value",
+    "actualValue": "Actual value",
+    "confidence": "Confidence"
+  }
+}

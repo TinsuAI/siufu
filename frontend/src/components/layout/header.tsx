@@ -42,7 +42,7 @@ export function Header() {
         <div className="flex items-center gap-8">
           <Link href="/" className="flex items-center gap-2">
             <h1 className="text-xl font-semibold text-slate-700">
-              Customs Declaration Platform
+              {t('common.app.title')}
             </h1>
           </Link>
           <nav className="flex items-center gap-6">

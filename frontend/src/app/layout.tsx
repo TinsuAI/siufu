@@ -8,7 +8,7 @@ import { PDFProvider } from '@/components/providers/pdf-provider'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Customs Declaration Automation Platform',
+  title: 'Siufu',
   description:
     'Automated customs declaration processing for logistics operations',
 }

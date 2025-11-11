@@ -1,0 +1,448 @@
+{
+  "header": {
+    "title": "Tiêu Đề Tờ Khai",
+    "declarationNumber": {
+      "label": "Số Tờ Khai (Chỉ Đọc)",
+      "placeholder": ""
+    },
+    "declarationTypeCode": {
+      "label": "Loại Tờ Khai",
+      "placeholder": "Ví dụ: A11 2 [4]"
+    },
+    "customsOfficeCode": {
+      "label": "Mã Cơ Quan Hải Quan",
+      "placeholder": "Ví dụ: HQHOALAC"
+    },
+    "processingDivisionCode": {
+      "label": "Mã Bộ Phận Xử Lý",
+      "placeholder": "Ví dụ: 00"
+    },
+    "registrationDate": {
+      "label": "Ngày Đăng Ký",
+      "placeholder": "DD/MM/YYYY"
+    },
+    "representativeHsCode": {
+      "label": "Mã HS Đại Diện",
+      "placeholder": "4 chữ số đầu"
+    }
+  },
+  "importer": {
+    "title": "Thông Tin Người Nhập Khẩu",
+    "taxCode": {
+      "label": "Mã Số Thuế",
+      "placeholder": "Mã số thuế 10 chữ số"
+    },
+    "name": {
+      "label": "Tên Người Nhập Khẩu",
+      "placeholder": "Tên pháp lý đầy đủ"
+    },
+    "postalCode": {
+      "label": "Mã Bưu Điện",
+      "placeholder": "Mã bưu điện"
+    },
+    "phone": {
+      "label": "Số Điện Thoại",
+      "placeholder": "Số điện thoại"
+    },
+    "address": {
+      "label": "Địa Chỉ",
+      "placeholder": "Địa chỉ đầy đủ tại Việt Nam"
+    }
+  },
+  "exporter": {
+    "title": "Thông Tin Người Xuất Khẩu",
+    "name": {
+      "label": "Tên Người Xuất Khẩu",
+      "placeholder": "Tên pháp lý đầy đủ của người xuất khẩu"
+    },
+    "addressLine1": {
+      "label": "Địa Chỉ Dòng 1",
+      "placeholder": "Địa chỉ chính"
+    },
+    "addressLine2": {
+      "label": "Địa Chỉ Dòng 2",
+      "placeholder": "Địa chỉ bổ sung"
+    },
+    "addressLine3": {
+      "label": "Địa Chỉ Dòng 3",
+      "placeholder": "Thành phố, tỉnh, quốc gia"
+    },
+    "countryCode": {
+      "label": "Mã Quốc Gia",
+      "placeholder": "Ví dụ: CN, US"
+    }
+  },
+  "shipping": {
+    "title": "Vận Chuyển & Giao Nhận",
+    "billOfLadingNumber": {
+      "label": "Số Vận Đơn",
+      "placeholder": "Số B/L hoặc AWB"
+    },
+    "warehouseCode": {
+      "label": "Mã Kho Hàng",
+      "placeholder": "Mã kho hàng/CFS"
+    },
+    "warehouseName": {
+      "label": "Tên Kho Hàng",
+      "placeholder": "Tên kho hàng"
+    },
+    "portOfDischargeCode": {
+      "label": "Mã Cảng Dỡ Hàng",
+      "placeholder": "UN/LOCODE"
+    },
+    "portOfDischargeName": {
+      "label": "Cảng Dỡ Hàng",
+      "placeholder": "Tên cảng"
+    },
+    "portOfLoadingCode": {
+      "label": "Mã Cảng Xếp Hàng",
+      "placeholder": "UN/LOCODE"
+    },
+    "portOfLoadingName": {
+      "label": "Cảng Xếp Hàng",
+      "placeholder": "Tên cảng"
+    },
+    "transportModeCode": {
+      "label": "Mã Phương Thức Vận Chuyển",
+      "placeholder": "Ví dụ: 9999"
+    },
+    "vesselName": {
+      "label": "Tên Phương Tiện Vận Chuyển",
+      "placeholder": "Tên tàu, máy bay hoặc phương tiện vận chuyển"
+    },
+    "arrivalDate": {
+      "label": "Ngày Đến",
+      "placeholder": "DD/MM/YYYY"
+    }
+  },
+  "package": {
+    "title": "Kiện Hàng & Container",
+    "totalPackages": {
+      "label": "Tổng Số Kiện",
+      "placeholder": "Số lượng"
+    },
+    "packageUnit": {
+      "label": "Đơn Vị Kiện",
+      "placeholder": "Ví dụ: PK, CT"
+    },
+    "containerCount": {
+      "label": "Số Lượng Container",
+      "placeholder": "Số lượng"
+    },
+    "packageMarks": {
+      "label": "Ký Hiệu Kiện Hàng",
+      "placeholder": "Ký hiệu và số hiệu kiện hàng"
+    },
+    "grossWeightKg": {
+      "label": "Trọng Lượng Tổng (kg)",
+      "placeholder": "Trọng lượng"
+    },
+    "weightUnit": {
+      "label": "Đơn Vị Trọng Lượng",
+      "placeholder": "Ví dụ: KGM"
+    }
+  },
+  "invoice": {
+    "title": "Chi Tiết Hóa Đơn",
+    "invoiceNumber": {
+      "label": "Số Hóa Đơn",
+      "placeholder": "Số hóa đơn thương mại"
+    },
+    "invoiceDate": {
+      "label": "Ngày Hóa Đơn",
+      "placeholder": "DD/MM/YYYY"
+    },
+    "paymentMethodCode": {
+      "label": "Mã Phương Thức Thanh Toán",
+      "placeholder": "Ví dụ: KC, TT"
+    },
+    "invoiceTotal": {
+      "label": "Tổng Giá Trị Hóa Đơn",
+      "placeholder": "Tổng giá trị"
+    },
+    "currency": {
+      "label": "Đơn Vị Tiền Tệ",
+      "placeholder": "Ví dụ: USD, EUR, CNY"
+    },
+    "incoterm": {
+      "label": "Điều Kiện Giao Hàng Quốc Tế",
+      "placeholder": "Ví dụ: FOB, CIF, EXW, DDP"
+    },
+    "totalTaxableValueVnd": {
+      "label": "Giá Tính Thuế Tổng (VNĐ)",
+      "placeholder": "Giá trị đã tính"
+    },
+    "exchangeRate": {
+      "label": "Tỷ Giá Hối Đoái",
+      "placeholder": "Tỷ giá USD sang VNĐ"
+    }
+  },
+  "certificateOfOrigin": {
+    "title": "Giấy Chứng Nhận Xuất Xứ (C/O)",
+    "formType": {
+      "label": "Loại Mẫu C/O",
+      "placeholder": "Ví dụ: Form E, Form AK, Form D"
+    },
+    "coNumber": {
+      "label": "Số Giấy Chứng Nhận Xuất Xứ",
+      "placeholder": "Số giấy chứng nhận"
+    },
+    "coDate": {
+      "label": "Ngày Cấp Giấy Chứng Nhận",
+      "placeholder": "DD/MM/YYYY"
+    }
+  },
+  "products": {
+    "title": "Danh Mục Hàng Hóa",
+    "addButton": "Thêm Hàng Hóa",
+    "removeButton": "Xóa",
+    "productNumber": "Hàng Hóa {number}",
+    "itemNumber": {
+      "label": "Số Thứ Tự Hàng Hóa",
+      "placeholder": "Số thứ tự"
+    },
+    "hsCode": {
+      "label": "Mã Số Hàng Hóa (Mã HS - 8 chữ số)",
+      "placeholder": "8 chữ số"
+    },
+    "productDescription": {
+      "label": "Mô Tả Hàng Hóa",
+      "placeholder": "Mô tả chi tiết bao gồm chất liệu, quy cách, model"
+    },
+    "quantity1": {
+      "label": "Số Lượng 1",
+      "placeholder": "Số lượng chính"
+    },
+    "unit1": {
+      "label": "Đơn Vị Tính 1",
+      "placeholder": "Ví dụ: PCE, KGM, MTR"
+    },
+    "quantity2": {
+      "label": "Số Lượng 2",
+      "placeholder": "Số lượng phụ"
+    },
+    "unit2": {
+      "label": "Đơn Vị Tính 2",
+      "placeholder": "Đơn vị phụ"
+    },
+    "unitPrice": {
+      "label": "Đơn Giá Hóa Đơn",
+      "placeholder": "Đơn giá"
+    },
+    "currency": {
+      "label": "Đơn Vị Tiền Tệ",
+      "placeholder": "Ví dụ: USD"
+    },
+    "lineTotal": {
+      "label": "Tổng Giá Trị Dòng",
+      "placeholder": "Số lượng × Đơn giá"
+    },
+    "taxableValueVnd": {
+      "label": "Giá Tính Thuế (VNĐ)",
+      "placeholder": "Giá trị tính thuế"
+    },
+    "unitPriceVnd": {
+      "label": "Đơn Giá (VNĐ)",
+      "placeholder": "Đơn giá quy đổi"
+    },
+    "countryOfOriginCode": {
+      "label": "Mã Nước Xuất Xứ",
+      "placeholder": "Ví dụ: CN, US, JP"
+    },
+    "countryName": {
+      "label": "Tên Nước Xuất Xứ",
+      "placeholder": "Ví dụ: TRUNG QUỐC, HOA KỲ"
+    },
+    "preferentialCode": {
+      "label": "Mã Ưu Đãi Thuế Quan",
+      "placeholder": "Ví dụ: B05 (ACFTA)"
+    },
+    "manufacturer": {
+      "label": "Tên Nhà Sản Xuất",
+      "placeholder": "Tên công ty/nhà máy sản xuất"
+    },
+    "brandName": {
+      "label": "Nhãn Hiệu Hàng Hóa",
+      "placeholder": "Tên thương hiệu/nhãn hiệu"
+    },
+    "condition": {
+      "label": "Tình Trạng Hàng Hóa",
+      "placeholder": "Ví dụ: Mới 100%, Đã qua sử dụng"
+    }
+  },
+  "importDuty": {
+    "title": "Thuế Nhập Khẩu",
+    "rate": {
+      "label": "Thuế Suất Nhập Khẩu (%)",
+      "placeholder": "Thuế suất %"
+    },
+    "rateType": {
+      "label": "Loại Thuế Suất",
+      "placeholder": "C (Thông thường), Ư (Ưu đãi), ĐB (Đặc biệt)"
+    },
+    "amount": {
+      "label": "Số Tiền Thuế Phải Nộp (VNĐ)",
+      "placeholder": "Số tiền thuế phải nộp"
+    },
+    "exemptionAmount": {
+      "label": "Số Tiền Được Miễn Thuế (VNĐ)",
+      "placeholder": "Số tiền được miễn"
+    }
+  },
+  "vat": {
+    "title": "Thuế Giá Trị Gia Tăng (Thuế GTGT) & Các Loại Thuế Khác",
+    "taxName": {
+      "label": "Tên Loại Thuế",
+      "placeholder": "Ví dụ: Thuế GTGT, Thuế Tiêu Thụ Đặc Biệt"
+    },
+    "rateCode": {
+      "label": "Mã Thuế Suất",
+      "placeholder": "Ví dụ: VB245"
+    },
+    "rate": {
+      "label": "Thuế Suất (%)",
+      "placeholder": "0%, 5%, hoặc 10%"
+    },
+    "taxableValueVnd": {
+      "label": "Giá Tính Thuế (VNĐ)",
+      "placeholder": "Giá trị tính thuế GTGT"
+    },
+    "amount": {
+      "label": "Số Tiền Thuế Phải Nộp (VNĐ)",
+      "placeholder": "Số tiền thuế phải nộp"
+    },
+    "exemption": {
+      "label": "Số Tiền Được Miễn Thuế (VNĐ)",
+      "placeholder": "Số tiền được miễn thuế"
+    }
+  },
+  "taxSummary": {
+    "title": "Tổng Hợp Thuế",
+    "totalTaxAmountVnd": {
+      "label": "Tổng Số Tiền Thuế Phí (VNĐ)",
+      "placeholder": "Tổng tất cả các loại thuế và phí"
+    },
+    "paymentDeadlineCode": {
+      "label": "Mã Hạn Nộp Thuế",
+      "placeholder": "D (trả chậm), N (trả ngay)"
+    },
+    "taxpayerType": {
+      "label": "Loại Người Nộp Thuế",
+      "placeholder": "Loại người nộp thuế"
+    },
+    "taxClassification": {
+      "label": "Phân Loại Thuế",
+      "placeholder": "Phân loại thuế"
+    }
+  },
+  "metadata": {
+    "title": "Trường Hợp Đặc Biệt"
+  },
+  "validation": {
+    "required": "Trường này là bắt buộc",
+    "invalidHsCode": "Mã HS phải có 8 chữ số",
+    "invalidPhone": "Định dạng số điện thoại không hợp lệ",
+    "invalidDate": "Định dạng ngày không hợp lệ (DD/MM/YYYY)",
+    "invalidAmount": "Số tiền phải lớn hơn 0",
+    "invalidEmail": "Địa chỉ email không hợp lệ",
+    "invalidTaxCode": "Mã số thuế phải có 10 chữ số"
+  },
+  "review": {
+    "title": "Xem Xét Tờ Khai",
+    "loadingDeclaration": "Đang tải tờ khai...",
+    "errorLoading": "Lỗi Tải Tờ Khai",
+    "unexpectedError": "Đã xảy ra lỗi không mong muốn",
+    "notFound": "Không Tìm Thấy Tờ Khai",
+    "notFoundMessage": "Không thể tìm thấy tờ khai được yêu cầu.",
+    "idLabel": "Mã",
+    "statusLabel": "Trạng Thái",
+    "buttons": {
+      "reject": "Từ Chối",
+      "rejecting": "Đang từ chối...",
+      "approve": "Phê Duyệt",
+      "approving": "Đang phê duyệt...",
+      "downloadExcel": "Tải Xuống Excel",
+      "downloading": "Đang tải xuống...",
+      "retrySave": "Thử Lưu Lại"
+    },
+    "tooltips": {
+      "waitForAutoSave": "Vui lòng đợi tự động lưu hoàn tất"
+    },
+    "tabs": {
+      "declarationForm": "Mẫu Tờ Khai",
+      "validation": "Xác Thực Chéo Tài Liệu",
+      "corrections": "Nhật Ký Sửa Chữa"
+    },
+    "validationMessages": {
+      "noIssues": "Không Có Vấn Đề Xác Thực",
+      "noIssuesDescription": "Tất cả các xác thực chéo tài liệu đã vượt qua thành công. Dữ liệu xuất hiện nhất quán trong tất cả các tài liệu đã tải lên."
+    },
+    "rejectDialog": {
+      "title": "Từ Chối Tờ Khai",
+      "description": "Vui lòng cung cấp lý do từ chối tờ khai này (tối thiểu 10 ký tự).",
+      "placeholder": "Nhập lý do từ chối...",
+      "cancel": "Hủy",
+      "confirm": "Xác Nhận Từ Chối"
+    },
+    "toasts": {
+      "approveSuccess": {
+        "title": "Thành Công",
+        "description": "Tờ khai đã được phê duyệt thành công"
+      },
+      "rejectSuccess": {
+        "title": "Thành Công",
+        "description": "Tờ khai đã bị từ chối. Lý do đã được ghi lại."
+      },
+      "exportSuccess": {
+        "title": "Thành Công",
+        "description": "Tờ khai đã được phê duyệt và xuất thành công"
+      },
+      "approveError": {
+        "title": "Phê Duyệt Thất Bại",
+        "description": "Không thể phê duyệt tờ khai. Vui lòng thử lại."
+      },
+      "rejectError": {
+        "title": "Từ Chối Thất Bại",
+        "description": "Không thể từ chối tờ khai. Vui lòng thử lại."
+      },
+      "exportError": {
+        "title": "Xuất Thất Bại",
+        "description": "Không thể xuất tờ khai. Vui lòng thử lại."
+      },
+      "invalidReason": {
+        "title": "Lý Do Không Hợp Lệ",
+        "description": "Lý do từ chối phải có ít nhất 10 ký tự."
+      }
+    }
+  },
+  "correctionsLog": {
+    "title": "Nhật Ký Sửa Chữa",
+    "flaggedFields": "trường được đánh dấu",
+    "exportCSV": "Xuất CSV",
+    "loading": "Đang tải nhật ký sửa chữa...",
+    "error": "Không thể tải nhật ký sửa chữa. Vui lòng thử lại.",
+    "exportError": "Không thể xuất nhật ký sửa chữa. Vui lòng thử lại.",
+    "tableHeaders": {
+      "fieldName": "Tên Trường",
+      "originalCorrected": "Gốc → Đã Sửa",
+      "expectedValue": "Giá Trị Mong Đợi",
+      "category": "Danh Mục",
+      "notes": "Ghi Chú",
+      "screenshots": "Ảnh Chụp Màn Hình",
+      "flaggedBy": "Được Đánh Dấu Bởi",
+      "time": "Thời Gian"
+    },
+    "null": "(trống)"
+  },
+  "confidenceInput": {
+    "placeholder": "Nhập thủ công...",
+    "tooltip": {
+      "missingDataTitle": "Thiếu Dữ Liệu",
+      "missingDataDescription": "Trường này không được trích xuất - cần nhập thủ công",
+      "fieldExtractedDescription": "Trường được trích xuất bởi AI - vui lòng kiểm tra độ chính xác"
+    }
+  },
+  "nullFieldPlaceholder": {
+    "text": "Không được trích xuất - cần nhập thủ công"
+  }
+}

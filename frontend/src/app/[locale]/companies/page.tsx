@@ -1,6 +1,7 @@
 /**
  * Companies List Page (Story 3.10)
  * Displays importers and exporters with search, filter, and pagination
+ * Story 4.3: Added i18n support and Vietnamese date formatting
  */
 
 'use client'
@@ -8,6 +9,8 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useTranslations } from 'next-intl'
+import { useFormatting } from '@/lib/format-utils'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -53,6 +56,8 @@ import { toast } from 'sonner'
 export default function CompaniesPage() {
   const router = useRouter()
   const queryClient = useQueryClient()
+  const t = useTranslations('companies')
+  const { formatDate } = useFormatting()
 
   // State
   const [activeTab, setActiveTab] = useState<CompanyType>('importers')
@@ -94,20 +99,16 @@ export default function CompaniesPage() {
       deleteCompany(id, type),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['companies'] })
-      toast.success('Company deleted successfully')
+      toast.success(t('messages.deleteSuccess'))
     },
     onError: (error: Error) => {
-      toast.error(`Failed to delete company: ${error.message}`)
+      toast.error(t('messages.deleteError', { message: error.message }))
     },
   })
 
   // Handlers
   const handleDelete = (id: string) => {
-    if (
-      confirm(
-        'Are you sure you want to delete this company? This will unlink all associated declarations.'
-      )
-    ) {
+    if (confirm(t('messages.deleteConfirm'))) {
       deleteMutation.mutate({ id, type: activeTab })
     }
   }
@@ -143,7 +144,7 @@ export default function CompaniesPage() {
   // Render company card
   const renderCompanyCard = (company: ImporterListItem | ExporterListItem) => {
     const isImporter = 'tax_code' in company
-    const lastSeen = new Date(company.updated_at).toLocaleDateString()
+    const lastSeen = formatDate(company.updated_at)
 
     return (
       <Card key={company.id} className="hover:shadow-md transition-shadow">
@@ -156,9 +157,15 @@ export default function CompaniesPage() {
               </CardTitle>
               <CardDescription className="mt-1">
                 {isImporter ? (
-                  <>Tax Code: {(company as ImporterListItem).tax_code}</>
+                  <>
+                    {t('company.taxCode')}:{' '}
+                    {(company as ImporterListItem).tax_code}
+                  </>
                 ) : (
-                  <>Country: {(company as ExporterListItem).country_code}</>
+                  <>
+                    {t('company.country')}:{' '}
+                    {(company as ExporterListItem).country_code}
+                  </>
                 )}
               </CardDescription>
             </div>
@@ -166,7 +173,7 @@ export default function CompaniesPage() {
               {company.is_verified ? (
                 <Badge variant="default" className="bg-green-500 gap-1">
                   <CheckCircle2 className="h-3 w-3" />
-                  Verified
+                  {t('company.verified')}
                 </Badge>
               ) : (
                 <Badge
@@ -174,7 +181,7 @@ export default function CompaniesPage() {
                   className="bg-yellow-500 text-white gap-1"
                 >
                   <AlertTriangle className="h-3 w-3" />
-                  Unverified
+                  {t('company.unverified')}
                 </Badge>
               )}
             </div>
@@ -185,11 +192,13 @@ export default function CompaniesPage() {
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-1">
                 <FileText className="h-4 w-4" />
-                {company.declaration_count} declarations
+                {t('company.declarations', {
+                  count: company.declaration_count,
+                })}
               </div>
               <div className="flex items-center gap-1">
                 <Calendar className="h-4 w-4" />
-                Last seen: {lastSeen}
+                {t('company.lastSeen', { date: lastSeen })}
               </div>
             </div>
           </div>
@@ -202,7 +211,7 @@ export default function CompaniesPage() {
               }
             >
               <Eye className="h-4 w-4 mr-1" />
-              View Details
+              {t('actions.viewDetails')}
             </Button>
             <Button
               variant="outline"
@@ -210,7 +219,7 @@ export default function CompaniesPage() {
               onClick={() => handleEdit(company.id)}
             >
               <Edit className="h-4 w-4 mr-1" />
-              Edit
+              {t('actions.edit')}
             </Button>
             <Button
               variant="outline"
@@ -218,7 +227,7 @@ export default function CompaniesPage() {
               onClick={() => handleMerge(company.id)}
             >
               <GitMerge className="h-4 w-4 mr-1" />
-              Merge
+              {t('actions.merge')}
             </Button>
             <Button
               variant="outline"
@@ -228,7 +237,7 @@ export default function CompaniesPage() {
               disabled={deleteMutation.isPending}
             >
               <Trash2 className="h-4 w-4 mr-1" />
-              Delete
+              {t('actions.delete')}
             </Button>
           </div>
         </CardContent>
@@ -242,22 +251,20 @@ export default function CompaniesPage() {
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-3">
             <Building2 className="h-8 w-8" />
-            Companies
+            {t('title')}
           </h1>
-          <p className="text-muted-foreground mt-1">
-            Manage importer and exporter master data
-          </p>
+          <p className="text-muted-foreground mt-1">{t('subtitle')}</p>
         </div>
         <Button onClick={() => router.push('/companies/new')}>
           <Plus className="h-4 w-4 mr-2" />
-          Add Company
+          {t('actions.addCompany')}
         </Button>
       </div>
 
       <Tabs value={activeTab} onValueChange={handleTabChange}>
         <TabsList className="mb-6">
-          <TabsTrigger value="importers">Importers</TabsTrigger>
-          <TabsTrigger value="exporters">Exporters</TabsTrigger>
+          <TabsTrigger value="importers">{t('tabs.importers')}</TabsTrigger>
+          <TabsTrigger value="exporters">{t('tabs.exporters')}</TabsTrigger>
         </TabsList>
 
         {/* Search and Filters */}
@@ -267,8 +274,8 @@ export default function CompaniesPage() {
             <Input
               placeholder={
                 activeTab === 'importers'
-                  ? 'Search by name or tax code...'
-                  : 'Search by name...'
+                  ? t('search.placeholderImporters')
+                  : t('search.placeholderExporters')
               }
               value={searchInput}
               onChange={(e) => handleSearch(e.target.value)}
@@ -281,9 +288,11 @@ export default function CompaniesPage() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Companies</SelectItem>
-              <SelectItem value="verified">Verified Only</SelectItem>
-              <SelectItem value="unverified">Unverified Only</SelectItem>
+              <SelectItem value="all">{t('filters.all')}</SelectItem>
+              <SelectItem value="verified">{t('filters.verified')}</SelectItem>
+              <SelectItem value="unverified">
+                {t('filters.unverified')}
+              </SelectItem>
             </SelectContent>
           </Select>
 
@@ -292,11 +301,11 @@ export default function CompaniesPage() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="name">Name</SelectItem>
+              <SelectItem value="name">{t('sort.name')}</SelectItem>
               <SelectItem value="declaration_count">
-                Declaration Count
+                {t('sort.declarationCount')}
               </SelectItem>
-              <SelectItem value="updated_at">Last Seen</SelectItem>
+              <SelectItem value="updated_at">{t('sort.lastSeen')}</SelectItem>
             </SelectContent>
           </Select>
 
@@ -308,18 +317,18 @@ export default function CompaniesPage() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="asc">Ascending</SelectItem>
-              <SelectItem value="desc">Descending</SelectItem>
+              <SelectItem value="asc">{t('sortOrder.ascending')}</SelectItem>
+              <SelectItem value="desc">{t('sortOrder.descending')}</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
         <TabsContent value="importers" className="mt-0">
           {isLoading ? (
-            <div className="text-center py-12">Loading companies...</div>
+            <div className="text-center py-12">{t('messages.loading')}</div>
           ) : error ? (
             <div className="text-center py-12 text-red-600">
-              Error loading companies: {error.message}
+              {t('messages.error', { message: error.message })}
             </div>
           ) : data && data.items.length > 0 ? (
             <>
@@ -336,10 +345,14 @@ export default function CompaniesPage() {
                     disabled={page === 1}
                     onClick={() => setPage(page - 1)}
                   >
-                    Previous
+                    {t('pagination.previous')}
                   </Button>
                   <span className="text-sm text-muted-foreground">
-                    Page {page} of {data.total_pages} ({data.total} companies)
+                    {t('pagination.page', {
+                      current: page,
+                      total: data.total_pages,
+                      count: data.total,
+                    })}
                   </span>
                   <Button
                     variant="outline"
@@ -347,7 +360,7 @@ export default function CompaniesPage() {
                     disabled={page === data.total_pages}
                     onClick={() => setPage(page + 1)}
                   >
-                    Next
+                    {t('pagination.next')}
                   </Button>
                 </div>
               )}
@@ -357,8 +370,7 @@ export default function CompaniesPage() {
               <CardContent className="text-center">
                 <Building2 className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                 <p className="text-muted-foreground">
-                  No companies found. Companies will appear here after
-                  processing declarations.
+                  {t('messages.noCompanies')}
                 </p>
               </CardContent>
             </Card>
@@ -387,10 +399,14 @@ export default function CompaniesPage() {
                     disabled={page === 1}
                     onClick={() => setPage(page - 1)}
                   >
-                    Previous
+                    {t('pagination.previous')}
                   </Button>
                   <span className="text-sm text-muted-foreground">
-                    Page {page} of {data.total_pages} ({data.total} companies)
+                    {t('pagination.page', {
+                      current: page,
+                      total: data.total_pages,
+                      count: data.total,
+                    })}
                   </span>
                   <Button
                     variant="outline"
@@ -398,7 +414,7 @@ export default function CompaniesPage() {
                     disabled={page === data.total_pages}
                     onClick={() => setPage(page + 1)}
                   >
-                    Next
+                    {t('pagination.next')}
                   </Button>
                 </div>
               )}
@@ -408,8 +424,7 @@ export default function CompaniesPage() {
               <CardContent className="text-center">
                 <Building2 className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                 <p className="text-muted-foreground">
-                  No companies found. Companies will appear here after
-                  processing declarations.
+                  {t('messages.noCompanies')}
                 </p>
               </CardContent>
             </Card>

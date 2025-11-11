@@ -3,11 +3,11 @@
 /**
  * Declarations History List Page
  * Story 3.9: Displays paginated, filterable, sortable list of all user's declarations
+ * Story 4.3: Added i18n support and Vietnamese formatting
  */
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { format } from 'date-fns'
 import {
   Eye,
   Download,
@@ -18,11 +18,14 @@ import {
   X,
   Plus,
 } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import { useDebounce } from 'use-debounce'
 import { useDeclarations } from '@/hooks/use-declarations'
 import { DeclarationStatusBadge } from '@/components/declarations/declaration-status-badge'
 import { exportDeclaration } from '@/lib/api'
 import { DeclarationStatus } from '@/types/declaration'
+import { useFormatting } from '@/lib/format-utils'
+import { useStatusLabels } from '@/lib/status-utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -54,6 +57,11 @@ import Link from 'next/link'
 export default function DeclarationsListPage() {
   const router = useRouter()
   const { toast } = useToast()
+  const t = useTranslations('common.declarations')
+  const tActions = useTranslations('common.actions')
+  const tCommon = useTranslations('common.common')
+  const { formatDateTime } = useFormatting()
+  const { getStatusLabel } = useStatusLabels()
 
   // Pagination and filter state
   const [page, setPage] = useState(1)
@@ -112,18 +120,16 @@ export default function DeclarationsListPage() {
     try {
       await deleteMutation.mutateAsync(declarationToDelete)
       toast({
-        title: 'Success',
-        description: 'Declaration deleted successfully',
+        title: tCommon('success'),
+        description: t('messages.deleteSuccess'),
       })
       setDeleteDialogOpen(false)
       setDeclarationToDelete(null)
     } catch (error) {
       toast({
-        title: 'Error',
+        title: tCommon('error'),
         description:
-          error instanceof Error
-            ? error.message
-            : 'Failed to delete declaration',
+          error instanceof Error ? error.message : t('messages.deleteError'),
         variant: 'error',
       })
     }
@@ -145,16 +151,14 @@ export default function DeclarationsListPage() {
       document.body.removeChild(a)
 
       toast({
-        title: 'Success',
-        description: 'Declaration exported successfully',
+        title: tCommon('success'),
+        description: t('messages.exportSuccess'),
       })
     } catch (error) {
       toast({
-        title: 'Error',
+        title: tCommon('error'),
         description:
-          error instanceof Error
-            ? error.message
-            : 'Failed to export declaration',
+          error instanceof Error ? error.message : t('messages.exportError'),
         variant: 'error',
       })
     } finally {
@@ -180,19 +184,17 @@ export default function DeclarationsListPage() {
       <div className="container mx-auto px-6 py-8">
         {/* Header with Title and Create Button */}
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-bold text-slate-700">
-            Declaration History
-          </h1>
+          <h1 className="text-3xl font-bold text-slate-700">{t('title')}</h1>
           <Link href="/upload">
             <Button>
               <Plus className="h-4 w-4 mr-2" />
-              Create New Declaration
+              {t('createNew')}
             </Button>
           </Link>
         </div>
         <div className="flex items-center justify-center py-12">
           <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-          <span className="ml-3 text-slate-600">Loading declarations...</span>
+          <span className="ml-3 text-slate-600">{t('messages.loading')}</span>
         </div>
       </div>
     )
@@ -204,19 +206,17 @@ export default function DeclarationsListPage() {
       <div className="container mx-auto px-6 py-8">
         {/* Header with Title and Create Button */}
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-bold text-slate-700">
-            Declaration History
-          </h1>
+          <h1 className="text-3xl font-bold text-slate-700">{t('title')}</h1>
           <Link href="/upload">
             <Button>
               <Plus className="h-4 w-4 mr-2" />
-              Create New Declaration
+              {t('createNew')}
             </Button>
           </Link>
         </div>
         <div className="rounded-lg bg-red-50 border border-red-200 p-4">
           <p className="text-red-800">
-            Error loading declarations: {error.message}
+            {t('messages.error', { message: error.message })}
           </p>
         </div>
       </div>
@@ -291,10 +291,10 @@ export default function DeclarationsListPage() {
 
         <div className="rounded-lg bg-slate-50 border border-slate-200 p-12 text-center">
           <p className="text-slate-600 text-lg mb-4">
-            No declarations found. Upload your first declaration to get started.
+            {t('messages.noDeclarations')}
           </p>
           <Link href="/upload">
-            <Button>Upload Declaration</Button>
+            <Button>{t('messages.uploadDeclaration')}</Button>
           </Link>
         </div>
       </div>
@@ -323,7 +323,7 @@ export default function DeclarationsListPage() {
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
           <Input
-            placeholder="Search by Declaration ID..."
+            placeholder={t('filters.search')}
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
             className="pl-10 pr-10"
@@ -343,20 +343,28 @@ export default function DeclarationsListPage() {
           onValueChange={handleStatusFilterChange}
         >
           <SelectTrigger className="w-[200px]">
-            <SelectValue placeholder="All Statuses" />
+            <SelectValue placeholder={t('filters.allStatuses')} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Statuses</SelectItem>
-            <SelectItem value={DeclarationStatus.UPLOADED}>Uploaded</SelectItem>
+            <SelectItem value="all">{t('filters.allStatuses')}</SelectItem>
+            <SelectItem value={DeclarationStatus.UPLOADED}>
+              {getStatusLabel(DeclarationStatus.UPLOADED)}
+            </SelectItem>
             <SelectItem value={DeclarationStatus.PROCESSING}>
-              Processing
+              {getStatusLabel(DeclarationStatus.PROCESSING)}
             </SelectItem>
             <SelectItem value={DeclarationStatus.READY_FOR_REVIEW}>
-              Ready for Review
+              {getStatusLabel(DeclarationStatus.READY_FOR_REVIEW)}
             </SelectItem>
-            <SelectItem value={DeclarationStatus.APPROVED}>Approved</SelectItem>
-            <SelectItem value={DeclarationStatus.REJECTED}>Rejected</SelectItem>
-            <SelectItem value={DeclarationStatus.FAILED}>Failed</SelectItem>
+            <SelectItem value={DeclarationStatus.APPROVED}>
+              {getStatusLabel(DeclarationStatus.APPROVED)}
+            </SelectItem>
+            <SelectItem value={DeclarationStatus.REJECTED}>
+              {getStatusLabel(DeclarationStatus.REJECTED)}
+            </SelectItem>
+            <SelectItem value={DeclarationStatus.FAILED}>
+              {getStatusLabel(DeclarationStatus.FAILED)}
+            </SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -366,13 +374,15 @@ export default function DeclarationsListPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[300px]">Declaration ID</TableHead>
+              <TableHead className="w-[300px]">
+                {t('table.declarationId')}
+              </TableHead>
               <TableHead>
                 <button
                   onClick={() => toggleSort('created_at')}
                   className="flex items-center gap-2 hover:text-slate-900 font-medium"
                 >
-                  Upload Date
+                  {t('table.uploadDate')}
                   <ArrowUpDown className="h-4 w-4" />
                 </button>
               </TableHead>
@@ -381,12 +391,14 @@ export default function DeclarationsListPage() {
                   onClick={() => toggleSort('status')}
                   className="flex items-center gap-2 hover:text-slate-900 font-medium"
                 >
-                  Status
+                  {t('table.status')}
                   <ArrowUpDown className="h-4 w-4" />
                 </button>
               </TableHead>
-              <TableHead className="text-right">Products Count</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead className="text-right">
+                {t('table.productsCount')}
+              </TableHead>
+              <TableHead className="text-right">{t('table.actions')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -411,10 +423,7 @@ export default function DeclarationsListPage() {
                     </Link>
                   </TableCell>
                   <TableCell>
-                    {format(
-                      new Date(declaration.created_at),
-                      'MM/dd/yyyy HH:mm'
-                    )}
+                    {formatDateTime(declaration.created_at)}
                   </TableCell>
                   <TableCell>
                     <DeclarationStatusBadge
@@ -437,7 +446,7 @@ export default function DeclarationsListPage() {
                           }
                         >
                           <Eye className="h-4 w-4 mr-1" />
-                          Review
+                          {t('actions.review')}
                         </Button>
                       )}
 
@@ -454,7 +463,7 @@ export default function DeclarationsListPage() {
                           ) : (
                             <Download className="h-4 w-4 mr-1" />
                           )}
-                          Download
+                          {t('actions.download')}
                         </Button>
                       )}
 
@@ -465,7 +474,7 @@ export default function DeclarationsListPage() {
                         className="text-red-600 border-red-600 hover:bg-red-50"
                       >
                         <Trash2 className="h-4 w-4 mr-1" />
-                        Delete
+                        {t('actions.delete')}
                       </Button>
                     </div>
                   </TableCell>
@@ -479,8 +488,11 @@ export default function DeclarationsListPage() {
       {/* Pagination */}
       <div className="flex items-center justify-between">
         <p className="text-sm text-slate-600">
-          Showing {(page - 1) * 20 + 1}-{Math.min(page * 20, total)} of {total}{' '}
-          declarations
+          {t('pagination.showing', {
+            start: (page - 1) * 20 + 1,
+            end: Math.min(page * 20, total),
+            total,
+          })}
         </p>
 
         <div className="flex items-center gap-2">
@@ -490,7 +502,7 @@ export default function DeclarationsListPage() {
             onClick={() => setPage(page - 1)}
             disabled={page === 1}
           >
-            Previous
+            {tActions('previous')}
           </Button>
 
           {/* Page numbers */}
@@ -549,7 +561,7 @@ export default function DeclarationsListPage() {
             onClick={() => setPage(page + 1)}
             disabled={page === total_pages}
           >
-            Next
+            {tActions('next')}
           </Button>
         </div>
       </div>
@@ -558,10 +570,9 @@ export default function DeclarationsListPage() {
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete Declaration</DialogTitle>
+            <DialogTitle>{t('dialog.deleteTitle')}</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete this declaration? This action
-              cannot be undone.
+              {t('dialog.deleteDescription')}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -570,7 +581,7 @@ export default function DeclarationsListPage() {
               onClick={() => setDeleteDialogOpen(false)}
               disabled={deleteMutation.isPending}
             >
-              Cancel
+              {tActions('cancel')}
             </Button>
             <Button
               variant="destructive"
@@ -580,10 +591,10 @@ export default function DeclarationsListPage() {
               {deleteMutation.isPending ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Deleting...
+                  {t('messages.deleting')}
                 </>
               ) : (
-                'Delete'
+                t('actions.delete')
               )}
             </Button>
           </DialogFooter>
