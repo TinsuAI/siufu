@@ -1,17 +1,18 @@
 """Integration tests for authentication endpoints."""
 
 import pytest
-from httpx import AsyncClient, ASGITransport
+import pytest_asyncio
+from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.main import app
 from src.core.database import get_db
-from src.models.user import User
-from src.models.organization import Organization
 from src.core.security import get_password_hash
+from src.main import app
+from src.models.organization import Organization
+from src.models.user import User
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def test_client(db_session: AsyncSession):
     """Create test client with database dependency override."""
     async def override_get_db():
@@ -24,7 +25,7 @@ async def test_client(db_session: AsyncSession):
     app.dependency_overrides.clear()
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def test_organization(db_session: AsyncSession) -> Organization:
     """Create a test organization."""
     org = Organization(name="Test Organization")
@@ -34,7 +35,7 @@ async def test_organization(db_session: AsyncSession) -> Organization:
     return org
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def test_user(db_session: AsyncSession, test_organization: Organization) -> User:
     """Create a test user with hashed password."""
     user = User(

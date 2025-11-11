@@ -1,10 +1,9 @@
 """
 FastAPI dependencies for authentication and authorization
 """
-from typing import Optional
 from uuid import UUID
 
-from fastapi import Request, HTTPException, status
+from fastapi import HTTPException, Request, status
 from jose import JWTError
 from sqlalchemy.ext.asyncio import AsyncSession
 

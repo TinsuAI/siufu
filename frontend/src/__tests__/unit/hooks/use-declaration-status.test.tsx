@@ -53,6 +53,7 @@ describe('useDeclarationStatus', () => {
       status: DeclarationStatus.PROCESSING,
       processing_progress: 0.5,
       processing_error: null,
+      processing_log: [],
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     }
@@ -79,6 +80,7 @@ describe('useDeclarationStatus', () => {
       status: DeclarationStatus.READY_FOR_REVIEW,
       processing_progress: 1.0,
       processing_error: null,
+      processing_log: [],
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     }
@@ -104,6 +106,7 @@ describe('useDeclarationStatus', () => {
       status: DeclarationStatus.FAILED,
       processing_progress: 0.3,
       processing_error: 'OCR processing failed',
+      processing_log: [],
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     }
@@ -133,6 +136,7 @@ describe('useDeclarationStatus', () => {
       status: DeclarationStatus.PROCESSING,
       processing_progress: 0.5,
       processing_error: null,
+      processing_log: [],
       created_at: createdAt,
       updated_at: new Date().toISOString(),
     }
@@ -163,6 +167,7 @@ describe('useDeclarationStatus', () => {
       status: DeclarationStatus.PROCESSING,
       processing_progress: 0.2,
       processing_error: null,
+      processing_log: [],
       created_at: '',
       updated_at: new Date().toISOString(),
     }

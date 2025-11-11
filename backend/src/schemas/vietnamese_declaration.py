@@ -3,8 +3,9 @@ Pydantic schemas for Vietnamese Customs Declaration (77 fields)
 
 Based on field mapping specification in docs/stories/1.7-field-mapping.md
 """
+from typing import Dict, List, Optional
+
 from pydantic import BaseModel, Field
-from typing import List, Dict, Optional
 
 
 class DeclarationHeader(BaseModel):

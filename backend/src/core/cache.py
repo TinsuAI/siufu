@@ -2,9 +2,10 @@
 Redis caching utilities
 """
 import hashlib
+from typing import Optional
+
 import redis
 import structlog
-from typing import Optional
 
 from src.core.config import settings
 from src.schemas.ocr import OCRResult

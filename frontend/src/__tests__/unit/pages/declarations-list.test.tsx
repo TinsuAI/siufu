@@ -13,6 +13,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderWithProviders } from '@/test-utils'
+import { DeclarationStatus } from '@/types/declaration'
 import DeclarationsListPage from '@/app/[locale]/declarations/page'
 import * as api from '@/lib/api'
 
@@ -74,7 +75,7 @@ describe('Declarations List Page - P0 Tests', () => {
       items: [
         {
           id: 'dec-001',
-          status: 'APPROVED' as const,
+          status: DeclarationStatus.APPROVED,
           created_at: '2024-11-01T10:00:00Z',
           updated_at: '2024-11-01T12:00:00Z',
           approved_at: '2024-11-01T12:00:00Z',
@@ -82,7 +83,7 @@ describe('Declarations List Page - P0 Tests', () => {
         },
         {
           id: 'dec-002',
-          status: 'READY_FOR_REVIEW' as const,
+          status: DeclarationStatus.READY_FOR_REVIEW,
           created_at: '2024-11-02T10:00:00Z',
           updated_at: '2024-11-02T11:00:00Z',
           approved_at: null,
@@ -128,7 +129,7 @@ describe('Declarations List Page - P0 Tests', () => {
       items: [
         {
           id: 'dec-001',
-          status: 'APPROVED' as const,
+          status: DeclarationStatus.APPROVED,
           created_at: '2024-11-01T10:00:00Z',
           updated_at: '2024-11-01T12:00:00Z',
           approved_at: '2024-11-01T12:00:00Z',

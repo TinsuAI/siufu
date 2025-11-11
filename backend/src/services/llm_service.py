@@ -3,19 +3,19 @@ LLM Service for intelligent data extraction from OCR results
 """
 import json
 import re
-from typing import Dict, Any
+from typing import Any, Dict
+
 import sentry_sdk
 
 from ..core.openrouter import OpenRouterClient
-from ..schemas.ocr import OCRResult
 from ..schemas.extraction import ExtractedData
+from ..schemas.ocr import OCRResult
 from ..schemas.vietnamese_declaration import VietnameseDeclarationData
 from .prompts import SYSTEM_PROMPT, get_extraction_user_prompt
 from .vietnamese_extraction_prompt import (
     VIETNAMESE_DECLARATION_SYSTEM_PROMPT,
-    get_vietnamese_extraction_prompt
+    get_vietnamese_extraction_prompt,
 )
-
 
 # Model tier constants
 MODEL_FLAGSHIP = "openai/gpt-5"

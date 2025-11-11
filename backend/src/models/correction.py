@@ -1,15 +1,16 @@
 """
 Correction database model
 """
-from datetime import datetime
 import enum
 import uuid
-from typing import Optional
+from datetime import datetime
 from decimal import Decimal
+from typing import Optional
 
-from sqlalchemy import String, DateTime, ForeignKey, Numeric, Text, Enum as SQLEnum, func
+from sqlalchemy import DateTime, ForeignKey, Numeric, String, Text, func
+from sqlalchemy import Enum as SQLEnum
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy.dialects.postgresql import UUID, JSONB
 
 from src.models.base import Base
 

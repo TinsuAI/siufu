@@ -17,7 +17,16 @@ select = [
     "B",  # flake8-bugbear
     "C4",  # flake8-comprehensions
 ]
-ignore = []
+ignore = [
+    "B008",  # FastAPI Depends() in defaults is standard pattern
+    "E501",  # Line too long - let Black/formatter handle
+    "B017",  # pytest.raises(Exception) is acceptable in tests
+    "B904",  # Exception chaining with 'from' is optional
+    "B007",  # Unused loop variable is acceptable
+    "E402",  # Module-level imports after code (needed for some configs)
+    "F821",  # Forward reference in TYPE_CHECKING blocks
+    "E712",  # Boolean comparison with == is acceptable with SQLAlchemy
+]
 
 [tool.mypy]
 python_version = "3.12"

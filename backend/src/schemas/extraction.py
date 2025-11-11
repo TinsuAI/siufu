@@ -1,8 +1,9 @@
 """
 Pydantic schemas for LLM-extracted customs data
 """
+from typing import Dict, List
+
 from pydantic import BaseModel, Field
-from typing import List, Dict
 
 
 class CompanyDetails(BaseModel):

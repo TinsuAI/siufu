@@ -66,8 +66,8 @@ export function ValidationWarningsPanel({
       try {
         const dismissed = JSON.parse(stored) as string[]
         setDismissedWarnings(new Set(dismissed))
-      } catch (e) {
-        console.error('Failed to parse dismissed warnings', e)
+      } catch {
+        // Failed to parse dismissed warnings from localStorage
       }
     }
   }, [declarationId])

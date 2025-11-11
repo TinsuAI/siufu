@@ -62,6 +62,7 @@ describe('ProcessingStatusPage Integration Tests', () => {
       status: DeclarationStatus.PROCESSING,
       processing_progress: 0.3,
       processing_error: null,
+      processing_log: [],
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     }
@@ -98,6 +99,7 @@ describe('ProcessingStatusPage Integration Tests', () => {
       status: DeclarationStatus.PROCESSING,
       processing_progress: 0.3,
       processing_error: null,
+      processing_log: [],
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     }
@@ -156,6 +158,7 @@ describe('ProcessingStatusPage Integration Tests', () => {
       status: DeclarationStatus.READY_FOR_REVIEW,
       processing_progress: 1.0,
       processing_error: null,
+      processing_log: [],
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     }
@@ -199,6 +202,7 @@ describe('ProcessingStatusPage Integration Tests', () => {
       status: DeclarationStatus.FAILED,
       processing_progress: 0.4,
       processing_error: 'OCR extraction failed: Invalid PDF format',
+      processing_log: [],
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     }
@@ -229,6 +233,7 @@ describe('ProcessingStatusPage Integration Tests', () => {
       status: DeclarationStatus.FAILED,
       processing_progress: 0.2,
       processing_error: 'Network timeout during OCR',
+      processing_log: [],
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     }
@@ -267,6 +272,7 @@ describe('ProcessingStatusPage Integration Tests', () => {
       status: DeclarationStatus.FAILED,
       processing_progress: 0.2,
       processing_error: 'Persistent error',
+      processing_log: [],
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     }
@@ -320,6 +326,7 @@ describe('ProcessingStatusPage Integration Tests', () => {
       status: DeclarationStatus.PROCESSING,
       processing_progress: 0.5,
       processing_error: null,
+      processing_log: [],
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     }
@@ -361,6 +368,7 @@ describe('ProcessingStatusPage Integration Tests', () => {
       status: DeclarationStatus.FAILED,
       processing_progress: 0.3,
       processing_error: 'Processing failed',
+      processing_log: [],
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     }

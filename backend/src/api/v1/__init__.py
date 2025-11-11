@@ -3,7 +3,7 @@ API v1 router initialization
 """
 from fastapi import APIRouter
 
-from src.api.v1 import auth, declarations, knowledge_base, analytics, health, corrections, companies
+from src.api.v1 import analytics, auth, companies, corrections, declarations, health, knowledge_base
 
 # Create main v1 router
 api_router = APIRouter()

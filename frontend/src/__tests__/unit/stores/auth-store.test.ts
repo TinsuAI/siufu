@@ -17,7 +17,12 @@ describe('Auth Store', () => {
     const testUser = {
       id: '1',
       email: 'test@example.com',
-      name: 'Test User',
+      full_name: 'Test User',
+      role: 'processor' as const,
+      is_active: true,
+      organization_id: 'org-1',
+      created_at: '2024-01-01T00:00:00Z',
+      updated_at: '2024-01-01T00:00:00Z',
     }
 
     const { login } = useAuthStore.getState()
@@ -32,7 +37,12 @@ describe('Auth Store', () => {
     const testUser = {
       id: '1',
       email: 'test@example.com',
-      name: 'Test User',
+      full_name: 'Test User',
+      role: 'processor' as const,
+      is_active: true,
+      organization_id: 'org-1',
+      created_at: '2024-01-01T00:00:00Z',
+      updated_at: '2024-01-01T00:00:00Z',
     }
 
     const { login, logout } = useAuthStore.getState()
@@ -53,8 +63,12 @@ describe('Auth Store', () => {
     const testUser = {
       id: '2',
       email: 'another@example.com',
-      name: 'Another User',
-      role: 'admin',
+      full_name: 'Another User',
+      role: 'admin' as const,
+      is_active: true,
+      organization_id: 'org-1',
+      created_at: '2024-01-01T00:00:00Z',
+      updated_at: '2024-01-01T00:00:00Z',
     }
 
     const { setUser } = useAuthStore.getState()
@@ -69,7 +83,12 @@ describe('Auth Store', () => {
     const testUser = {
       id: '1',
       email: 'test@example.com',
-      name: 'Test User',
+      full_name: 'Test User',
+      role: 'processor' as const,
+      is_active: true,
+      organization_id: 'org-1',
+      created_at: '2024-01-01T00:00:00Z',
+      updated_at: '2024-01-01T00:00:00Z',
     }
 
     const { setUser } = useAuthStore.getState()

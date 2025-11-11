@@ -14,11 +14,12 @@ Examples:
     python3 test_sample.py ../resources/sample/1
     python3 test_sample.py ../resources/sample/2 600
 """
-import requests
-import time
 import json
 import sys
+import time
 from pathlib import Path
+
+import requests
 
 # Configuration
 BASE_URL = "http://localhost:8780"
@@ -58,7 +59,7 @@ def upload_files(sample_dir):
                     found = True
                     break
             if not found:
-                print(f"⚠️  Warning: Invoice file not found (tried .jpg, .jpeg, .pdf, .png)")
+                print("⚠️  Warning: Invoice file not found (tried .jpg, .jpeg, .pdf, .png)")
                 return None
         else:
             file_path = sample_dir / filename
@@ -101,7 +102,7 @@ def trigger_processing(declaration_id):
 
         if response.status_code == 200:
             data = response.json()
-            print(f"✅ Processing started!")
+            print("✅ Processing started!")
             print(f"   Status: {data['status']}")
             print(f"   Celery Task ID: {data['celery_task_id']}")
             return True
@@ -176,13 +177,13 @@ def poll_status(declaration_id, max_wait=120):
 
     elapsed = time.time() - start_time
     print(f"\n⏱️  Timeout after {max_wait}s ({poll_count} polls, last status: {last_status})")
-    print(f"   Consider increasing timeout or checking celery worker logs:")
-    print(f"   docker logs logai-focus-celery-worker")
+    print("   Consider increasing timeout or checking celery worker logs:")
+    print("   docker logs logai-focus-celery-worker")
     return False
 
 def get_results(declaration_id, sample_dir):
     """Retrieve and display extraction results"""
-    print(f"\n📥 Step 4: Retrieving results...")
+    print("\n📥 Step 4: Retrieving results...")
 
     url = f"{BASE_URL}/api/v1/declarations/{declaration_id}"
 
@@ -192,7 +193,7 @@ def get_results(declaration_id, sample_dir):
         if response.status_code == 200:
             data = response.json()
 
-            print(f"\n📋 Declaration Details:")
+            print("\n📋 Declaration Details:")
             print(f"   ID: {data['id']}")
             print(f"   Status: {data['status']}")
             print(f"   Progress: {data['processing_progress']*100:.1f}%")
@@ -201,12 +202,12 @@ def get_results(declaration_id, sample_dir):
             extracted = data.get("extracted_data", {})
 
             if extracted:
-                print(f"\n📊 Extracted Data Summary:")
+                print("\n📊 Extracted Data Summary:")
 
                 # Performance metrics
                 perf = extracted.get("_performance_metrics", {})
                 if perf:
-                    print(f"\n   ⏱️  Performance Metrics:")
+                    print("\n   ⏱️  Performance Metrics:")
                     print(f"      OCR Duration: {perf.get('ocr_duration_seconds', 0):.1f}s")
                     print(f"      LLM Duration: {perf.get('llm_duration_seconds', 0):.1f}s")
                     print(f"      Storage Duration: {perf.get('storage_duration_seconds', 0):.1f}s")
@@ -219,14 +220,14 @@ def get_results(declaration_id, sample_dir):
                 # Importer info
                 importer = extracted.get("importer", {})
                 if importer:
-                    print(f"\n   📦 Importer:")
+                    print("\n   📦 Importer:")
                     print(f"      Tax Code: {importer.get('tax_code', 'N/A')}")
                     print(f"      Name: {importer.get('name', 'N/A')}")
 
                 # Invoice info
                 invoice = extracted.get("invoice", {})
                 if invoice:
-                    print(f"\n   💰 Invoice:")
+                    print("\n   💰 Invoice:")
                     print(f"      Number: {invoice.get('invoice_number', 'N/A')}")
                     print(f"      Date: {invoice.get('invoice_date', 'N/A')}")
                     print(f"      Total: {invoice.get('invoice_total', 0)} {invoice.get('invoice_currency', 'USD')}")

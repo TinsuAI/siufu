@@ -3,12 +3,13 @@ User repository with user-specific queries
 """
 from typing import Optional
 from uuid import UUID
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.core.security import get_password_hash
 from src.models.user import User
 from src.repositories.base import BaseRepository
-from src.core.security import get_password_hash
 from src.schemas.auth import RegisterRequest
 
 

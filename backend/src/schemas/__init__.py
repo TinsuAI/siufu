@@ -2,14 +2,14 @@
 Pydantic schemas package
 """
 from src.schemas.common import ErrorResponse, PaginatedResponse
-from src.schemas.user import UserBase, UserCreate, UserUpdate, UserResponse
 from src.schemas.declaration import (
-    DeclarationStatus,
     DeclarationBase,
     DeclarationCreate,
-    DeclarationUpdate,
     DeclarationResponse,
+    DeclarationStatus,
+    DeclarationUpdate,
 )
+from src.schemas.user import UserBase, UserCreate, UserResponse, UserUpdate
 
 __all__ = [
     "ErrorResponse",

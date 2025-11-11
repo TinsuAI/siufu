@@ -1,13 +1,12 @@
 """
 Unit tests for declaration approval, rejection, and export API endpoints
 """
-import pytest
-from unittest.mock import Mock, patch, AsyncMock, MagicMock
-from uuid import uuid4
 from datetime import datetime, timezone
-from pathlib import Path
+from unittest.mock import AsyncMock, Mock, patch
+from uuid import uuid4
+
+import pytest
 from fastapi import HTTPException
-from httpx import AsyncClient
 
 from src.models.declaration import DeclarationStatus
 
@@ -56,15 +55,16 @@ class TestApproveEndpoint:
     @pytest.mark.asyncio
     async def test_approve_success(self, mock_declaration, mock_user, mock_db):
         """Test successful approval of READY_FOR_REVIEW declaration"""
-        from src.api.v1.declarations import approve_declaration
         from fastapi import Request
+
+        from src.api.v1.declarations import approve_declaration
 
         # Setup
         mock_declaration.status = DeclarationStatus.READY_FOR_REVIEW
         mock_request = Mock(spec=Request)
 
         # Mock dependencies
-        with patch('src.api.v1.declarations.get_current_user', return_value=mock_user) as mock_get_user, \
+        with patch('src.api.v1.declarations.get_current_user', return_value=mock_user), \
              patch('src.api.v1.declarations.DeclarationRepository') as MockRepo:
 
             mock_repo = MockRepo.return_value
@@ -90,8 +90,9 @@ class TestApproveEndpoint:
     @pytest.mark.asyncio
     async def test_approve_declaration_not_found(self, mock_user, mock_db):
         """Test approval fails when declaration does not exist"""
-        from src.api.v1.declarations import approve_declaration
         from fastapi import Request
+
+        from src.api.v1.declarations import approve_declaration
 
         mock_request = Mock(spec=Request)
         declaration_id = uuid4()
@@ -116,8 +117,9 @@ class TestApproveEndpoint:
     @pytest.mark.asyncio
     async def test_approve_invalid_status(self, mock_declaration, mock_user, mock_db):
         """Test approval fails when declaration is not READY_FOR_REVIEW"""
-        from src.api.v1.declarations import approve_declaration
         from fastapi import Request
+
+        from src.api.v1.declarations import approve_declaration
 
         # Setup - declaration in UPLOADED status (not ready for approval)
         mock_declaration.status = DeclarationStatus.UPLOADED
@@ -143,8 +145,9 @@ class TestApproveEndpoint:
     @pytest.mark.asyncio
     async def test_approve_records_timestamp_utc(self, mock_declaration, mock_user, mock_db):
         """Test that approval timestamp is recorded in UTC"""
-        from src.api.v1.declarations import approve_declaration
         from fastapi import Request
+
+        from src.api.v1.declarations import approve_declaration
 
         mock_declaration.status = DeclarationStatus.READY_FOR_REVIEW
         mock_request = Mock(spec=Request)
@@ -155,7 +158,7 @@ class TestApproveEndpoint:
             mock_repo = MockRepo.return_value
             mock_repo.get_by_id = AsyncMock(return_value=mock_declaration)
 
-            result = await approve_declaration(
+            _ = await approve_declaration(
                 declaration_id=mock_declaration.id,
                 request=mock_request,
                 db=mock_db
@@ -172,9 +175,10 @@ class TestRejectEndpoint:
     @pytest.mark.asyncio
     async def test_reject_success(self, mock_declaration, mock_user, mock_db):
         """Test successful rejection of READY_FOR_REVIEW declaration"""
+        from fastapi import Request
+
         from src.api.v1.declarations import reject_declaration
         from src.schemas.declaration import DeclarationRejectRequest
-        from fastapi import Request
 
         # Setup
         mock_declaration.status = DeclarationStatus.READY_FOR_REVIEW
@@ -209,9 +213,10 @@ class TestRejectEndpoint:
     @pytest.mark.asyncio
     async def test_reject_declaration_not_found(self, mock_user, mock_db):
         """Test rejection fails when declaration does not exist"""
+        from fastapi import Request
+
         from src.api.v1.declarations import reject_declaration
         from src.schemas.declaration import DeclarationRejectRequest
-        from fastapi import Request
 
         mock_request = Mock(spec=Request)
         declaration_id = uuid4()
@@ -239,9 +244,10 @@ class TestRejectEndpoint:
     @pytest.mark.asyncio
     async def test_reject_invalid_status(self, mock_declaration, mock_user, mock_db):
         """Test rejection fails when declaration is not READY_FOR_REVIEW"""
+        from fastapi import Request
+
         from src.api.v1.declarations import reject_declaration
         from src.schemas.declaration import DeclarationRejectRequest
-        from fastapi import Request
 
         # Setup - declaration already APPROVED
         mock_declaration.status = DeclarationStatus.APPROVED
@@ -271,8 +277,9 @@ class TestRejectEndpoint:
     @pytest.mark.asyncio
     async def test_reject_validation_min_length(self):
         """Test that rejection reason must be at least 10 characters"""
-        from src.schemas.declaration import DeclarationRejectRequest
         from pydantic import ValidationError
+
+        from src.schemas.declaration import DeclarationRejectRequest
 
         # Test rejection reason too short
         with pytest.raises(ValidationError) as exc_info:
@@ -287,8 +294,9 @@ class TestExportEndpoint:
     @pytest.mark.asyncio
     async def test_export_success(self, mock_declaration, mock_user, mock_db, tmp_path):
         """Test successful export of APPROVED declaration"""
-        from src.api.v1.declarations import export_declaration
         from fastapi import Request
+
+        from src.api.v1.declarations import export_declaration
 
         # Setup
         mock_declaration.status = DeclarationStatus.APPROVED
@@ -330,8 +338,9 @@ class TestExportEndpoint:
     @pytest.mark.asyncio
     async def test_export_declaration_not_found(self, mock_user, mock_db):
         """Test export fails when declaration does not exist"""
-        from src.api.v1.declarations import export_declaration
         from fastapi import Request
+
+        from src.api.v1.declarations import export_declaration
 
         mock_request = Mock(spec=Request)
         declaration_id = uuid4()
@@ -355,8 +364,9 @@ class TestExportEndpoint:
     @pytest.mark.asyncio
     async def test_export_not_approved(self, mock_declaration, mock_user, mock_db):
         """Test export fails when declaration is not APPROVED"""
-        from src.api.v1.declarations import export_declaration
         from fastapi import Request
+
+        from src.api.v1.declarations import export_declaration
 
         # Setup - declaration in READY_FOR_REVIEW status
         mock_declaration.status = DeclarationStatus.READY_FOR_REVIEW
@@ -382,8 +392,9 @@ class TestExportEndpoint:
     @pytest.mark.asyncio
     async def test_export_file_not_generated(self, mock_declaration, mock_user, mock_db):
         """Test export fails when Excel file does not exist"""
-        from src.api.v1.declarations import export_declaration
         from fastapi import Request
+
+        from src.api.v1.declarations import export_declaration
 
         # Setup
         mock_declaration.status = DeclarationStatus.APPROVED
@@ -419,8 +430,9 @@ class TestListDeclarationsEndpoint:
     @pytest.mark.asyncio
     async def test_list_declarations_default_pagination(self, mock_user, mock_db):
         """Test listing declarations with default pagination"""
-        from src.api.v1.declarations import list_declarations
         from fastapi import Request
+
+        from src.api.v1.declarations import list_declarations
 
         # Setup - create mock declarations
         mock_declarations = []
@@ -473,8 +485,9 @@ class TestListDeclarationsEndpoint:
     @pytest.mark.asyncio
     async def test_list_declarations_with_status_filter(self, mock_user, mock_db):
         """Test listing declarations filtered by status"""
-        from src.api.v1.declarations import list_declarations
         from fastapi import Request
+
+        from src.api.v1.declarations import list_declarations
 
         mock_request = Mock(spec=Request)
         mock_result = Mock()
@@ -505,8 +518,9 @@ class TestListDeclarationsEndpoint:
     @pytest.mark.asyncio
     async def test_list_declarations_with_search(self, mock_user, mock_db):
         """Test listing declarations with search by ID"""
-        from src.api.v1.declarations import list_declarations
         from fastapi import Request
+
+        from src.api.v1.declarations import list_declarations
 
         mock_request = Mock(spec=Request)
         mock_result = Mock()
@@ -535,8 +549,9 @@ class TestListDeclarationsEndpoint:
     @pytest.mark.asyncio
     async def test_list_declarations_invalid_sort_by(self, mock_user, mock_db):
         """Test listing declarations with invalid sort_by parameter"""
-        from src.api.v1.declarations import list_declarations
         from fastapi import Request
+
+        from src.api.v1.declarations import list_declarations
 
         mock_request = Mock(spec=Request)
 
@@ -560,8 +575,9 @@ class TestListDeclarationsEndpoint:
     @pytest.mark.asyncio
     async def test_list_declarations_calculates_products_count(self, mock_user, mock_db):
         """Test that products_count is calculated correctly from draft_data"""
-        from src.api.v1.declarations import list_declarations
         from fastapi import Request
+
+        from src.api.v1.declarations import list_declarations
 
         # Setup - declaration with products in draft_data
         decl = Mock()
@@ -606,8 +622,9 @@ class TestDeleteDeclarationEndpoint:
     @pytest.mark.asyncio
     async def test_delete_declaration_success(self, mock_declaration, mock_user, mock_db):
         """Test successful soft delete of declaration"""
-        from src.api.v1.declarations import delete_declaration
         from fastapi import Request
+
+        from src.api.v1.declarations import delete_declaration
 
         # Setup
         mock_declaration.created_by_user_id = mock_user.id
@@ -635,8 +652,9 @@ class TestDeleteDeclarationEndpoint:
     @pytest.mark.asyncio
     async def test_delete_declaration_not_found(self, mock_user, mock_db):
         """Test delete fails when declaration does not exist"""
-        from src.api.v1.declarations import delete_declaration
         from fastapi import Request
+
+        from src.api.v1.declarations import delete_declaration
 
         mock_request = Mock(spec=Request)
         declaration_id = uuid4()
@@ -660,8 +678,9 @@ class TestDeleteDeclarationEndpoint:
     @pytest.mark.asyncio
     async def test_delete_declaration_unauthorized(self, mock_declaration, mock_user, mock_db):
         """Test delete fails when user doesn't own the declaration"""
-        from src.api.v1.declarations import delete_declaration
         from fastapi import Request
+
+        from src.api.v1.declarations import delete_declaration
 
         # Setup - declaration owned by different user
         mock_declaration.created_by_user_id = uuid4()  # Different user ID
@@ -688,8 +707,9 @@ class TestDeleteDeclarationEndpoint:
     @pytest.mark.asyncio
     async def test_delete_already_deleted_declaration(self, mock_declaration, mock_user, mock_db):
         """Test delete fails when declaration already deleted"""
-        from src.api.v1.declarations import delete_declaration
         from fastapi import Request
+
+        from src.api.v1.declarations import delete_declaration
 
         # Setup - declaration already deleted
         mock_declaration.created_by_user_id = mock_user.id

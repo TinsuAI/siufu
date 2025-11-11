@@ -15,8 +15,8 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.models.importer import Importer
 from src.models.exporter import Exporter
+from src.models.importer import Importer
 
 
 def normalize_tax_code(tax_code: str) -> str:

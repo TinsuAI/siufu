@@ -6,9 +6,10 @@ to identify discrepancies, typos, and data quality issues before final review.
 
 Story 3.11: Brownfield addition - additive only, non-blocking validation
 """
-from typing import List, Dict, Any, Optional
 from datetime import datetime
-from src.services.master_data_service import calculate_similarity, normalize_company_name
+from typing import Any, Dict, List, Optional
+
+from src.services.master_data_service import normalize_company_name
 
 
 class IncomeValidationService:
@@ -194,7 +195,7 @@ class IncomeValidationService:
         importer_name = self._safe_get(importer, "name")
 
         # Check exporter name consistency
-        exporter_name = self._safe_get(exporter, "name")
+        _ = self._safe_get(exporter, "name")  # Reserved for future cross-document validation
 
         # Note: In full implementation, we'd compare names across documents
         # For now, we ensure names are normalized
@@ -241,7 +242,7 @@ class IncomeValidationService:
         for description, hs_codes in hs_by_description.items():
             if len(hs_codes) > 1:
                 # Check if all HS codes are the same
-                unique_codes = set(code for _, code in hs_codes)
+                unique_codes = {code for _, code in hs_codes}
                 if len(unique_codes) > 1:
                     indices = [idx for idx, _ in hs_codes]
                     warnings.append({

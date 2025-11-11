@@ -2,10 +2,8 @@
 Authentication API endpoints
 """
 from datetime import timedelta
-from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Response, Request
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.config import settings
@@ -15,7 +13,8 @@ from src.core.security import (
     verify_password,
 )
 from src.repositories.user_repository import UserRepository
-from src.schemas.auth import LoginRequest, LoginResponse, RegisterRequest, User as UserSchema
+from src.schemas.auth import LoginRequest, LoginResponse, RegisterRequest
+from src.schemas.auth import User as UserSchema
 
 router = APIRouter()
 
@@ -50,6 +49,7 @@ async def register(
 
     # Get or create demo organization (for MVP, all users belong to same org)
     from sqlalchemy import select
+
     from src.models.organization import Organization
 
     result = await db.execute(

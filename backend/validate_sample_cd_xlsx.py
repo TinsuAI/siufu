@@ -35,12 +35,13 @@ Examples:
     python3 validate_sample_cd_xlsx.py ../resources/sample/1 --generate-reference
 """
 
+import argparse
 import json
 import sys
-import argparse
-from pathlib import Path
-from difflib import SequenceMatcher
 from datetime import datetime
+from difflib import SequenceMatcher
+from pathlib import Path
+
 from openpyxl import load_workbook
 
 
@@ -484,7 +485,7 @@ def extract_ground_truth_from_cd_xlsx(xlsx_path):
     # Products are in the TKN/main sheet, NOT in HANG/HANG_NK sheet (which is just a template)
 
     items = []
-    print(f"   Searching for products in main sheet (starting from row 100)...")
+    print("   Searching for products in main sheet (starting from row 100)...")
 
     # Parse rate percentage (e.g., "0%" -> "0%", "8%" -> "8%")
     def parse_rate_str(val):
@@ -1024,19 +1025,19 @@ def generate_comprehensive_markdown_report(sample_path, validation_results, grou
 
     # Header
     md.append(f"# Comprehensive Validation Report - {Path(sample_path).name}")
-    md.append(f"")
+    md.append("")
     md.append(f"**Generated:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     md.append(f"**Sample Path:** `{sample_path}`")
-    md.append(f"**Validation Tool:** `backend/validate_sample_comprehensive.py`")
-    md.append(f"")
-    md.append(f"---")
-    md.append(f"")
+    md.append("**Validation Tool:** `backend/validate_sample_comprehensive.py`")
+    md.append("")
+    md.append("---")
+    md.append("")
 
     # Executive Summary
-    md.append(f"## Executive Summary")
-    md.append(f"")
-    md.append(f"| Metric | Value |")
-    md.append(f"|--------|-------|")
+    md.append("## Executive Summary")
+    md.append("")
+    md.append("| Metric | Value |")
+    md.append("|--------|-------|")
     md.append(f"| **Total Checks** | {validation_results['total_checks']} |")
     md.append(f"| **Passed** | {validation_results['passed_checks']:.1f} |")
     md.append(f"| **Accuracy** | {validation_results['accuracy']:.1f}% |")
@@ -1060,121 +1061,121 @@ def generate_comprehensive_markdown_report(sample_path, validation_results, grou
         verdict_msg = "Extraction quality INSUFFICIENT"
 
     md.append(f"| **Verdict** | {verdict} |")
-    md.append(f"")
+    md.append("")
     md.append(f"{verdict_msg}")
-    md.append(f"")
-    md.append(f"---")
-    md.append(f"")
+    md.append("")
+    md.append("---")
+    md.append("")
 
     # Critical Failures
     if validation_results['critical_failures']:
         md.append(f"## ❌ Critical Failures ({len(validation_results['critical_failures'])})")
-        md.append(f"")
+        md.append("")
         for failure in validation_results['critical_failures']:
             md.append(f"- {failure}")
-        md.append(f"")
-        md.append(f"---")
-        md.append(f"")
+        md.append("")
+        md.append("---")
+        md.append("")
 
     # Warnings
     if validation_results['warnings']:
         md.append(f"## ⚠️ Warnings ({len(validation_results['warnings'])})")
-        md.append(f"")
+        md.append("")
         for warning in validation_results['warnings']:
             md.append(f"- {warning}")
-        md.append(f"")
-        md.append(f"---")
-        md.append(f"")
+        md.append("")
+        md.append("---")
+        md.append("")
 
     # Critical Fields Table
-    md.append(f"## Detailed Validation Results")
-    md.append(f"")
-    md.append(f"### Critical Fields (Must be 100% accurate)")
-    md.append(f"")
-    md.append(f"| Field | Expected | Actual | Match | Similarity | Confidence |")
-    md.append(f"|-------|----------|--------|-------|------------|------------|")
+    md.append("## Detailed Validation Results")
+    md.append("")
+    md.append("### Critical Fields (Must be 100% accurate)")
+    md.append("")
+    md.append("| Field | Expected | Actual | Match | Similarity | Confidence |")
+    md.append("|-------|----------|--------|-------|------------|------------|")
 
     for detail in validation_results['details']['critical']:
         icon = "✅" if detail['match'] else "❌"
         md.append(f"| {icon} {detail['field']} | `{detail['expected']}` | `{detail['actual']}` | {detail['match']} | {detail['similarity']:.0%} | {detail['confidence']:.0%} |")
 
-    md.append(f"")
+    md.append("")
 
     # Important Fields Table
-    md.append(f"### Important Fields (≥85% fuzzy match threshold)")
-    md.append(f"")
-    md.append(f"| Field | Expected | Actual | Match | Similarity | Confidence |")
-    md.append(f"|-------|----------|--------|-------|------------|------------|")
+    md.append("### Important Fields (≥85% fuzzy match threshold)")
+    md.append("")
+    md.append("| Field | Expected | Actual | Match | Similarity | Confidence |")
+    md.append("|-------|----------|--------|-------|------------|------------|")
 
     for detail in validation_results['details']['important']:
         icon = "✅" if detail['match'] else "⚠️"
         md.append(f"| {icon} {detail['field']} | `{detail['expected']}` | `{detail['actual']}` | {detail['match']} | {detail['similarity']:.0%} | {detail['confidence']:.0%} |")
 
-    md.append(f"")
+    md.append("")
 
     # Products Table
     if validation_results['details']['products']:
-        md.append(f"### Product Line Items")
-        md.append(f"")
+        md.append("### Product Line Items")
+        md.append("")
 
         for product in validation_results['details']['products']:
             md.append(f"#### Product {product['item_number']}")
-            md.append(f"")
-            md.append(f"| Field | Expected | Actual | Match | Similarity | Confidence |")
-            md.append(f"|-------|----------|--------|-------|------------|------------|")
+            md.append("")
+            md.append("| Field | Expected | Actual | Match | Similarity | Confidence |")
+            md.append("|-------|----------|--------|-------|------------|------------|")
 
             for check in product['checks']:
                 icon = "✅" if check['match'] else "⚠️"
                 field_name = check['field'].replace(f"Product {product['item_number']} - ", "")
                 md.append(f"| {icon} {field_name} | `{check['expected']}` | `{check['actual']}` | {check['match']} | {check['similarity']:.0%} | {check['confidence']:.0%} |")
 
-            md.append(f"")
+            md.append("")
 
     # Full Extracted Data
-    md.append(f"---")
-    md.append(f"")
-    md.append(f"## Complete Extracted Data")
-    md.append(f"")
-    md.append(f"<details>")
-    md.append(f"<summary>Click to expand full extraction results</summary>")
-    md.append(f"")
-    md.append(f"```json")
+    md.append("---")
+    md.append("")
+    md.append("## Complete Extracted Data")
+    md.append("")
+    md.append("<details>")
+    md.append("<summary>Click to expand full extraction results</summary>")
+    md.append("")
+    md.append("```json")
     md.append(json.dumps(extracted_data, indent=2, ensure_ascii=False))
-    md.append(f"```")
-    md.append(f"")
-    md.append(f"</details>")
-    md.append(f"")
-    md.append(f"---")
-    md.append(f"")
+    md.append("```")
+    md.append("")
+    md.append("</details>")
+    md.append("")
+    md.append("---")
+    md.append("")
 
     # Known Discrepancies
-    md.append(f"## 📌 Known Discrepancies")
-    md.append(f"")
-    md.append(f"These discrepancies are expected due to differences between source documents and CD.xlsx:")
-    md.append(f"")
-    md.append(f"1. **Declaration Number**: System-generated field, not extracted from source documents")
-    md.append(f"2. **CO Number**: CD.xlsx may show internal tracking number vs official CO document number")
-    md.append(f"3. **Arrival Date**: May differ between CO issue date and actual arrival date")
-    md.append(f"4. **Address Formatting**: Vietnamese vs English, with/without diacritics")
-    md.append(f"5. **Port Names**: Different levels of specificity (port vs terminal)")
-    md.append(f"")
-    md.append(f"---")
-    md.append(f"")
+    md.append("## 📌 Known Discrepancies")
+    md.append("")
+    md.append("These discrepancies are expected due to differences between source documents and CD.xlsx:")
+    md.append("")
+    md.append("1. **Declaration Number**: System-generated field, not extracted from source documents")
+    md.append("2. **CO Number**: CD.xlsx may show internal tracking number vs official CO document number")
+    md.append("3. **Arrival Date**: May differ between CO issue date and actual arrival date")
+    md.append("4. **Address Formatting**: Vietnamese vs English, with/without diacritics")
+    md.append("5. **Port Names**: Different levels of specificity (port vs terminal)")
+    md.append("")
+    md.append("---")
+    md.append("")
 
     # Metadata
-    md.append(f"## Validation Metadata")
-    md.append(f"")
-    md.append(f"- **Tool Version:** 2.0 (Comprehensive)")
-    md.append(f"- **Ground Truth Source:** CD.xlsx")
-    md.append(f"- **Extraction Source:** results.json")
+    md.append("## Validation Metadata")
+    md.append("")
+    md.append("- **Tool Version:** 2.0 (Comprehensive)")
+    md.append("- **Ground Truth Source:** CD.xlsx")
+    md.append("- **Extraction Source:** results.json")
     md.append(f"- **Validation Date:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    md.append(f"- **Fuzzy Match Threshold:** 85%")
-    md.append(f"- **Numeric Tolerance:** ±1%")
+    md.append("- **Fuzzy Match Threshold:** 85%")
+    md.append("- **Numeric Tolerance:** ±1%")
     md.append(f"- **Fields Validated:** {validation_results['total_checks']}")
-    md.append(f"")
-    md.append(f"---")
-    md.append(f"")
-    md.append(f"*Generated by comprehensive validation tool - AC#9 Compliance Check*")
+    md.append("")
+    md.append("---")
+    md.append("")
+    md.append("*Generated by comprehensive validation tool - AC#9 Compliance Check*")
 
     # Write report
     with open(report_path, 'w', encoding='utf-8') as f:
@@ -1258,11 +1259,11 @@ Examples:
         ground_truth = load_validation_reference(sample_path)
 
         if ground_truth:
-            print(f"✅ Loaded ground truth from validation-reference.json")
+            print("✅ Loaded ground truth from validation-reference.json")
         else:
             # Fall back to extracting from CD.xlsx
             ground_truth = extract_ground_truth_from_cd_xlsx(cd_xlsx_path)
-            print(f"✅ Extracted ground truth from CD.xlsx")
+            print("✅ Extracted ground truth from CD.xlsx")
 
         print()
     except Exception as e:
@@ -1280,7 +1281,7 @@ Examples:
         extracted_data = results.get('extracted_data', {})
         confidence_scores = results.get('confidence_scores', {})
 
-        print(f"✅ Loaded extraction results")
+        print("✅ Loaded extraction results")
         print(f"   Status: {results.get('status')}")
         print(f"   Overall Confidence: {extracted_data.get('overall_confidence', 0):.1%}")
         print()

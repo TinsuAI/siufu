@@ -1,10 +1,11 @@
 """
 Custom exception classes and error handlers following RFC 7807 Problem Details
 """
-from typing import Optional, Dict, Any
+from typing import Any, Dict, Optional
+
 from fastapi import Request, status
-from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 

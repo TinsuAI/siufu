@@ -1,14 +1,15 @@
 """
 Declaration database model
 """
-from datetime import datetime
 import enum
 import uuid
+from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import String, Float, Text, DateTime, ForeignKey, Enum as SQLEnum, func
+from sqlalchemy import DateTime, Float, ForeignKey, String, Text, func
+from sqlalchemy import Enum as SQLEnum
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy.dialects.postgresql import UUID, JSONB
 
 from src.models.base import Base
 

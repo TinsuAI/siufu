@@ -1,13 +1,14 @@
 """
 User database model
 """
-from datetime import datetime
 import enum
 import uuid
+from datetime import datetime
 
-from sqlalchemy import String, Boolean, DateTime, ForeignKey, Enum as SQLEnum, func
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import Boolean, DateTime, ForeignKey, String, func
+from sqlalchemy import Enum as SQLEnum
 from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.models.base import Base
 

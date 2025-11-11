@@ -5,6 +5,7 @@ Vietnamese format to frontend form format
 """
 import json
 
+
 def transform_vietnamese_to_draft(extracted_data):
     """Transform Vietnamese declaration data to form schema"""
     importer = extracted_data.get("importer", {})

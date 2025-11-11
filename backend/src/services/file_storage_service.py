@@ -7,11 +7,12 @@ Updated in Story 3.3.1: Supports multiple CO files
 import os
 import shutil
 import uuid
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List, Union
-from datetime import datetime, timezone
-from fastapi import UploadFile
+
 import aiofiles
+from fastapi import UploadFile
 
 
 class FileStorageService:

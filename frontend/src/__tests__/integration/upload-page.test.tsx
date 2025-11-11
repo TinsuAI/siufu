@@ -42,7 +42,16 @@ describe('UploadPage Integration Tests - 4-File Upload Flow', () => {
 
     // Set user as authenticated
     useAuthStore.setState({
-      user: { id: '1', email: 'test@example.com', name: 'Test User' },
+      user: {
+        id: '1',
+        email: 'test@example.com',
+        full_name: 'Test User',
+        role: 'processor',
+        is_active: true,
+        organization_id: 'org-1',
+        created_at: '2024-01-01T00:00:00Z',
+        updated_at: '2024-01-01T00:00:00Z',
+      },
       isAuthenticated: true,
       isLoading: false,
     })

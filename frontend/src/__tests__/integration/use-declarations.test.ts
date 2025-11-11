@@ -9,6 +9,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { AllTheProviders } from '@/test-utils'
 import { useDeclarations } from '@/hooks/use-declarations'
+import { DeclarationStatus } from '@/types/declaration'
 import * as api from '@/lib/api'
 
 // Mock the API client
@@ -28,7 +29,7 @@ describe('useDeclarations', () => {
       items: [
         {
           id: 'dec-001',
-          status: 'APPROVED' as const,
+          status: DeclarationStatus.APPROVED as const,
           created_at: '2024-11-01T10:00:00Z',
           updated_at: '2024-11-01T12:00:00Z',
           approved_at: '2024-11-01T12:00:00Z',
@@ -36,7 +37,7 @@ describe('useDeclarations', () => {
         },
         {
           id: 'dec-002',
-          status: 'READY_FOR_REVIEW' as const,
+          status: DeclarationStatus.READY_FOR_REVIEW as const,
           created_at: '2024-11-02T10:00:00Z',
           updated_at: '2024-11-02T11:00:00Z',
           approved_at: null,
@@ -70,7 +71,7 @@ describe('useDeclarations', () => {
     expect(result.current.data?.total).toBe(2)
     expect(result.current.data?.items[0]).toMatchObject({
       id: 'dec-001',
-      status: 'APPROVED',
+      status: DeclarationStatus.APPROVED,
       products_count: 5,
     })
 
@@ -129,7 +130,7 @@ describe('useDeclarations', () => {
     vi.mocked(api.getDeclarations).mockResolvedValue(mockResponse)
 
     const { result } = renderHook(
-      () => useDeclarations({ status: 'APPROVED' }),
+      () => useDeclarations({ status: DeclarationStatus.APPROVED }),
       {
         wrapper: AllTheProviders,
       }
@@ -142,7 +143,7 @@ describe('useDeclarations', () => {
     expect(api.getDeclarations).toHaveBeenCalledWith({
       page: 1,
       limit: 20,
-      status: 'APPROVED',
+      status: DeclarationStatus.APPROVED,
       search: undefined,
       sort_by: 'created_at',
       sort_order: 'desc',
@@ -214,7 +215,7 @@ describe('useDeclarations', () => {
       items: [
         {
           id: 'dec-001',
-          status: 'APPROVED' as const,
+          status: DeclarationStatus.APPROVED as const,
           created_at: '2024-11-01T10:00:00Z',
           updated_at: '2024-11-01T12:00:00Z',
           approved_at: '2024-11-01T12:00:00Z',

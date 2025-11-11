@@ -8,10 +8,11 @@ Provides health status for:
 - Redis connectivity
 """
 
-from fastapi import APIRouter, status, Depends
-from sqlalchemy.ext.asyncio import AsyncSession
-from typing import Dict, Any
 import logging
+from typing import Any, Dict
+
+from fastapi import APIRouter, Depends, status
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.celery_app import celery_app
 from src.core.database import get_db

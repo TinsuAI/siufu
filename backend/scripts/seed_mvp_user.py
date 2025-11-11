@@ -11,7 +11,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 
 from src.core.config import settings
@@ -69,7 +69,7 @@ async def seed_mvp_data():
             await session.commit()
             await session.refresh(user)
             print(f"✓ Created user: {user.email} (ID: {user.id}, Role: {user.role})")
-            print(f"  Password: password123")
+            print("  Password: password123")
         else:
             print(f"✓ User already exists: {user.email} (ID: {user.id}, Role: {user.role})")
 

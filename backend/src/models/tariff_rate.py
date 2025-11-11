@@ -1,14 +1,14 @@
 """
 Tariff Rate database model
 """
-from datetime import datetime, date
 import uuid
-from typing import Optional
+from datetime import date, datetime
 from decimal import Decimal
+from typing import Optional
 
-from sqlalchemy import String, Boolean, DateTime, Date, ForeignKey, Numeric, Text, func
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Numeric, String, Text, func
 from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.models.base import Base
 

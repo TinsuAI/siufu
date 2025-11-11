@@ -1,15 +1,16 @@
 """Initial schema with core models
 
 Revision ID: e3061fd0812f
-Revises: 
+Revises:
 Create Date: 2025-10-18 09:19:26.191258
 
 """
 from typing import Sequence, Union
 
-from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
+
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = 'e3061fd0812f'

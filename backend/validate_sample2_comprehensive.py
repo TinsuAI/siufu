@@ -7,6 +7,7 @@ Validates extraction results against ground truth from CD.xlsx
 import json
 from difflib import SequenceMatcher
 
+
 def fuzzy_match(str1, str2, threshold=0.85):
     """Check if two strings match with fuzzy matching"""
     if str1 is None or str2 is None:
@@ -41,7 +42,7 @@ def validate_sample2_comprehensive():
         validation_ref = json.load(f)
 
     ground_truth = validation_ref['sample_2_ground_truth']
-    print(f"✅ Loaded ground truth from validation-reference.json")
+    print("✅ Loaded ground truth from validation-reference.json")
     print(f"   Description: {ground_truth['description']}")
     print()
 
@@ -51,7 +52,7 @@ def validate_sample2_comprehensive():
 
     extracted = results['extracted_data']
     confidence_scores = results['confidence_scores']
-    print(f"✅ Loaded extraction results")
+    print("✅ Loaded extraction results")
     print(f"   Status: {results['status']}")
     print(f"   Overall Confidence: {extracted.get('overall_confidence', 0):.1%}")
     print()

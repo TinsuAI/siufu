@@ -26,6 +26,7 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).parent.parent / "src"))
 
 from src.models import Base  # noqa: E402
+
 target_metadata = Base.metadata
 
 # Get database URL from environment variable if available

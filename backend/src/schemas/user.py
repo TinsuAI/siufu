@@ -1,10 +1,11 @@
 """
 User Pydantic schemas for API request/response
 """
-from uuid import UUID
 from datetime import datetime
 from typing import Optional
-from pydantic import BaseModel, EmailStr, Field, ConfigDict
+from uuid import UUID
+
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 
 class UserBase(BaseModel):

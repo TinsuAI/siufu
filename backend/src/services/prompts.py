@@ -1,9 +1,8 @@
 """
 Prompt templates for LLM extraction
 """
-from typing import Dict, Any
 import json
-
+from typing import Any, Dict
 
 SYSTEM_PROMPT = """You are an expert customs data extraction assistant specializing in Vietnamese import declarations.
 Your task is to extract structured data from OCR text of customs documents with high accuracy.

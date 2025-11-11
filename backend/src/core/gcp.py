@@ -1,8 +1,9 @@
 """
 Google Cloud Platform credential loader
 """
-import os
 import json
+import os
+
 from google.oauth2 import service_account
 
 

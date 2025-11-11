@@ -56,7 +56,6 @@ const mockImporters: ImporterListItem[] = [
     declaration_count: 10,
     is_verified: true,
     updated_at: '2025-01-15T10:00:00Z',
-    created_at: '2025-01-01T10:00:00Z',
   },
   {
     id: 'importer-2',
@@ -65,7 +64,6 @@ const mockImporters: ImporterListItem[] = [
     declaration_count: 5,
     is_verified: false,
     updated_at: '2025-01-14T10:00:00Z',
-    created_at: '2025-01-02T10:00:00Z',
   },
 ]
 
@@ -77,7 +75,6 @@ const mockExporters: ExporterListItem[] = [
     declaration_count: 20,
     is_verified: true,
     updated_at: '2025-01-15T10:00:00Z',
-    created_at: '2025-01-01T10:00:00Z',
   },
   {
     id: 'exporter-2',
@@ -86,7 +83,6 @@ const mockExporters: ExporterListItem[] = [
     declaration_count: 8,
     is_verified: false,
     updated_at: '2025-01-14T10:00:00Z',
-    created_at: '2025-01-02T10:00:00Z',
   },
 ]
 

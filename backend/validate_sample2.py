@@ -5,8 +5,10 @@ Validates extracted results.json against ground truth CD.xlsx
 """
 
 import json
-from openpyxl import load_workbook
 from difflib import SequenceMatcher
+
+from openpyxl import load_workbook
+
 
 def fuzzy_match(str1, str2, threshold=0.85):
     """Check if two strings match with fuzzy matching"""

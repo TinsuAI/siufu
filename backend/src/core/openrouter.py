@@ -1,16 +1,12 @@
 """
 OpenRouter API Client for GPT-5 LLM Integration
 """
-import httpx
 import json
-from typing import List, Dict, Any
-from tenacity import (
-    retry,
-    stop_after_attempt,
-    wait_exponential,
-    retry_if_exception_type
-)
+from typing import Any, Dict, List
+
+import httpx
 import sentry_sdk
+from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
 
 from .config import settings
 from .errors import OpenRouterException
@@ -196,7 +192,7 @@ class OpenRouterClient:
                     original_error=e
                 )
 
-        except httpx.TimeoutException as e:
+        except httpx.TimeoutException:
             # Timeout - will retry
             sentry_sdk.add_breadcrumb(
                 category="llm",

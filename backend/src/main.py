@@ -2,18 +2,19 @@
 FastAPI application entry point for Customs Declaration Automation Platform
 """
 from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, status
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from fastapi.exceptions import RequestValidationError
 
 from src.core.config import settings
 from src.core.database import test_db_connection
 from src.core.errors import (
     CustomException,
     custom_exception_handler,
-    validation_exception_handler,
     generic_exception_handler,
+    validation_exception_handler,
 )
 
 
@@ -76,6 +77,7 @@ app.add_exception_handler(Exception, generic_exception_handler)
 
 # Mount API v1 router
 from src.api.v1 import api_router
+
 app.include_router(api_router, prefix="/api/v1")
 
 

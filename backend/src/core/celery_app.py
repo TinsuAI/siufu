@@ -2,9 +2,10 @@
 Celery application for async task processing
 """
 import logging
+
+import sentry_sdk
 from celery import Celery
 from redis.exceptions import ConnectionError as RedisConnectionError
-import sentry_sdk
 from sentry_sdk.integrations.celery import CeleryIntegration
 
 from src.core.config import settings

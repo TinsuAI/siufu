@@ -8,8 +8,10 @@ These tests require:
 
 Skip these tests in CI to avoid API costs. Run manually before production.
 """
-import pytest
 import os
+
+import pytest
+
 from src.services.ocr_service import OCRService
 
 
@@ -155,7 +157,7 @@ def test_cache_hit_avoids_api_call(ocr_service):
 
     # Act - First call (cache miss)
     result1 = ocr_service.process_document_ocr(file_path)
-    processing_time_1 = result1.processing_time_ms
+    _ = result1.processing_time_ms  # Reserved for future performance testing
 
     # Act - Second call (cache hit)
     result2 = ocr_service.process_document_ocr(file_path)

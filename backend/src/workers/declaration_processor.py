@@ -16,24 +16,23 @@ import logging
 import os
 import time
 from datetime import datetime
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
 from uuid import UUID
 
 import sentry_sdk
 from celery import Task
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy import select, update
-from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from src.core.celery_app import celery_app
 from src.core.config import settings
 from src.core.errors import DocumentAIException, OpenRouterException
-from src.models.declaration import DeclarationStatus, Declaration
+from src.models.declaration import Declaration, DeclarationStatus
 from src.repositories.declaration_repository import DeclarationRepository
-from src.services.ocr_service import OCRService
-from src.services.llm_service import LLMService
 from src.services import master_data_service
 from src.services.income_validation_service import IncomeValidationService
+from src.services.llm_service import LLMService
+from src.services.ocr_service import OCRService
 
 logger = logging.getLogger(__name__)
 
@@ -230,7 +229,7 @@ def process_declaration_task(self, declaration_id: str) -> Dict[str, Any]:
         # Log successful completion with performance metrics
         total_duration = time.time() - task_start_time
         logger.info(
-            f"Declaration processing completed successfully",
+            "Declaration processing completed successfully",
             extra={
                 "declaration_id": declaration_id,
                 "total_duration_seconds": total_duration,
@@ -282,7 +281,7 @@ def process_declaration_task(self, declaration_id: str) -> Dict[str, Any]:
         else:
             # Permanent error - fail immediately
             logger.error(
-                f"Permanent error occurred, marking declaration as FAILED",
+                "Permanent error occurred, marking declaration as FAILED",
                 extra={
                     "declaration_id": declaration_id,
                     "error": str(exc),
@@ -292,7 +291,7 @@ def process_declaration_task(self, declaration_id: str) -> Dict[str, Any]:
 
             # Log the failure (database update will be handled by Celery retry/failure handlers)
             logger.error(
-                f"Marking declaration as FAILED due to permanent error",
+                "Marking declaration as FAILED due to permanent error",
                 extra={
                     "declaration_id": declaration_id,
                     "error_message": str(exc)
@@ -306,13 +305,13 @@ def process_declaration_task(self, declaration_id: str) -> Dict[str, Any]:
     except Exception as exc:
         # Unexpected error - log and fail
         logger.exception(
-            f"Unexpected error during declaration processing",
+            "Unexpected error during declaration processing",
             extra={"declaration_id": declaration_id}
         )
 
         # Log unexpected error
         logger.error(
-            f"Marking declaration as FAILED due to unexpected error",
+            "Marking declaration as FAILED due to unexpected error",
             extra={
                 "declaration_id": declaration_id,
                 "error_message": f"{type(exc).__name__}: {str(exc)}"
@@ -334,7 +333,7 @@ async def _process_declaration_async(declaration_id: str) -> Dict[str, Any]:
     Returns:
         dict with status, declaration_id, and timing metrics
     """
-    ocr_start = time.time()
+    _ = time.time()  # Reserved for future timing metrics
 
     async with AsyncSessionLocal() as db:
         repo = DeclarationRepository(db)
@@ -367,7 +366,7 @@ async def _process_declaration_async(declaration_id: str) -> Dict[str, Any]:
         required_single_docs = ["AN", "BOL", "INVOICE"]
 
         # Stage 1: Update to PROCESSING status (OCR stage)
-        logger.info(f"Stage 1: Starting OCR processing", extra={"declaration_id": declaration_id})
+        logger.info("Stage 1: Starting OCR processing", extra={"declaration_id": declaration_id})
         await repo.update_status_and_progress(
             UUID(declaration_id),
             DeclarationStatus.PROCESSING,
@@ -381,7 +380,7 @@ async def _process_declaration_async(declaration_id: str) -> Dict[str, Any]:
             UUID(declaration_id),
             "info",
             "Starting OCR processing",
-            {"stage": "OCR", "files_to_process": len([k for k in uploaded_files.keys()])}
+            {"stage": "OCR", "files_to_process": len(list(uploaded_files.keys()))}
         )
 
         # Track OCR stage start time
@@ -428,7 +427,7 @@ async def _process_declaration_async(declaration_id: str) -> Dict[str, Any]:
 
         ocr_duration = time.time() - stage_start
         logger.info(
-            f"OCR processing complete",
+            "OCR processing complete",
             extra={
                 "declaration_id": declaration_id,
                 "duration_seconds": ocr_duration,
@@ -447,7 +446,7 @@ async def _process_declaration_async(declaration_id: str) -> Dict[str, Any]:
 
         # Stage 2: Continue PROCESSING status (LLM stage)
         stage_start = time.time()
-        logger.info(f"Stage 2: Starting LLM extraction", extra={"declaration_id": declaration_id})
+        logger.info("Stage 2: Starting LLM extraction", extra={"declaration_id": declaration_id})
         await repo.update_status_and_progress(
             UUID(declaration_id),
             DeclarationStatus.PROCESSING,
@@ -509,7 +508,7 @@ async def _process_declaration_async(declaration_id: str) -> Dict[str, Any]:
 
         llm_duration = time.time() - stage_start
         logger.info(
-            f"LLM extraction complete",
+            "LLM extraction complete",
             extra={
                 "declaration_id": declaration_id,
                 "duration_seconds": llm_duration,
@@ -550,7 +549,7 @@ async def _process_declaration_async(declaration_id: str) -> Dict[str, Any]:
         )
 
         logger.info(
-            f"Source metadata generated",
+            "Source metadata generated",
             extra={
                 "declaration_id": declaration_id,
                 "metadata_field_count": len(source_metadata)
@@ -559,7 +558,7 @@ async def _process_declaration_async(declaration_id: str) -> Dict[str, Any]:
 
         # Stage 3: Cross-document validation (Story 3.11)
         validation_start = time.time()
-        logger.info(f"Stage 3: Running cross-document validation", extra={"declaration_id": declaration_id})
+        logger.info("Stage 3: Running cross-document validation", extra={"declaration_id": declaration_id})
 
         # Update progress to VALIDATING status
         await repo.update_status_and_progress(
@@ -591,7 +590,7 @@ async def _process_declaration_async(declaration_id: str) -> Dict[str, Any]:
         )
 
         logger.info(
-            f"Validation complete",
+            "Validation complete",
             extra={
                 "declaration_id": declaration_id,
                 "duration_seconds": validation_duration,
@@ -601,7 +600,7 @@ async def _process_declaration_async(declaration_id: str) -> Dict[str, Any]:
 
         # Stage 3a: Store extracted data in database
         stage_start = time.time()
-        logger.info(f"Stage 3a: Matching master data and storing extracted data", extra={"declaration_id": declaration_id})
+        logger.info("Stage 3a: Matching master data and storing extracted data", extra={"declaration_id": declaration_id})
 
         # Store extracted data and confidence scores in declaration
         declaration = await repo.get_by_id(UUID(declaration_id))
@@ -620,7 +619,7 @@ async def _process_declaration_async(declaration_id: str) -> Dict[str, Any]:
 
             if matched_importer:
                 logger.info(
-                    f"Matched importer from master data",
+                    "Matched importer from master data",
                     extra={
                         "declaration_id": declaration_id,
                         "importer_id": str(matched_importer.id),
@@ -664,7 +663,7 @@ async def _process_declaration_async(declaration_id: str) -> Dict[str, Any]:
 
             if matched_exporter:
                 logger.info(
-                    f"Matched exporter from master data",
+                    "Matched exporter from master data",
                     extra={
                         "declaration_id": declaration_id,
                         "exporter_id": str(matched_exporter.id),
@@ -740,7 +739,7 @@ async def _process_declaration_async(declaration_id: str) -> Dict[str, Any]:
 
         storage_duration = time.time() - stage_start
         logger.info(
-            f"Data storage complete",
+            "Data storage complete",
             extra={
                 "declaration_id": declaration_id,
                 "duration_seconds": storage_duration,
@@ -750,7 +749,7 @@ async def _process_declaration_async(declaration_id: str) -> Dict[str, Any]:
         )
 
         # Stage 4: Update to READY_FOR_REVIEW status
-        logger.info(f"Stage 4: Marking as ready for review", extra={"declaration_id": declaration_id})
+        logger.info("Stage 4: Marking as ready for review", extra={"declaration_id": declaration_id})
         await repo.update_status_and_progress(
             UUID(declaration_id),
             DeclarationStatus.READY_FOR_REVIEW,

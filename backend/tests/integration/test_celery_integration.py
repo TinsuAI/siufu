@@ -8,16 +8,14 @@ These tests require:
 
 Run with: pytest tests/integration/test_celery_integration.py -v -m integration
 """
-import pytest
-import asyncio
-import time
 from uuid import uuid4
+
+import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.celery_app import celery_app
-from src.workers.declaration_processor import process_declaration_task
-from src.models.declaration import Declaration, DeclarationStatus
 from src.repositories.declaration_repository import DeclarationRepository
+from src.workers.declaration_processor import process_declaration_task
 
 
 @pytest.mark.integration
@@ -73,7 +71,7 @@ class TestCeleryIntegration:
         Consider using fixtures to create temporary test files.
         """
         # Create test declaration
-        repo = DeclarationRepository(db_session)
+        _ = DeclarationRepository(db_session)  # Reserved for future test implementation
 
         # For now, skip this test if no test data available
         pytest.skip("Requires test declaration with uploaded files. Implement in Story 1.6+")
@@ -105,7 +103,7 @@ class TestCeleryIntegration:
 
         # Wait for task to complete (should fail)
         try:
-            result = task.get(timeout=30)
+            _ = task.get(timeout=30)
             pytest.fail("Task should have failed with invalid declaration ID")
         except Exception as e:
             # Expected to raise ValueError
@@ -169,7 +167,6 @@ class TestCeleryMonitoring:
         This checks that Sentry SDK is initialized with CeleryIntegration.
         """
         import sentry_sdk
-        from sentry_sdk.integrations.celery import CeleryIntegration
 
         # Check if Sentry client is initialized
         client = sentry_sdk.Hub.current.client

@@ -6,6 +6,7 @@ Detailed analysis of product section in CD.xlsx template
 from openpyxl import load_workbook
 from openpyxl.utils import get_column_letter
 
+
 def analyze_product_section():
     template_path = 'resources/sample/2/CD.xlsx'
     wb = load_workbook(template_path)

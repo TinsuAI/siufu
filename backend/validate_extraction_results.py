@@ -21,15 +21,14 @@ Story: 1.7.1 (LLM Extraction Results Validation Against Expected Results)
 Author: Product Manager (John) via Sprint Change Proposal
 """
 
-import json
-import sys
 import argparse
+import json
 import re
-from pathlib import Path
-from difflib import SequenceMatcher
+import sys
 from datetime import datetime
-from typing import Dict, Any, List, Tuple, Optional
-
+from difflib import SequenceMatcher
+from pathlib import Path
+from typing import Any, Dict, List, Tuple
 
 # =============================================================================
 # FIELD MAPPING: camelCase (expected-results.json) → snake_case (results.json)
@@ -534,38 +533,38 @@ def generate_markdown_report(
     # Generate markdown
     md = []
     md.append(f"# Validation Report: Sample {sample_name}")
-    md.append(f"")
+    md.append("")
     md.append(f"**Generated:** {timestamp}")
-    md.append(f"")
-    md.append(f"---")
-    md.append(f"")
-    md.append(f"## Summary")
-    md.append(f"")
-    md.append(f"| Metric | Count | Percentage |")
-    md.append(f"|--------|-------|------------|")
+    md.append("")
+    md.append("---")
+    md.append("")
+    md.append("## Summary")
+    md.append("")
+    md.append("| Metric | Count | Percentage |")
+    md.append("|--------|-------|------------|")
     md.append(f"| **Total Fields** | {total_fields} | 100% |")
     md.append(f"| ✅ **PASS** | {pass_count} | {pass_count/total_fields*100:.1f}% |")
     md.append(f"| ⚠️ **PARTIAL** | {partial_count} | {partial_count/total_fields*100:.1f}% |")
     md.append(f"| ❌ **FAIL** | {fail_count} | {fail_count/total_fields*100:.1f}% |")
     md.append(f"| 🔴 **MISSING** | {missing_count} | {missing_count/total_fields*100:.1f}% |")
     md.append(f"| ➕ **EXTRA** | {extra_count} | - |")
-    md.append(f"")
+    md.append("")
     md.append(f"**Overall Accuracy:** {accuracy:.1f}%")
-    md.append(f"")
-    md.append(f"---")
-    md.append(f"")
+    md.append("")
+    md.append("---")
+    md.append("")
 
     # Status legend
-    md.append(f"## Status Legend")
-    md.append(f"")
-    md.append(f"- ✅ **PASS**: Field matches exactly (or within tolerance)")
-    md.append(f"- ⚠️ **PARTIAL**: Field partially matches (fuzzy match 70-85%)")
-    md.append(f"- ❌ **FAIL**: Field does not match expected value")
-    md.append(f"- 🔴 **MISSING**: Field missing in extraction results")
-    md.append(f"- ➕ **EXTRA**: Field present in results but not expected")
-    md.append(f"")
-    md.append(f"---")
-    md.append(f"")
+    md.append("## Status Legend")
+    md.append("")
+    md.append("- ✅ **PASS**: Field matches exactly (or within tolerance)")
+    md.append("- ⚠️ **PARTIAL**: Field partially matches (fuzzy match 70-85%)")
+    md.append("- ❌ **FAIL**: Field does not match expected value")
+    md.append("- 🔴 **MISSING**: Field missing in extraction results")
+    md.append("- ➕ **EXTRA**: Field present in results but not expected")
+    md.append("")
+    md.append("---")
+    md.append("")
 
     # Detailed comparison by status
     for status_name, status_filter, emoji in [
@@ -581,9 +580,9 @@ def generate_markdown_report(
             continue
 
         md.append(f"## {emoji} {status_name} ({len(filtered)})")
-        md.append(f"")
-        md.append(f"| Field | Expected | Actual | Similarity | Notes |")
-        md.append(f"|-------|----------|--------|------------|-------|")
+        md.append("")
+        md.append("| Field | Expected | Actual | Similarity | Notes |")
+        md.append("|-------|----------|--------|------------|-------|")
 
         for result in filtered:
             field = result["field"]
@@ -601,7 +600,7 @@ def generate_markdown_report(
 
             md.append(f"| `{field}` | {expected_str} | {actual_str} | {similarity_str} | {note_str} |")
 
-        md.append(f"")
+        md.append("")
 
     # Write to file
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -642,7 +641,7 @@ def main():
     try:
         print("📥 Loading expected-results.json...")
         expected = load_expected_results(sample_path)
-        print(f"   ✅ Loaded expected results")
+        print("   ✅ Loaded expected results")
     except FileNotFoundError as e:
         print(f"   ❌ {e}")
         sys.exit(1)
@@ -650,7 +649,7 @@ def main():
     try:
         print("📥 Loading results.json...")
         actual = load_extraction_results(sample_path)
-        print(f"   ✅ Loaded extraction results")
+        print("   ✅ Loaded extraction results")
     except FileNotFoundError as e:
         print(f"   ❌ {e}")
         sys.exit(1)

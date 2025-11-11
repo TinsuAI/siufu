@@ -1,11 +1,12 @@
 """
 Declaration Pydantic schemas for API request/response
 """
-from uuid import UUID
 from datetime import datetime
-from typing import Optional, Dict, List, Any
-from pydantic import BaseModel, Field, ConfigDict
 from enum import Enum
+from typing import Any, Dict, List, Optional
+from uuid import UUID
+
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class DeclarationStatus(str, Enum):

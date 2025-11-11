@@ -2,9 +2,10 @@
 """
 Fetch results from successful declaration and save to sample2_results.json
 """
-import requests
 import json
 from pathlib import Path
+
+import requests
 
 BASE_URL = "http://localhost:8780"
 DECLARATION_ID = "8d351ca0-85c5-429e-94b0-8890e6afbbd5"
@@ -32,7 +33,7 @@ def fetch_and_save():
             # Show summary
             extracted = data.get("extracted_data", {})
             if extracted:
-                print(f"\n📊 Summary:")
+                print("\n📊 Summary:")
                 print(f"   Overall Confidence: {extracted.get('overall_confidence', 0)*100:.1f}%")
                 print(f"   Products: {len(extracted.get('products', []))}")
 

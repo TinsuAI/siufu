@@ -1,7 +1,8 @@
 """
 Common Pydantic schemas for API responses
 """
-from typing import Optional, Dict, Any, Generic, TypeVar, List
+from typing import Any, Dict, Generic, List, Optional, TypeVar
+
 from pydantic import BaseModel, ConfigDict
 
 T = TypeVar('T')

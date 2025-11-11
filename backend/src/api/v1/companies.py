@@ -2,34 +2,24 @@
 Companies API endpoints for master data management
 Handles both importers and exporters
 """
-from uuid import UUID
-from typing import Optional, List, Literal
-from datetime import datetime, timezone
-from fastapi import APIRouter, Depends, HTTPException, status, Query, Request
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, or_, and_, delete as sql_delete
-from sqlalchemy.sql import Select
 import math
+from datetime import datetime, timezone
+from typing import List, Literal, Optional
+from uuid import UUID
+
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from sqlalchemy import and_, func, or_, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.sql import Select
 
 from src.core.database import get_db
 from src.core.deps import get_current_user
-from src.models.user import User
-from src.models.importer import Importer
-from src.models.exporter import Exporter
 from src.models.declaration import Declaration
-from src.schemas.importer import (
-    ImporterCreate,
-    ImporterUpdate,
-    ImporterDetail,
-    ImporterListItem
-)
-from src.schemas.exporter import (
-    ExporterCreate,
-    ExporterUpdate,
-    ExporterDetail,
-    ExporterListItem
-)
+from src.models.exporter import Exporter
+from src.models.importer import Importer
 from src.schemas.company import CompanyListResponse, DuplicatePair, MergeRequest
+from src.schemas.exporter import ExporterCreate, ExporterDetail, ExporterListItem, ExporterUpdate
+from src.schemas.importer import ImporterCreate, ImporterDetail, ImporterListItem, ImporterUpdate
 from src.services import master_data_service
 
 router = APIRouter()

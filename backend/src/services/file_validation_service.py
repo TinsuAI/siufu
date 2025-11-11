@@ -4,9 +4,10 @@ File validation service for uploaded declaration files
 Validates file types using magic bytes and enforces size limits.
 Updated in Story 3.3.1: Certificate of Origin supports multiple files (1-20)
 """
+from typing import Dict, List, Optional, Tuple, Union
+
 import magic
-from typing import Dict, List, Tuple, Optional, Union
-from fastapi import UploadFile, HTTPException, status
+from fastapi import UploadFile
 
 
 class FileValidationError(Exception):

@@ -43,6 +43,29 @@ export function ImageViewer({
     }
   }, [isOpen])
 
+  // Define callbacks first (before they're used in useEffect dependencies)
+  const handlePrevious = useCallback(() => {
+    setCurrentIndex((prev) => (prev > 0 ? prev - 1 : images.length - 1))
+    setZoom(1)
+  }, [images.length])
+
+  const handleNext = useCallback(() => {
+    setCurrentIndex((prev) => (prev < images.length - 1 ? prev + 1 : 0))
+    setZoom(1)
+  }, [images.length])
+
+  const handleZoomIn = useCallback(() => {
+    setZoom((prev) => Math.min(prev + 0.25, 3))
+  }, [])
+
+  const handleZoomOut = useCallback(() => {
+    setZoom((prev) => Math.max(prev - 0.25, 0.5))
+  }, [])
+
+  const toggleFullscreen = useCallback(() => {
+    setIsFullscreen((prev) => !prev)
+  }, [])
+
   // Keyboard navigation
   useEffect(() => {
     if (!isOpen) return
@@ -85,28 +108,6 @@ export function ImageViewer({
     onClose,
     toggleFullscreen,
   ])
-
-  const handlePrevious = useCallback(() => {
-    setCurrentIndex((prev) => (prev > 0 ? prev - 1 : images.length - 1))
-    setZoom(1)
-  }, [images.length])
-
-  const handleNext = useCallback(() => {
-    setCurrentIndex((prev) => (prev < images.length - 1 ? prev + 1 : 0))
-    setZoom(1)
-  }, [images.length])
-
-  const handleZoomIn = useCallback(() => {
-    setZoom((prev) => Math.min(prev + 0.25, 3))
-  }, [])
-
-  const handleZoomOut = useCallback(() => {
-    setZoom((prev) => Math.max(prev - 0.25, 0.5))
-  }, [])
-
-  const toggleFullscreen = useCallback(() => {
-    setIsFullscreen((prev) => !prev)
-  }, [])
 
   const handleThumbnailClick = (index: number) => {
     setCurrentIndex(index)

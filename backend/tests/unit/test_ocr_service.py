@@ -1,17 +1,18 @@
 """
 Unit tests for OCR service
 """
+from unittest.mock import MagicMock, mock_open, patch
+
 import pytest
-from unittest.mock import MagicMock, patch, mock_open
 from google.api_core import exceptions as google_exceptions
 
-from src.services.ocr_service import OCRService
 from src.core.errors import DocumentAIException
+from src.services.ocr_service import OCRService
 from tests.fixtures.document_ai import (
     mock_document_ai_response_an,
     mock_document_ai_response_bol,
     mock_document_ai_response_co,
-    mock_document_ai_response_invoice
+    mock_document_ai_response_invoice,
 )
 
 
@@ -138,7 +139,7 @@ def test_ocr_result_cached_in_redis(ocr_service, mock_redis):
         with patch('os.path.exists', return_value=True):
             with patch('os.path.basename', return_value='AN.pdf'):
                 # Act
-                result = ocr_service.process_document_ocr('/fake/path/AN.pdf')
+                _ = ocr_service.process_document_ocr('/fake/path/AN.pdf')
 
     # Assert
     mock_redis.setex.assert_called_once()

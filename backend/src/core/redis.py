@@ -2,6 +2,7 @@
 Redis connection and dependency for FastAPI
 """
 import redis.asyncio as redis
+
 from src.core.config import settings
 
 # Redis client instance

@@ -3,18 +3,19 @@ OCR service using Google Cloud Document AI
 """
 import os
 import time
-from typing import Dict, Any
-from google.cloud import documentai
-from google.api_core import exceptions as google_exceptions
-import structlog
-from tenacity import retry, stop_after_attempt, wait_exponential
-import sentry_sdk
+from typing import Any, Dict
 
-from src.core.config import settings
-from src.core.gcp import load_gcp_credentials
+import sentry_sdk
+import structlog
+from google.api_core import exceptions as google_exceptions
+from google.cloud import documentai
+from tenacity import retry, stop_after_attempt, wait_exponential
+
 from src.core.cache import cache_ocr_result, get_cached_ocr_result
+from src.core.config import settings
 from src.core.errors import DocumentAIException
-from src.schemas.ocr import OCRResult, KeyValuePair, Table
+from src.core.gcp import load_gcp_credentials
+from src.schemas.ocr import KeyValuePair, OCRResult, Table
 
 logger = structlog.get_logger()
 

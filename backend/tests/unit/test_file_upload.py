@@ -3,19 +3,19 @@ Unit tests for file upload functionality
 
 Tests file validation and storage services.
 """
-import pytest
 import uuid
-from pathlib import Path
 from io import BytesIO
-from unittest.mock import Mock, AsyncMock, patch, MagicMock
+from unittest.mock import patch
+
+import pytest
 from fastapi import UploadFile
 
-from src.services.file_validation_service import (
-    FileValidationService,
-    FileValidationError,
-    FileSizeLimitExceeded
-)
 from src.services.file_storage_service import FileStorageService
+from src.services.file_validation_service import (
+    FileSizeLimitExceeded,
+    FileValidationError,
+    FileValidationService,
+)
 
 
 class TestFileValidationService:
@@ -37,7 +37,7 @@ class TestFileValidationService:
         upload_file = UploadFile(
             filename=filename,
             file=file_obj,
-            content_type=content_type
+            headers={"content-type": content_type}
         )
         # Make seek and read async
         async def async_seek(*args):
@@ -63,7 +63,7 @@ class TestFileValidationService:
         files = {
             "arrival_notice": self.create_mock_upload_file("AN.pdf", pdf_content, "application/pdf"),
             "bill_of_lading": self.create_mock_upload_file("BOL.pdf", pdf_content, "application/pdf"),
-            "certificate_of_origin": self.create_mock_upload_file("CO.pdf", pdf_content, "application/pdf"),
+            "certificate_of_origin": [self.create_mock_upload_file("CO.pdf", pdf_content, "application/pdf")],
             "invoice": self.create_mock_upload_file("INVOICE.pdf", pdf_content, "application/pdf"),
             "good_list": self.create_mock_upload_file("goods.xls", b"test", "application/vnd.ms-excel"),
             "tariff": self.create_mock_upload_file("tariff.xlsx", b"test", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
@@ -79,16 +79,15 @@ class TestFileValidationService:
         files = {
             "arrival_notice": self.create_mock_upload_file("AN.pdf", pdf_content, "application/pdf"),
             "bill_of_lading": self.create_mock_upload_file("BOL.pdf", pdf_content, "application/pdf"),
-            # certificate_of_origin is missing
+            # certificate_of_origin is missing (required)
             "invoice": self.create_mock_upload_file("INVOICE.pdf", pdf_content, "application/pdf"),
             "good_list": self.create_mock_upload_file("goods.xls", b"test", "application/vnd.ms-excel"),
-            # tariff is missing
+            # tariff is optional, not required
         }
 
         errors = await validation_service.validate_all_files_present(files)
-        assert len(errors) == 2
+        assert len(errors) == 1  # Only CO is missing (tariff is optional)
         assert any(e["file"] == "certificate_of_origin" for e in errors)
-        assert any(e["file"] == "tariff" for e in errors)
 
     @pytest.mark.asyncio
     async def test_validate_file_type_pdf_success(self, validation_service):
@@ -208,9 +207,9 @@ class TestFileValidationService:
 
     @pytest.mark.asyncio
     async def test_validate_file_size_excel_exceeds_limit(self, validation_service):
-        """Test that Excel files exceeding 2MB limit fail validation"""
-        # Create 3MB Excel file (over 2MB limit)
-        excel_content = b"PK\x03\x04" + b"x" * (3 * 1024 * 1024)
+        """Test that Excel files exceeding 10MB limit fail validation"""
+        # Create 11MB Excel file (over 10MB limit)
+        excel_content = b"PK\x03\x04" + b"x" * (11 * 1024 * 1024)
 
         upload_file = self.create_mock_upload_file(
             "goods.xlsx",
@@ -222,7 +221,7 @@ class TestFileValidationService:
             await validation_service.validate_file_size(upload_file, "good_list")
 
         assert exc_info.value.file_field == "good_list"
-        assert exc_info.value.max_size == 2 * 1024 * 1024
+        assert exc_info.value.max_size == 10 * 1024 * 1024  # 10MB default limit
 
     @pytest.mark.asyncio
     async def test_validate_all_files_missing_files(self, validation_service):
@@ -235,7 +234,7 @@ class TestFileValidationService:
         with pytest.raises(FileValidationError) as exc_info:
             await validation_service.validate_all_files(files)
 
-        assert len(exc_info.value.errors) == 5  # 5 files missing
+        assert len(exc_info.value.errors) == 3  # 3 required files missing (BOL, CO, Invoice)
 
     @pytest.mark.asyncio
     async def test_validate_all_files_wrong_type(self, validation_service):
@@ -247,7 +246,7 @@ class TestFileValidationService:
         files = {
             "arrival_notice": self.create_mock_upload_file("AN.pdf", pdf_content, "application/pdf"),
             "bill_of_lading": self.create_mock_upload_file("BOL.pdf", pdf_content, "application/pdf"),
-            "certificate_of_origin": self.create_mock_upload_file("CO.pdf", pdf_content, "application/pdf"),
+            "certificate_of_origin": [self.create_mock_upload_file("CO.pdf", pdf_content, "application/pdf")],
             "invoice": self.create_mock_upload_file("INVOICE.pdf", pdf_content, "application/pdf"),
             "good_list": self.create_mock_upload_file("goods.xls", excel_content, "application/vnd.ms-excel"),
             "tariff": self.create_mock_upload_file("tariff.doc", doc_content, "application/msword")  # Wrong type!
@@ -296,7 +295,7 @@ class TestFileStorageService:
         upload_file = UploadFile(
             filename=filename,
             file=file_obj,
-            content_type=content_type
+            headers={"content-type": content_type}
         )
 
         # Make methods async
@@ -324,7 +323,7 @@ class TestFileStorageService:
         files = {
             "arrival_notice": self.create_mock_upload_file("AN.pdf", pdf_content, "application/pdf"),
             "bill_of_lading": self.create_mock_upload_file("BOL.pdf", pdf_content, "application/pdf"),
-            "certificate_of_origin": self.create_mock_upload_file("CO.pdf", pdf_content, "application/pdf"),
+            "certificate_of_origin": [self.create_mock_upload_file("CO.pdf", pdf_content, "application/pdf")],
             "invoice": self.create_mock_upload_file("INVOICE.pdf", pdf_content, "application/pdf"),
             "good_list": self.create_mock_upload_file("goods.xls", b"excel", "application/vnd.ms-excel"),
             "tariff": self.create_mock_upload_file("tariff.xlsx", b"excel", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
@@ -353,7 +352,7 @@ class TestFileStorageService:
         files = {
             "arrival_notice": self.create_mock_upload_file("AN.pdf", pdf_content, "application/pdf"),
             "bill_of_lading": self.create_mock_upload_file("BOL.pdf", b"BOL content", "application/pdf"),
-            "certificate_of_origin": self.create_mock_upload_file("CO.pdf", b"CO content", "application/pdf"),
+            "certificate_of_origin": [self.create_mock_upload_file("CO.pdf", b"CO content", "application/pdf")],
             "invoice": self.create_mock_upload_file("INVOICE.pdf", b"Invoice", "application/pdf"),
             "good_list": self.create_mock_upload_file("goods.xls", b"goods", "application/vnd.ms-excel"),
             "tariff": self.create_mock_upload_file("tariff.xlsx", b"tariff", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
@@ -365,7 +364,7 @@ class TestFileStorageService:
         declaration_dir = storage_service.UPLOAD_BASE_DIR / str(declaration_id)
         assert (declaration_dir / "AN.pdf").exists()
         assert (declaration_dir / "BOL.pdf").exists()
-        assert (declaration_dir / "CO.pdf").exists()
+        assert (declaration_dir / "CO_1.pdf").exists()
 
         # Check file contents
         with open(declaration_dir / "AN.pdf", "rb") as f:
@@ -379,7 +378,7 @@ class TestFileStorageService:
         files = {
             "arrival_notice": self.create_mock_upload_file("../../../etc/passwd", b"bad", "application/pdf"),
             "bill_of_lading": self.create_mock_upload_file("BOL<>.pdf", b"bad", "application/pdf"),
-            "certificate_of_origin": self.create_mock_upload_file("CO|test.pdf", b"bad", "application/pdf"),
+            "certificate_of_origin": [self.create_mock_upload_file("CO|test.pdf", b"bad", "application/pdf")],
             "invoice": self.create_mock_upload_file("invoice.pdf", b"good", "application/pdf"),
             "good_list": self.create_mock_upload_file("goods.xls", b"good", "application/vnd.ms-excel"),
             "tariff": self.create_mock_upload_file("tariff.xlsx", b"good", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
@@ -420,7 +419,7 @@ class TestFileStorageService:
         files = {
             "arrival_notice": self.create_mock_upload_file("AN.pdf", b"test", "application/pdf"),
             "bill_of_lading": self.create_mock_upload_file("BOL.pdf", b"test", "application/pdf"),
-            "certificate_of_origin": self.create_mock_upload_file("CO.pdf", b"test", "application/pdf"),
+            "certificate_of_origin": [self.create_mock_upload_file("CO.pdf", b"test", "application/pdf")],
             "invoice": self.create_mock_upload_file("INVOICE.pdf", b"test", "application/pdf"),
             "good_list": self.create_mock_upload_file("goods.xls", b"test", "application/vnd.ms-excel"),
             "tariff": self.create_mock_upload_file("tariff.xlsx", b"test", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")

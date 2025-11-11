@@ -4,9 +4,10 @@ Script to analyze CD.xlsx template structure for Story 2.5
 This will help document cell mappings, formats, and structure
 """
 
+
 from openpyxl import load_workbook
 from openpyxl.utils import get_column_letter
-import json
+
 
 def analyze_template():
     template_path = 'resources/sample/2/CD.xlsx'

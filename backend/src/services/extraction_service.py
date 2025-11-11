@@ -1,7 +1,8 @@
 """
 Extraction service for mapping extracted data to source document locations
 """
-from typing import Dict, Any, List
+from typing import Any, Dict
+
 from src.schemas.ocr import OCRResult
 
 

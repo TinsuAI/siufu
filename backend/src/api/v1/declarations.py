@@ -1,34 +1,48 @@
 """
 Declaration API endpoints
 """
+from typing import List, Optional
 from uuid import UUID
-from typing import Optional, List
-from fastapi import APIRouter, Depends, HTTPException, status, Response, File, UploadFile, Query, Request
+
+from fastapi import (
+    APIRouter,
+    Depends,
+    File,
+    HTTPException,
+    Query,
+    Request,
+    Response,
+    UploadFile,
+    status,
+)
 from fastapi.responses import FileResponse
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from src.core.database import get_db
 from src.core.deps import get_current_user
-from src.models.user import User
+from src.models.declaration import Declaration
+from src.models.exporter import Exporter
+from src.models.importer import Importer
 from src.repositories.declaration_repository import DeclarationRepository
 from src.schemas.declaration import (
+    DeclarationApproveResponse,
+    DeclarationListItem,
+    DeclarationListResponse,
+    DeclarationRejectRequest,
+    DeclarationRejectResponse,
     DeclarationStatusResponse,
     DeclarationUploadResponse,
     UploadedFileMetadata,
-    DeclarationApproveResponse,
-    DeclarationRejectRequest,
-    DeclarationRejectResponse,
-    DeclarationListItem,
-    DeclarationListResponse
 )
-from src.services.file_validation_service import FileValidationService, FileValidationError, FileSizeLimitExceeded
-from src.services.file_storage_service import FileStorageService
 from src.services import master_data_service
-from src.models.importer import Importer
-from src.models.exporter import Exporter
-from src.models.declaration import Declaration
+from src.services.file_storage_service import FileStorageService
+from src.services.file_validation_service import (
+    FileSizeLimitExceeded,
+    FileValidationError,
+    FileValidationService,
+)
 
 router = APIRouter()
 
@@ -62,9 +76,11 @@ async def list_declarations(
         HTTPException 400: Invalid query parameters
         HTTPException 401: Not authenticated
     """
-    from sqlalchemy import select, func, cast, String
-    from src.models.declaration import Declaration
     import math
+
+    from sqlalchemy import String, cast, func, select
+
+    from src.models.declaration import Declaration
 
     # Authenticate user
     current_user = await get_current_user(request, db)
@@ -611,7 +627,7 @@ async def approve_declaration(
         HTTPException 401: If not authenticated
     """
     # Authenticate user
-    current_user = await get_current_user(request, db)
+    await get_current_user(request, db)
 
     # Get declaration
     repo = DeclarationRepository(db)
@@ -761,7 +777,7 @@ async def reject_declaration(
         HTTPException 422: If rejection reason too short (< 10 characters)
     """
     # Authenticate user
-    current_user = await get_current_user(request, db)
+    await get_current_user(request, db)
 
     # Get declaration
     repo = DeclarationRepository(db)
@@ -823,7 +839,7 @@ async def export_declaration(
     from pathlib import Path
 
     # Authenticate user
-    current_user = await get_current_user(request, db)
+    await get_current_user(request, db)
 
     # Get declaration
     repo = DeclarationRepository(db)

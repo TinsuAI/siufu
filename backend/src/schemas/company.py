@@ -1,10 +1,10 @@
 """
 Shared company schemas for master data management (used by both importers and exporters)
 """
-from typing import Generic, TypeVar, List
+from typing import Generic, List, TypeVar
 from uuid import UUID
-from pydantic import BaseModel, Field
 
+from pydantic import BaseModel, Field
 
 # Generic type for list items
 T = TypeVar('T')

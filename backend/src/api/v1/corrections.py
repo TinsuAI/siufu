@@ -2,29 +2,25 @@
 Corrections API endpoints (Story 3.6 Expansion)
 Allows users to flag field corrections with category and notes
 """
-from uuid import UUID
-from typing import Literal, List
-from fastapi import APIRouter, Depends, HTTPException, status, Response, Request, File, UploadFile
-from fastapi.responses import StreamingResponse, FileResponse
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-from sqlalchemy.orm import selectinload
 import csv
 import io
-from pathlib import Path
-import aiofiles
 import os
+from pathlib import Path
+from typing import List, Literal
+from uuid import UUID
+
+import aiofiles
+from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile, status
+from fastapi.responses import FileResponse, StreamingResponse
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from src.core.database import get_db
 from src.core.deps import get_current_user
-from src.models.user import User
-from src.models.declaration import Declaration
 from src.models.correction import Correction
-from src.schemas.correction import (
-    CorrectionCreate,
-    CorrectionResponse,
-    CorrectionListResponse
-)
+from src.models.declaration import Declaration
+from src.schemas.correction import CorrectionCreate, CorrectionListResponse, CorrectionResponse
 
 router = APIRouter()
 
@@ -290,7 +286,7 @@ async def upload_screenshots(
         HTTPException 500: File storage error
     """
     # Authenticate user
-    current_user = await get_current_user(request, db)
+    await get_current_user(request, db)
 
     # Validate number of files
     if len(files) > 3:

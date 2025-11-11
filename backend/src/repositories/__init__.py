@@ -6,8 +6,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.database import get_db
 from src.repositories.base import BaseRepository
-from src.repositories.user_repository import UserRepository
 from src.repositories.declaration_repository import DeclarationRepository
+from src.repositories.user_repository import UserRepository
 
 
 def get_user_repository(db: AsyncSession = Depends(get_db)) -> UserRepository:
