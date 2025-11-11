@@ -1,0 +1,302 @@
+version: '3.8'
+
+# Production Docker Compose Configuration
+# This file is optimized for production deployments with:
+# - No source code volume mounts (uses built images)
+# - Production restart policies
+# - Health checks
+# - Resource limits
+# - Production logging configurations
+#
+# Usage: docker compose -f docker-compose.prod.yml up -d --build
+
+services:
+  # PostgreSQL 18.0 Database
+  postgres:
+    image: postgres:18.0-alpine
+    container_name: siufu-postgres
+    environment:
+      POSTGRES_DB: customs_db
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    ports:
+      - "8781:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: always
+    networks:
+      - siufu-network
+    # Production resource limits
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 512M
+    # Production logging
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Redis 7.4.1 Cache & Message Broker
+  redis:
+    image: redis:7.4.1-alpine
+    container_name: siufu-redis
+    command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis-data:/data
+    ports:
+      - "8782:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+    restart: always
+    networks:
+      - siufu-network
+    # Production resource limits
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 128M
+    # Production logging
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # FastAPI Backend
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      # Production build args (if needed)
+      args:
+        - ENVIRONMENT=production
+    container_name: siufu-backend
+    ports:
+      - "8780:8000"
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://postgres:${POSTGRES_PASSWORD}@postgres:5432/customs_db
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/0
+      # Production-specific environment variables
+      ENVIRONMENT: production
+      LOG_LEVEL: INFO
+    volumes:
+      # Only data volumes - NO source code mounts in production
+      - uploaded-files:/app/data/uploads
+      - exports:/app/data/exports
+      - screenshots:/app/data/screenshots
+      - ./secrets/gcp-sa-key.json:/app/secrets/gcp-sa-key.json:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: always
+    networks:
+      - siufu-network
+    # Production resource limits
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '2'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
+    # Production logging
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+  # Celery Worker
+  celery-worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      args:
+        - ENVIRONMENT=production
+    container_name: siufu-celery-worker
+    command: celery -A src.core.celery_app worker --loglevel=info --concurrency=4 --max-tasks-per-child=100
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://postgres:${POSTGRES_PASSWORD}@postgres:5432/customs_db
+      CELERY_BROKER_URL: redis://redis:6379/0
+      REDIS_URL: redis://redis:6379/0
+      # Production-specific environment variables
+      ENVIRONMENT: production
+      LOG_LEVEL: INFO
+    volumes:
+      # Only data volumes - NO source code mounts in production
+      - uploaded-files:/app/data/uploads
+      - exports:/app/data/exports
+      - ./secrets/gcp-sa-key.json:/app/secrets/gcp-sa-key.json:ro
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      backend:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A src.core.celery_app inspect ping -d celery@$$HOSTNAME"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    restart: always
+    networks:
+      - siufu-network
+    # Production resource limits
+    deploy:
+      resources:
+        limits:
+          memory: 3G
+          cpus: '2'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
+    # Production logging
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+  # Next.js Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+        # Production build optimization
+        NODE_ENV: production
+    container_name: siufu-frontend
+    ports:
+      - "8779:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+      NODE_ENV: production
+    depends_on:
+      - backend
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    restart: always
+    networks:
+      - siufu-network
+    # Production resource limits
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+    # Production logging
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+volumes:
+  postgres-data:
+    driver: local
+  redis-data:
+    driver: local
+  uploaded-files:
+    driver: local
+  exports:
+    driver: local
+  screenshots:
+    driver: local
+
+networks:
+  siufu-network:
+    driver: bridge
+
+# Production Configuration Notes:
+#
+# 1. Build Strategy:
+#    - Images are built fresh on each deployment (--build flag)
+#    - No source code volume mounts
+#    - All code is baked into Docker images
+#
+# 2. Restart Policy:
+#    - All services use "restart: always" for maximum uptime
+#    - Services automatically restart on failure or host reboot
+#
+# 3. Health Checks:
+#    - All services have health checks configured
+#    - Backend and frontend have HTTP-based health checks
+#    - PostgreSQL and Redis have built-in health check commands
+#    - Celery worker has task queue health check
+#
+# 4. Resource Limits:
+#    - Memory and CPU limits prevent resource exhaustion
+#    - Reservations ensure minimum resources are available
+#    - Adjust based on your server specifications
+#
+# 5. Logging:
+#    - JSON file driver with log rotation
+#    - Prevents disk space issues from unbounded log growth
+#    - Max 10-50MB per file, 3-5 files retained
+#
+# 6. Security:
+#    - GCP service account key mounted as read-only
+#    - Secrets managed through .env file (created by deployment workflow)
+#    - No development ports exposed
+#
+# 7. Performance Optimizations:
+#    - Celery worker configured with:
+#      * --concurrency=4: Handle 4 tasks simultaneously
+#      * --max-tasks-per-child=100: Restart worker after 100 tasks (prevents memory leaks)
+#    - Redis configured with:
+#      * maxmemory limit and LRU eviction policy
+#      * AOF persistence enabled for data durability
+#
+# 8. Differences from Development (docker-compose.yml):
+#    - No source code volume mounts
+#    - "restart: always" instead of "restart: unless-stopped"
+#    - Resource limits configured
+#    - Log rotation enabled
+#    - Production environment variables
+#    - Health checks with longer intervals
+#    - Build args include ENVIRONMENT=production
+#
+# 9. Usage:
+#    - Deploy: docker compose -f docker-compose.prod.yml up -d --build
+#    - View logs: docker compose -f docker-compose.prod.yml logs -f
+#    - Stop: docker compose -f docker-compose.prod.yml down
+#    - Update: docker compose -f docker-compose.prod.yml down && docker compose -f docker-compose.prod.yml up -d --build
