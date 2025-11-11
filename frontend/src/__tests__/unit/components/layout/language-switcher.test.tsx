@@ -2,11 +2,6 @@ import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { LanguageSwitcher } from '@/components/layout/language-switcher'
 
-// Mock next-intl hooks
-vi.mock('next-intl', () => ({
-  useTranslations: () => (key: string) => key,
-}))
-
 // Mock next/navigation
 vi.mock('next/navigation', () => ({
   useParams: () => ({ locale: 'en' }),

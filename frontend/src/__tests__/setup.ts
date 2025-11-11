@@ -6,7 +6,17 @@
 
 import '@testing-library/jest-dom'
 import { cleanup } from '@testing-library/react'
-import { afterEach } from 'vitest'
+import { afterEach, vi } from 'vitest'
+
+// Mock next-intl globally
+vi.mock('next-intl', () => ({
+  useTranslations: () => (key: string) => {
+    // Return the key itself as translation for simplicity in tests
+    // This allows tests to check for translation keys
+    const parts = key.split('.')
+    return parts[parts.length - 1]
+  },
+}))
 
 // Reset handlers after each test (important for test isolation)
 afterEach(() => {

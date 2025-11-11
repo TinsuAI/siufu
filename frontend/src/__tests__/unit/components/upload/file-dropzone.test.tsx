@@ -3,15 +3,6 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { FileDropZone } from '@/components/upload/file-dropzone'
 
-// Mock next-intl hooks
-vi.mock('next-intl', () => ({
-  useTranslations: () => (key: string) => {
-    // Simple translation mock - return the last part of the key
-    const parts = key.split('.')
-    return parts[parts.length - 1]
-  },
-}))
-
 describe('FileDropZone', () => {
   const defaultProps = {
     label: 'Test Document (test.pdf)',

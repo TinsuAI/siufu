@@ -28,15 +28,6 @@ vi.mock('@/navigation', () => ({
   }),
 }))
 
-// Mock next-intl hooks
-vi.mock('next-intl', () => ({
-  useTranslations: () => (key: string) => {
-    // Simple translation mock - return the last part of the key
-    const parts = key.split('.')
-    return parts[parts.length - 1]
-  },
-}))
-
 // Mock next/navigation for params
 vi.mock('next/navigation', () => ({
   useParams: () => ({ locale: 'en' }),
