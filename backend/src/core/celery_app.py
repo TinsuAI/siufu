@@ -2,6 +2,7 @@
 Celery application for async task processing
 """
 import logging
+import os
 
 import sentry_sdk
 from celery import Celery
@@ -25,8 +26,8 @@ if settings.SENTRY_DSN:
 # Create Celery app with Redis as broker and result backend
 celery_app = Celery(
     "customs_automation",
-    broker=settings.CELERY_BROKER_URL,
-    backend=settings.CELERY_BROKER_URL,  # Use same Redis instance for results
+    broker=settings.celery_broker,
+    backend=settings.celery_broker,  # Use same Redis instance for results
 )
 
 # Configure Celery per Task 1 requirements
@@ -55,12 +56,16 @@ celery_app.conf.update(
 )
 
 # Verify Redis connection on initialization (fail fast if Redis unavailable)
-try:
-    celery_app.connection().ensure_connection(max_retries=3)
-    logger.info("✓ Celery app initialized successfully - Redis connection verified")
-except RedisConnectionError as e:
-    logger.error(f"✗ Failed to connect to Redis broker: {e}")
-    raise RuntimeError(f"Celery cannot connect to Redis at {settings.CELERY_BROKER_URL}") from e
+# Skip connection check in test environment to allow module import during testing
+if os.getenv("ENVIRONMENT") != "test":
+    try:
+        celery_app.connection().ensure_connection(max_retries=3)
+        logger.info("✓ Celery app initialized successfully - Redis connection verified")
+    except RedisConnectionError as e:
+        logger.error(f"✗ Failed to connect to Redis broker: {e}")
+        raise RuntimeError(f"Celery cannot connect to Redis at {settings.celery_broker}") from e
+else:
+    logger.info("ℹ Celery app initialized in test mode - skipping Redis connection check")
 
 # Auto-discover tasks from workers module
 celery_app.autodiscover_tasks(['src.workers'])

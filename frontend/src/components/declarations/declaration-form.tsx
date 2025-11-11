@@ -614,7 +614,10 @@ export function DeclarationForm({
                     type="button"
                     size="sm"
                     variant="outline"
-                    onClick={() => appendContainer('')}
+                    onClick={() =>
+                      // @ts-expect-error - React Hook Form typing issue with nested arrays
+                      appendContainer('')
+                    }
                   >
                     <Plus className="h-4 w-4 mr-1" />
                     Add Container
