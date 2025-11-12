@@ -81,12 +81,15 @@ async def register(
     )
 
     # Set httpOnly cookie
+    # In production, domain=.tinsu.ai allows cookie to work across subdomains
+    # (siufu.tinsu.ai and siufu-api.tinsu.ai)
     response.set_cookie(
         key="access_token",
         value=access_token,
         httponly=True,
-        secure=False,  # Set to True in production with HTTPS
-        samesite="strict",
+        secure=True,  # Required for HTTPS in production
+        samesite="lax",  # Changed from "strict" to allow cross-subdomain navigation
+        domain=".tinsu.ai" if "tinsu.ai" in settings.CORS_ORIGINS else None,
         max_age=settings.ACCESS_TOKEN_EXPIRE_HOURS * 3600  # Convert hours to seconds
     )
 
@@ -157,12 +160,15 @@ async def login(
     )
 
     # Set httpOnly cookie
+    # In production, domain=.tinsu.ai allows cookie to work across subdomains
+    # (siufu.tinsu.ai and siufu-api.tinsu.ai)
     response.set_cookie(
         key="access_token",
         value=access_token,
         httponly=True,
-        secure=False,  # Set to True in production with HTTPS
-        samesite="strict",
+        secure=True,  # Required for HTTPS in production
+        samesite="lax",  # Changed from "strict" to allow cross-subdomain navigation
+        domain=".tinsu.ai" if "tinsu.ai" in settings.CORS_ORIGINS else None,
         max_age=settings.ACCESS_TOKEN_EXPIRE_HOURS * 3600  # Convert hours to seconds
     )
 
@@ -197,8 +203,9 @@ async def logout(response: Response):
         key="access_token",
         value="",
         httponly=True,
-        secure=False,  # Set to True in production with HTTPS
-        samesite="strict",
+        secure=True,  # Required for HTTPS in production
+        samesite="lax",
+        domain=".tinsu.ai" if "tinsu.ai" in settings.CORS_ORIGINS else None,
         max_age=0
     )
 

@@ -210,6 +210,7 @@ logs/
 
 # Environment files (actual secrets, not examples)
 .env
+.env.prod
 .env.local
 .env.*.local
 !.env.example

@@ -59,8 +59,9 @@ export async function middleware(request: NextRequest) {
   if (pathnameWithoutLocale === '/login' && accessToken) {
     // Verify the token is valid by calling the backend
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://backend:8000'
-      const response = await fetch(`${apiUrl}/api/auth/me`, {
+      const apiUrl =
+        process.env.NEXT_PUBLIC_API_URL || 'http://backend:8000/api/v1'
+      const response = await fetch(`${apiUrl}/auth/me`, {
         headers: {
           Cookie: `access_token=${accessToken}`,
         },
