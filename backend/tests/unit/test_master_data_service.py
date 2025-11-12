@@ -9,7 +9,7 @@ Tests for:
 - match_exporter: Exact and fuzzy name matching
 """
 
-from datetime import datetime
+from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 import pytest
@@ -196,8 +196,8 @@ async def test_match_importer_exact_tax_code_match(db_session, test_organization
         declaration_count=5,
         is_verified=True,
         confidence_score=0.95,
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow()
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC)
     )
     db_session.add(importer)
     await db_session.commit()
@@ -228,8 +228,8 @@ async def test_match_importer_fuzzy_name_match_above_threshold(db_session, test_
         declaration_count=3,
         is_verified=True,
         confidence_score=0.9,
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow()
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC)
     )
     db_session.add(importer)
     await db_session.commit()
@@ -259,8 +259,8 @@ async def test_match_importer_fuzzy_name_match_below_threshold(db_session, test_
         declaration_count=1,
         is_verified=False,
         confidence_score=0.7,
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow()
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC)
     )
     db_session.add(importer)
     await db_session.commit()
@@ -289,8 +289,8 @@ async def test_match_importer_prefers_tax_code_over_name(db_session, test_organi
         declaration_count=10,
         is_verified=True,
         confidence_score=1.0,
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow()
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC)
     )
     importer2 = Importer(
         id=uuid4(),
@@ -301,8 +301,8 @@ async def test_match_importer_prefers_tax_code_over_name(db_session, test_organi
         declaration_count=2,
         is_verified=False,
         confidence_score=0.8,
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow()
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC)
     )
     db_session.add_all([importer1, importer2])
     await db_session.commit()
@@ -333,9 +333,9 @@ async def test_match_importer_ignores_deleted(db_session, test_organization):
         declaration_count=0,
         is_verified=True,
         confidence_score=0.9,
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow(),
-        deleted_at=datetime.utcnow()  # Soft deleted
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC),
+        deleted_at=datetime.now(UTC)  # Soft deleted
     )
     db_session.add(importer)
     await db_session.commit()
@@ -373,8 +373,8 @@ async def test_match_importer_organization_isolation(db_session, test_organizati
         declaration_count=5,
         is_verified=True,
         confidence_score=0.95,
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow()
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC)
     )
     db_session.add(importer)
     await db_session.commit()
@@ -416,8 +416,8 @@ async def test_match_importer_selects_best_fuzzy_match(db_session, test_organiza
         declaration_count=1,
         is_verified=True,
         confidence_score=0.9,
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow()
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC)
     )
     importer2 = Importer(
         id=uuid4(),
@@ -428,8 +428,8 @@ async def test_match_importer_selects_best_fuzzy_match(db_session, test_organiza
         declaration_count=2,
         is_verified=True,
         confidence_score=0.95,
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow()
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC)
     )
     importer3 = Importer(
         id=uuid4(),
@@ -440,8 +440,8 @@ async def test_match_importer_selects_best_fuzzy_match(db_session, test_organiza
         declaration_count=1,
         is_verified=False,
         confidence_score=0.7,
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow()
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC)
     )
     db_session.add_all([importer1, importer2, importer3])
     await db_session.commit()
@@ -477,8 +477,8 @@ async def test_match_exporter_exact_name_and_country_match(db_session, test_orga
         declaration_count=10,
         is_verified=True,
         confidence_score=0.98,
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow()
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC)
     )
     db_session.add(exporter)
     await db_session.commit()
@@ -508,8 +508,8 @@ async def test_match_exporter_fuzzy_name_match_same_country(db_session, test_org
         declaration_count=5,
         is_verified=True,
         confidence_score=0.92,
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow()
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC)
     )
     db_session.add(exporter)
     await db_session.commit()
@@ -539,8 +539,8 @@ async def test_match_exporter_fuzzy_name_match_below_threshold(db_session, test_
         declaration_count=2,
         is_verified=False,
         confidence_score=0.8,
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow()
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC)
     )
     db_session.add(exporter)
     await db_session.commit()
@@ -569,8 +569,8 @@ async def test_match_exporter_prefers_exact_over_fuzzy(db_session, test_organiza
         declaration_count=10,
         is_verified=True,
         confidence_score=1.0,
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow()
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC)
     )
     exporter2 = Exporter(
         id=uuid4(),
@@ -581,8 +581,8 @@ async def test_match_exporter_prefers_exact_over_fuzzy(db_session, test_organiza
         declaration_count=2,
         is_verified=False,
         confidence_score=0.85,
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow()
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC)
     )
     db_session.add_all([exporter1, exporter2])
     await db_session.commit()
@@ -613,9 +613,9 @@ async def test_match_exporter_ignores_deleted(db_session, test_organization):
         declaration_count=0,
         is_verified=True,
         confidence_score=0.9,
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow(),
-        deleted_at=datetime.utcnow()  # Soft deleted
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC),
+        deleted_at=datetime.now(UTC)  # Soft deleted
     )
     db_session.add(exporter)
     await db_session.commit()
@@ -653,8 +653,8 @@ async def test_match_exporter_organization_isolation(db_session, test_organizati
         declaration_count=5,
         is_verified=True,
         confidence_score=0.95,
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow()
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC)
     )
     db_session.add(exporter)
     await db_session.commit()
@@ -696,8 +696,8 @@ async def test_match_exporter_fuzzy_without_country_code(db_session, test_organi
         declaration_count=3,
         is_verified=True,
         confidence_score=0.9,
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow()
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC)
     )
     db_session.add(exporter)
     await db_session.commit()
@@ -727,8 +727,8 @@ async def test_match_exporter_country_code_case_insensitive(db_session, test_org
         declaration_count=2,
         is_verified=True,
         confidence_score=0.88,
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow()
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC)
     )
     db_session.add(exporter)
     await db_session.commit()
@@ -758,8 +758,8 @@ async def test_match_exporter_selects_best_fuzzy_match(db_session, test_organiza
         declaration_count=5,
         is_verified=True,
         confidence_score=0.9,
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow()
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC)
     )
     exporter2 = Exporter(
         id=uuid4(),
@@ -770,8 +770,8 @@ async def test_match_exporter_selects_best_fuzzy_match(db_session, test_organiza
         declaration_count=10,
         is_verified=True,
         confidence_score=0.95,
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow()
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC)
     )
     exporter3 = Exporter(
         id=uuid4(),
@@ -782,8 +782,8 @@ async def test_match_exporter_selects_best_fuzzy_match(db_session, test_organiza
         declaration_count=2,
         is_verified=False,
         confidence_score=0.7,
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow()
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC)
     )
     db_session.add_all([exporter1, exporter2, exporter3])
     await db_session.commit()

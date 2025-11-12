@@ -32,6 +32,7 @@ def skip_if_no_credits() -> str:
 
 
 @pytest.mark.integration
+@pytest.mark.llm
 @pytest.mark.skipif(not has_openrouter_key(), reason="OpenRouter API key not available")
 @pytest.mark.asyncio
 async def test_extract_from_sample_invoice_ocr():
@@ -130,6 +131,7 @@ TOTAL AMOUNT: USD 22,500.00""",
 
 
 @pytest.mark.integration
+@pytest.mark.llm
 @pytest.mark.skipif(not has_openrouter_key(), reason="OpenRouter API key not available")
 @pytest.mark.asyncio
 async def test_confidence_scores_above_threshold():
@@ -185,6 +187,7 @@ Seal Number: SN123456""",
 
 
 @pytest.mark.integration
+@pytest.mark.llm
 @pytest.mark.skipif(not has_openrouter_key(), reason="OpenRouter API key not available")
 @pytest.mark.asyncio
 async def test_flagship_vs_mini_model_comparison():
@@ -230,6 +233,7 @@ Currency: USD""",
 
 
 @pytest.mark.integration
+@pytest.mark.llm
 @pytest.mark.skipif(not has_openrouter_key(), reason="OpenRouter API key not available")
 @pytest.mark.asyncio
 async def test_multi_document_extraction():
@@ -272,6 +276,7 @@ async def test_multi_document_extraction():
 
 
 @pytest.mark.integration
+@pytest.mark.llm
 @pytest.mark.skipif(not has_openrouter_key(), reason="OpenRouter API key not available")
 @pytest.mark.asyncio
 async def test_error_handling_with_real_api():

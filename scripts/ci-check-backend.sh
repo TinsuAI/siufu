@@ -120,7 +120,7 @@ else
         export JWT_SECRET_KEY="test-jwt-secret-key-for-ci"
     fi
 
-    if pytest tests/ -m "not e2e" --cov=src --cov-report=term-missing -v --tb=short > /tmp/pytest-output.log 2>&1; then
+    if pytest tests/ -m "not e2e and not llm" --cov=src --cov-report=term-missing -v --tb=short > /tmp/pytest-output.log 2>&1; then
         # Show coverage summary
         grep -A 30 "TOTAL" /tmp/pytest-output.log || tail -50 /tmp/pytest-output.log
         print_status 0 "Backend tests passed with coverage"

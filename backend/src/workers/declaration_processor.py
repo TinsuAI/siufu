@@ -15,7 +15,7 @@ import asyncio
 import logging
 import os
 import time
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any, Dict, Optional
 from uuid import UUID
 
@@ -151,7 +151,7 @@ async def add_processing_log(
         details: Optional additional details
     """
     log_entry = {
-        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "timestamp": datetime.now(UTC).isoformat().replace("+00:00", "Z"),
         "level": level,
         "message": message,
     }

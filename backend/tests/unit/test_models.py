@@ -4,6 +4,7 @@ import uuid
 from datetime import datetime, timezone
 
 import pytest
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.models.declaration import Declaration, DeclarationStatus
@@ -187,8 +188,11 @@ class TestUserModel:
         await db_session.flush()
 
         db_session.add(user2)
-        with pytest.raises(Exception):  # Will raise IntegrityError
+        with pytest.raises(IntegrityError):  # Will raise IntegrityError for duplicate email
             await db_session.flush()
+
+        # Rollback to clean up the failed transaction
+        await db_session.rollback()
 
     async def test_user_repr(self):
         """Test User string representation."""
