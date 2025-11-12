@@ -9,6 +9,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useDeclaration } from '@/hooks/use-declaration'
 import * as api from '@/lib/api'
 import type { Declaration } from '@/types/declaration'
+import { DeclarationStatus } from '@/types/declaration'
 
 // Mock the API module
 vi.mock('@/lib/api', () => ({
