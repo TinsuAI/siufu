@@ -217,9 +217,21 @@ jobs:
       - name: Setup SSH key
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
+          # Write SSH key (GitHub Secrets preserve newlines in multi-line secrets)
+          cat > ~/.ssh/deploy_key <<'EOF'
+          ${{ secrets.SSH_PRIVATE_KEY }}
+          EOF
           chmod 600 ~/.ssh/deploy_key
-          ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+          # Add known hosts to avoid host verification prompt
+          ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
+          # Verify the key file was created correctly
+          if ! grep -q "BEGIN.*PRIVATE KEY" ~/.ssh/deploy_key; then
+            echo "ERROR: SSH private key file does not contain a valid key header"
+            echo "First line of key file:"
+            head -n 1 ~/.ssh/deploy_key
+            exit 1
+          fi
+          echo "SSH key file created successfully"
 
       - name: Test SSH connection
         run: |
