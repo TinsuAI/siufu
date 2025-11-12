@@ -7,7 +7,6 @@ import uuid
 from io import BytesIO
 
 import pytest
-from httpx import AsyncClient
 
 from src.core.security import create_access_token
 from src.repositories.declaration_repository import DeclarationRepository
