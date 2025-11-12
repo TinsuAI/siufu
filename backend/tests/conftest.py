@@ -12,8 +12,15 @@ from sqlalchemy.pool import NullPool
 
 # Set test database URL and Redis URL BEFORE importing any src modules
 # This ensures src.core.config loads the test configuration
-TEST_DATABASE_URL = "postgresql+asyncpg://postgres:test_password_123@localhost:8781/customs_db_test"
-TEST_REDIS_URL = "redis://localhost:8782/0"
+# Use environment variables if set (for CI), otherwise use default test ports
+TEST_DATABASE_URL = os.environ.get(
+    "DATABASE_URL",
+    "postgresql+asyncpg://postgres:test_password_123@localhost:5432/customs_db_test"
+)
+TEST_REDIS_URL = os.environ.get(
+    "REDIS_URL",
+    "redis://localhost:6379/0"
+)
 os.environ["DATABASE_URL"] = TEST_DATABASE_URL
 os.environ["REDIS_URL"] = TEST_REDIS_URL
 os.environ["CELERY_BROKER_URL"] = TEST_REDIS_URL
