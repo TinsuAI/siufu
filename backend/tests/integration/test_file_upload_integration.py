@@ -9,8 +9,7 @@ from io import BytesIO
 import pytest
 from httpx import AsyncClient
 
-from src.core.database import get_db
-from src.main import app
+from src.core.security import create_access_token
 from src.repositories.declaration_repository import DeclarationRepository
 from src.services.file_storage_service import FileStorageService
 
@@ -19,22 +18,33 @@ from src.services.file_storage_service import FileStorageService
 class TestFileUploadIntegration:
     """Integration tests for file upload endpoint"""
 
-    @pytest.fixture
-    async def client(self):
-        """Create async HTTP client for testing"""
-        async with AsyncClient(app=app, base_url="http://test") as ac:
-            yield ac
+    @pytest.fixture(autouse=True)
+    def mock_file_storage(self, tmp_path, monkeypatch):
+        """Mock FileStorageService to use tmp_path instead of /app/data/uploads"""
+        # Store the original __init__
+        original_init = FileStorageService.__init__
 
-    @pytest.fixture
-    async def db_session(self):
-        """Get database session for verification"""
-        async for session in get_db():
-            yield session
+        # Create a new __init__ that uses tmp_path
+        def patched_init(self, upload_base_dir=None):
+            # Use tmp_path for tests
+            upload_dir = tmp_path / "uploads"
+            original_init(self, upload_base_dir=str(upload_dir))
+
+        # Patch the __init__ method
+        monkeypatch.setattr(FileStorageService, "__init__", patched_init)
 
     @pytest.fixture
     def storage_service(self):
         """Create FileStorageService for cleanup"""
         return FileStorageService()
+
+    @pytest.fixture
+    def auth_headers(self, test_user):
+        """Create authentication headers for testing with valid JWT token"""
+        token = create_access_token(data={"sub": str(test_user.id)})
+        return {
+            'Authorization': f'Bearer {token}'
+        }
 
     def create_test_file(self, filename: str, content: bytes, content_type: str):
         """Create a test file for upload"""
@@ -65,7 +75,7 @@ class TestFileUploadIntegration:
         return content
 
     @pytest.mark.asyncio
-    async def test_upload_endpoint_e2e_success(self, client, db_session, storage_service):
+    async def test_upload_endpoint_e2e_success(self, async_client, db_session, storage_service, auth_headers):
         """Test successful end-to-end file upload"""
         # Create valid test files
         files = {
@@ -78,7 +88,7 @@ class TestFileUploadIntegration:
         }
 
         # Make upload request
-        response = await client.post("/api/declarations/upload", files=files)
+        response = await async_client.post("/api/v1/declarations/upload", files=files, headers=auth_headers)
 
         # Verify response
         assert response.status_code == 201
@@ -111,7 +121,7 @@ class TestFileUploadIntegration:
         await db_session.commit()
 
     @pytest.mark.asyncio
-    async def test_upload_with_auto_process_triggers_celery_task(self, client, db_session, storage_service):
+    async def test_upload_with_auto_process_triggers_celery_task(self, async_client, db_session, storage_service, auth_headers):
         """Test that auto_process=true triggers Celery task"""
         # Create valid test files
         files = {
@@ -124,7 +134,7 @@ class TestFileUploadIntegration:
         }
 
         # Make upload request with auto_process=true
-        response = await client.post("/api/declarations/upload?auto_process=true", files=files)
+        response = await async_client.post("/api/v1/declarations/upload?auto_process=true", files=files, headers=auth_headers)
 
         # Verify response
         assert response.status_code == 201
@@ -149,7 +159,7 @@ class TestFileUploadIntegration:
         await db_session.commit()
 
     @pytest.mark.asyncio
-    async def test_upload_missing_file_returns_400(self, client):
+    async def test_upload_missing_file_returns_400(self, async_client, auth_headers):
         """Test that missing files return 400 Bad Request"""
         # Only provide 5 files instead of 6
         files = {
@@ -161,7 +171,7 @@ class TestFileUploadIntegration:
             # tariff is missing
         }
 
-        response = await client.post("/api/declarations/upload", files=files)
+        response = await async_client.post("/api/v1/declarations/upload", files=files, headers=auth_headers)
 
         assert response.status_code == 400
         data = response.json()
@@ -171,7 +181,7 @@ class TestFileUploadIntegration:
         assert any(e["file"] == "tariff" for e in data["detail"]["errors"])
 
     @pytest.mark.asyncio
-    async def test_upload_wrong_file_type_returns_400(self, client):
+    async def test_upload_wrong_file_type_returns_400(self, async_client, auth_headers):
         """Test that wrong file types return 400 Bad Request"""
         # Use Word document instead of PDF for arrival_notice
         files = {
@@ -183,7 +193,7 @@ class TestFileUploadIntegration:
             "tariff": self.create_test_file("tariff.xlsx", self.create_valid_excel_xlsx(100), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
         }
 
-        response = await client.post("/api/declarations/upload", files=files)
+        response = await async_client.post("/api/v1/declarations/upload", files=files, headers=auth_headers)
 
         assert response.status_code == 400
         data = response.json()
@@ -192,7 +202,7 @@ class TestFileUploadIntegration:
         assert any(e["file"] == "arrival_notice" for e in data["detail"]["errors"])
 
     @pytest.mark.asyncio
-    async def test_upload_file_too_large_returns_413(self, client):
+    async def test_upload_file_too_large_returns_413(self, async_client, auth_headers):
         """Test that files exceeding size limit return 413"""
         # Create PDF larger than 10MB limit
         large_pdf = self.create_valid_pdf(11)
@@ -206,7 +216,7 @@ class TestFileUploadIntegration:
             "tariff": self.create_test_file("tariff.xlsx", self.create_valid_excel_xlsx(100), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
         }
 
-        response = await client.post("/api/declarations/upload", files=files)
+        response = await async_client.post("/api/v1/declarations/upload", files=files, headers=auth_headers)
 
         assert response.status_code == 413
         data = response.json()
@@ -216,7 +226,7 @@ class TestFileUploadIntegration:
         assert data["detail"]["max_size"] == 10 * 1024 * 1024
 
     @pytest.mark.asyncio
-    async def test_upload_invoice_accepts_jpeg(self, client, db_session, storage_service):
+    async def test_upload_invoice_accepts_jpeg(self, async_client, db_session, storage_service, auth_headers):
         """Test that invoice field accepts JPEG images"""
         files = {
             "arrival_notice": self.create_test_file("AN.pdf", self.create_valid_pdf(1), "application/pdf"),
@@ -227,7 +237,7 @@ class TestFileUploadIntegration:
             "tariff": self.create_test_file("tariff.xlsx", self.create_valid_excel_xlsx(100), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
         }
 
-        response = await client.post("/api/declarations/upload", files=files)
+        response = await async_client.post("/api/v1/declarations/upload", files=files, headers=auth_headers)
 
         assert response.status_code == 201
         data = response.json()
@@ -245,7 +255,7 @@ class TestFileUploadIntegration:
         await db_session.commit()
 
     @pytest.mark.asyncio
-    async def test_upload_rollback_on_database_error(self, client, storage_service, db_session, monkeypatch):
+    async def test_upload_rollback_on_database_error(self, async_client, storage_service, db_session, monkeypatch, auth_headers):
         """Test that files are cleaned up if database commit fails"""
         files = {
             "arrival_notice": self.create_test_file("AN.pdf", self.create_valid_pdf(1), "application/pdf"),
@@ -258,7 +268,7 @@ class TestFileUploadIntegration:
 
         # This test would require mocking the database commit to fail
         # For now, we'll just verify the endpoint handles errors gracefully
-        response = await client.post("/api/declarations/upload", files=files)
+        response = await async_client.post("/api/v1/declarations/upload", files=files, headers=auth_headers)
 
         # Should succeed in normal case
         assert response.status_code in [201, 500]
@@ -275,7 +285,7 @@ class TestFileUploadIntegration:
                 await db_session.commit()
 
     @pytest.mark.asyncio
-    async def test_upload_stores_correct_file_metadata(self, client, db_session, storage_service):
+    async def test_upload_stores_correct_file_metadata(self, async_client, db_session, storage_service, auth_headers):
         """Test that file metadata is correctly stored in database"""
         files = {
             "arrival_notice": self.create_test_file("AN.pdf", self.create_valid_pdf(2), "application/pdf"),
@@ -286,7 +296,7 @@ class TestFileUploadIntegration:
             "tariff": self.create_test_file("tariff.xlsx", self.create_valid_excel_xlsx(300), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
         }
 
-        response = await client.post("/api/declarations/upload", files=files)
+        response = await async_client.post("/api/v1/declarations/upload", files=files, headers=auth_headers)
 
         assert response.status_code == 201
         data = response.json()
@@ -320,7 +330,7 @@ class TestFileUploadIntegration:
         await db_session.commit()
 
     @pytest.mark.asyncio
-    async def test_concurrent_uploads_different_declarations(self, client, db_session, storage_service):
+    async def test_concurrent_uploads_different_declarations(self, async_client, db_session, storage_service, auth_headers):
         """Test that concurrent uploads to different declarations work correctly"""
         import asyncio
 
@@ -333,7 +343,7 @@ class TestFileUploadIntegration:
                 "good_list": self.create_test_file("goods.xls", self.create_valid_excel_xls(100), "application/vnd.ms-excel"),
                 "tariff": self.create_test_file("tariff.xlsx", self.create_valid_excel_xlsx(100), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
             }
-            return await client.post("/api/declarations/upload", files=files)
+            return await async_client.post("/api/v1/declarations/upload", files=files, headers=auth_headers)
 
         # Upload 2 declarations concurrently
         responses = await asyncio.gather(

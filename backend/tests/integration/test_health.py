@@ -142,37 +142,33 @@ class TestAPIPlaceholderEndpoints:
     """Integration tests for placeholder API endpoints."""
 
     async def test_auth_endpoints_return_placeholder_responses(self):
-        """Test that auth endpoints return placeholder messages."""
+        """Test that auth endpoints are properly implemented."""
         # Arrange
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
-            # Test login endpoint
+            # Test login endpoint - should return 422 without credentials
             response = await client.post("/api/v1/auth/login")
-            assert response.status_code == 200
-            assert "message" in response.json()
+            assert response.status_code == 422  # Validation error
 
-            # Test logout endpoint
+            # Test logout endpoint - should return 200 (doesn't require auth)
             response = await client.post("/api/v1/auth/logout")
             assert response.status_code == 200
-            assert "message" in response.json()
+            assert response.json()["message"] == "Successfully logged out"
 
-            # Test me endpoint
+            # Test me endpoint - should return 401 without auth
             response = await client.get("/api/v1/auth/me")
-            assert response.status_code == 200
-            assert "message" in response.json()
+            assert response.status_code == 401  # Unauthorized
 
     async def test_declarations_list_endpoint(self):
-        """Test that declarations list endpoint returns placeholder."""
+        """Test that declarations list endpoint requires authentication."""
         # Arrange
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
             # Act
             response = await client.get("/api/v1/declarations")
 
-            # Assert
-            assert response.status_code == 200
-            data = response.json()
-            assert "message" in data
+            # Assert - should return 401 without authentication
+            assert response.status_code == 401
 
     async def test_knowledge_base_endpoints(self):
         """Test that knowledge base endpoints return placeholders."""

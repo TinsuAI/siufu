@@ -10,10 +10,13 @@ import pytest_asyncio
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool
 
-# Set test database URL BEFORE importing any src modules
-# This ensures src.core.config loads the test database URL
-TEST_DATABASE_URL = "postgresql+asyncpg://postgres:test_password_123@postgres:5432/customs_db_test"
+# Set test database URL and Redis URL BEFORE importing any src modules
+# This ensures src.core.config loads the test configuration
+TEST_DATABASE_URL = "postgresql+asyncpg://postgres:test_password_123@localhost:8781/customs_db_test"
+TEST_REDIS_URL = "redis://localhost:8782/0"
 os.environ["DATABASE_URL"] = TEST_DATABASE_URL
+os.environ["REDIS_URL"] = TEST_REDIS_URL
+os.environ["CELERY_BROKER_URL"] = TEST_REDIS_URL
 
 # Import Base from models
 from src.models.base import Base
@@ -53,28 +56,28 @@ def anyio_backend():
     return "asyncio"
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="function")
 def event_loop():
     """
-    Create a session-scoped event loop for all async tests.
+    Create a function-scoped event loop for each async test.
 
-    This prevents 'Event loop is closed' errors by ensuring all async
-    fixtures and tests use the same event loop throughout the test session.
+    This prevents 'attached to a different loop' errors by ensuring each
+    test gets its own event loop, avoiding conflicts with asyncpg connections.
     """
     policy = asyncio.get_event_loop_policy()
     loop = policy.new_event_loop()
+    asyncio.set_event_loop(loop)
     yield loop
     loop.close()
 
 
-@pytest_asyncio.fixture(scope="session")
+@pytest_asyncio.fixture(scope="function")
 async def test_engine():
     """
-    Create test database engine and setup tables.
+    Create test database engine for each test function.
 
-    Uses session-scoped fixture to create tables once per test session.
-    Transaction-based isolation ensures each test gets clean state without
-    recreating tables, preventing event loop conflicts.
+    Creates a fresh engine per test to avoid event loop conflicts.
+    Tables are created once per test run via metadata.create_all.
     """
     engine = create_async_engine(
         TEST_DATABASE_URL,
@@ -82,15 +85,11 @@ async def test_engine():
         echo=False,  # Set to True for SQL debugging
     )
 
-    # Create all tables
+    # Create all tables if they don't exist
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
     yield engine
-
-    # Drop all tables after tests complete
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
 
     await engine.dispose()
 

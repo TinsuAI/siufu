@@ -439,3 +439,21 @@ def auth_headers():
     return {
         'Authorization': f'Bearer {token}'
     }
+
+
+@pytest.fixture(autouse=True)
+def mock_file_storage(tmp_path, monkeypatch):
+    """Mock FileStorageService to use tmp_path instead of /app/data/uploads"""
+    from src.services.file_storage_service import FileStorageService
+
+    # Store the original __init__
+    original_init = FileStorageService.__init__
+
+    # Create a new __init__ that uses tmp_path
+    def patched_init(self, upload_base_dir=None):
+        # Use tmp_path for tests
+        upload_dir = tmp_path / "uploads"
+        original_init(self, upload_base_dir=str(upload_dir))
+
+    # Patch the __init__ method
+    monkeypatch.setattr(FileStorageService, "__init__", patched_init)

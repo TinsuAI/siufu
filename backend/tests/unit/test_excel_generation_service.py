@@ -88,9 +88,10 @@ def minimal_draft_data():
 
 
 @pytest.fixture
-def excel_service():
+def excel_service(tmp_path):
     """ExcelGenerationService instance"""
-    return ExcelGenerationService()
+    export_dir = tmp_path / "data" / "exports"
+    return ExcelGenerationService(export_base_dir=str(export_dir))
 
 
 @pytest.fixture
@@ -105,24 +106,12 @@ class TestExcelGeneration:
     """Test suite for Excel file generation"""
 
     def test_generate_cd_file_creates_valid_xlsx(
-        self, excel_service, sample_declaration_id, sample_draft_data, tmp_path, monkeypatch
+        self, excel_service, sample_declaration_id, sample_draft_data
     ):
         """
         Test 1: Verify Excel file is created and is valid .xlsx
         AC 1: Uses openpyxl to create .xlsx file
         """
-        # Mock export directory to use tmp_path
-        def mock_ensure_export_directory(self, declaration_id):
-            export_dir = tmp_path / "data" / "exports" / str(declaration_id)
-            export_dir.mkdir(parents=True, exist_ok=True)
-            return export_dir
-
-        monkeypatch.setattr(
-            ExcelGenerationService,
-            "_ensure_export_directory",
-            mock_ensure_export_directory
-        )
-
         # Generate Excel file
         file_path = excel_service.generate_cd_file(
             sample_declaration_id,
@@ -148,18 +137,6 @@ class TestExcelGeneration:
         Test 2: Verify header section fields mapped correctly
         AC 2, 3: Header section includes importer name, address, tax ID, date
         """
-        # Mock export directory
-        def mock_ensure_export_directory(self, declaration_id):
-            export_dir = tmp_path / "data" / "exports" / str(declaration_id)
-            export_dir.mkdir(parents=True, exist_ok=True)
-            return export_dir
-
-        monkeypatch.setattr(
-            ExcelGenerationService,
-            "_ensure_export_directory",
-            mock_ensure_export_directory
-        )
-
         # Generate Excel file
         file_path = excel_service.generate_cd_file(
             sample_declaration_id,
@@ -192,18 +169,6 @@ class TestExcelGeneration:
         Test 3: Verify product table fields mapped correctly
         AC 2, 3: Product table includes description, HS code, quantity, prices, origin
         """
-        # Mock export directory
-        def mock_ensure_export_directory(self, declaration_id):
-            export_dir = tmp_path / "data" / "exports" / str(declaration_id)
-            export_dir.mkdir(parents=True, exist_ok=True)
-            return export_dir
-
-        monkeypatch.setattr(
-            ExcelGenerationService,
-            "_ensure_export_directory",
-            mock_ensure_export_directory
-        )
-
         # Generate Excel file
         file_path = excel_service.generate_cd_file(
             sample_declaration_id,
@@ -241,18 +206,6 @@ class TestExcelGeneration:
         Test 4: Verify tax summary fields mapped correctly
         AC 2, 3: Tax summary includes total VAT and total payable
         """
-        # Mock export directory
-        def mock_ensure_export_directory(self, declaration_id):
-            export_dir = tmp_path / "data" / "exports" / str(declaration_id)
-            export_dir.mkdir(parents=True, exist_ok=True)
-            return export_dir
-
-        monkeypatch.setattr(
-            ExcelGenerationService,
-            "_ensure_export_directory",
-            mock_ensure_export_directory
-        )
-
         # Generate Excel file
         file_path = excel_service.generate_cd_file(
             sample_declaration_id,
@@ -277,18 +230,6 @@ class TestExcelGeneration:
         Test 5: Verify number formatting matches requirements
         AC 4: Currency cells use #,##0.00, Date cells use DD/MM/YYYY
         """
-        # Mock export directory
-        def mock_ensure_export_directory(self, declaration_id):
-            export_dir = tmp_path / "data" / "exports" / str(declaration_id)
-            export_dir.mkdir(parents=True, exist_ok=True)
-            return export_dir
-
-        monkeypatch.setattr(
-            ExcelGenerationService,
-            "_ensure_export_directory",
-            mock_ensure_export_directory
-        )
-
         # Generate Excel file
         file_path = excel_service.generate_cd_file(
             sample_declaration_id,
@@ -322,18 +263,6 @@ class TestExcelGeneration:
         Test 6: Verify Vietnamese static labels are not overwritten
         AC 5: Vietnamese language headers and labels preserved
         """
-        # Mock export directory
-        def mock_ensure_export_directory(self, declaration_id):
-            export_dir = tmp_path / "data" / "exports" / str(declaration_id)
-            export_dir.mkdir(parents=True, exist_ok=True)
-            return export_dir
-
-        monkeypatch.setattr(
-            ExcelGenerationService,
-            "_ensure_export_directory",
-            mock_ensure_export_directory
-        )
-
         # Load original template to check labels
         original_template = load_workbook("resources/sample/2/CD.xlsx")
         original_ws = original_template.active
@@ -382,18 +311,6 @@ class TestExcelGeneration:
         Test 7: Verify handling of multiple products (2 products)
         Multi-product support: Each product mapped to sequential sections
         """
-        # Mock export directory
-        def mock_ensure_export_directory(self, declaration_id):
-            export_dir = tmp_path / "data" / "exports" / str(declaration_id)
-            export_dir.mkdir(parents=True, exist_ok=True)
-            return export_dir
-
-        monkeypatch.setattr(
-            ExcelGenerationService,
-            "_ensure_export_directory",
-            mock_ensure_export_directory
-        )
-
         # Add second product
         multi_product_data = sample_draft_data.copy()
         multi_product_data["products"] = [
@@ -440,18 +357,6 @@ class TestExcelGeneration:
         Test 7b: Verify handling of 5 products
         Multi-product support: Sequential product sections
         """
-        # Mock export directory
-        def mock_ensure_export_directory(self, declaration_id):
-            export_dir = tmp_path / "data" / "exports" / str(declaration_id)
-            export_dir.mkdir(parents=True, exist_ok=True)
-            return export_dir
-
-        monkeypatch.setattr(
-            ExcelGenerationService,
-            "_ensure_export_directory",
-            mock_ensure_export_directory
-        )
-
         # Create 5 products
         multi_product_data = sample_draft_data.copy()
         multi_product_data["products"] = [
@@ -498,18 +403,6 @@ class TestExcelGeneration:
         Target: <3-5 seconds generation time
         """
         import time
-
-        # Mock export directory
-        def mock_ensure_export_directory(self, declaration_id):
-            export_dir = tmp_path / "data" / "exports" / str(declaration_id)
-            export_dir.mkdir(parents=True, exist_ok=True)
-            return export_dir
-
-        monkeypatch.setattr(
-            ExcelGenerationService,
-            "_ensure_export_directory",
-            mock_ensure_export_directory
-        )
 
         # Create 20 products
         multi_product_data = sample_draft_data.copy()
@@ -601,7 +494,7 @@ class TestExcelGeneration:
         # Should raise FileNotFoundError during initialization
         with pytest.raises(FileNotFoundError, match="Excel template not found"):
             # Create service with invalid template path - this should raise immediately
-            invalid_service = ExcelGenerationService(template_path="nonexistent/template.xlsx")
+            ExcelGenerationService(template_path="nonexistent/template.xlsx")
 
     def test_export_directory_creation(
         self, excel_service, sample_declaration_id, sample_draft_data, tmp_path, monkeypatch
@@ -610,18 +503,6 @@ class TestExcelGeneration:
         Test: Verify export directory is created if it doesn't exist
         AC 6: Generated file saved to ./data/exports/{declaration_id}/CD.xlsx
         """
-        # Mock export directory to use tmp_path
-        def mock_ensure_export_directory(self, declaration_id):
-            export_dir = tmp_path / "data" / "exports" / str(declaration_id)
-            export_dir.mkdir(parents=True, exist_ok=True)
-            return export_dir
-
-        monkeypatch.setattr(
-            ExcelGenerationService,
-            "_ensure_export_directory",
-            mock_ensure_export_directory
-        )
-
         # Directory should not exist initially
         export_dir = tmp_path / "data" / "exports" / str(sample_declaration_id)
         if export_dir.exists():
@@ -648,13 +529,8 @@ class TestExcelGeneration:
         Test: Verify delete_export_file() cleanup method
         Task 4: Cleanup method for future use
         """
-        # Mock export directory to use tmp_path
-        def mock_path_new(cls, *args):
-            if args[0] == "./data/exports":
-                return tmp_path / "data" / "exports"
-            return Path(*args)
-
-        monkeypatch.setattr(Path, "__new__", mock_path_new)
+        # Don't mock Path.__new__ as it causes recursion errors
+        # Just mock the _ensure_export_directory method instead
 
         def mock_ensure_export_directory(self, declaration_id):
             export_dir = tmp_path / "data" / "exports" / str(declaration_id)

@@ -278,10 +278,8 @@ class TestFileStorageService:
     @pytest.fixture
     def storage_service(self, tmp_path):
         """Create a FileStorageService instance with temp directory"""
-        service = FileStorageService()
-        # Override base directory to use temp path for testing
-        service.UPLOAD_BASE_DIR = tmp_path / "uploads"
-        service.UPLOAD_BASE_DIR.mkdir(parents=True, exist_ok=True)
+        upload_dir = tmp_path / "uploads"
+        service = FileStorageService(upload_base_dir=str(upload_dir))
         return service
 
     def create_mock_upload_file(

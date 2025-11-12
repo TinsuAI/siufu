@@ -26,9 +26,6 @@ class FileStorageService:
     - Returns file metadata for database storage
     """
 
-    # Base upload directory (Docker volume mount point)
-    UPLOAD_BASE_DIR = Path("/app/data/uploads")
-
     # Field name to file type mapping
     # Updated in Story 3.3.1: Removed GOODLIST and TARIFF
     FILE_TYPE_MAP = {
@@ -38,9 +35,14 @@ class FileStorageService:
         "invoice": "INVOICE"
     }
 
-    def __init__(self):
-        """Initialize file storage service and ensure base directory exists"""
+    def __init__(self, upload_base_dir: str = "/app/data/uploads"):
+        """Initialize file storage service and ensure base directory exists
+
+        Args:
+            upload_base_dir: Base directory for uploads. Defaults to /app/data/uploads
+        """
         # Create base upload directory if it doesn't exist
+        self.UPLOAD_BASE_DIR = Path(upload_base_dir)
         self.UPLOAD_BASE_DIR.mkdir(parents=True, exist_ok=True)
 
     async def save_declaration_files(

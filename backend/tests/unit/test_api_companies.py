@@ -58,7 +58,7 @@ async def test_list_importers_success(db_session, test_user, test_organization, 
     access_token = create_access_token(data={"sub": str(test_user.id)})
 
     response = await async_client.get(
-        "/api/companies/?type=importers",
+        "/api/v1/companies/?type=importers",
         headers={"Authorization": f"Bearer {access_token}"}
     )
 
@@ -106,7 +106,7 @@ async def test_list_companies_with_search(db_session, test_user, test_organizati
     access_token = create_access_token(data={"sub": str(test_user.id)})
 
     response = await async_client.get(
-        "/api/companies/?type=importers&search=ABC",
+        "/api/v1/companies/?type=importers&search=ABC",
         headers={"Authorization": f"Bearer {access_token}"}
     )
 
@@ -152,7 +152,7 @@ async def test_list_companies_filter_verified(db_session, test_user, test_organi
     access_token = create_access_token(data={"sub": str(test_user.id)})
 
     response = await async_client.get(
-        "/api/companies/?type=importers&filter=verified",
+        "/api/v1/companies/?type=importers&filter=verified",
         headers={"Authorization": f"Bearer {access_token}"}
     )
 
@@ -199,7 +199,7 @@ async def test_list_companies_ignores_deleted(db_session, test_user, test_organi
     access_token = create_access_token(data={"sub": str(test_user.id)})
 
     response = await async_client.get(
-        "/api/companies/?type=importers",
+        "/api/v1/companies/?type=importers",
         headers={"Authorization": f"Bearer {access_token}"}
     )
 
@@ -212,14 +212,22 @@ async def test_list_companies_ignores_deleted(db_session, test_user, test_organi
 @pytest.mark.asyncio
 async def test_list_companies_organization_isolation(db_session, test_user, test_organization, async_client):
     """Test that list_companies respects organization_id filtering."""
+    # Create another organization for isolation testing
+    from src.models.organization import Organization
+    other_org = Organization(
+        id=uuid4(),
+        name="Other Organization"
+    )
+    db_session.add(other_org)
+    await db_session.flush()
+
     # Create importer in different organization
-    other_org_id = uuid4()
     importer_other_org = Importer(
         id=uuid4(),
         tax_code="9999999999",
         name="Other Org Company",
         name_normalized="other org company",
-        organization_id=other_org_id,  # Different org
+        organization_id=other_org.id,  # Different org
         declaration_count=10,
         is_verified=True,
         confidence_score=1.0,
@@ -246,7 +254,7 @@ async def test_list_companies_organization_isolation(db_session, test_user, test
     access_token = create_access_token(data={"sub": str(test_user.id)})
 
     response = await async_client.get(
-        "/api/companies/?type=importers",
+        "/api/v1/companies/?type=importers",
         headers={"Authorization": f"Bearer {access_token}"}
     )
 
@@ -284,7 +292,7 @@ async def test_get_company_success(db_session, test_user, test_organization, asy
     access_token = create_access_token(data={"sub": str(test_user.id)})
 
     response = await async_client.get(
-        f"/api/companies/{importer.id}?type=importers",
+        f"/api/v1/companies/{importer.id}?type=importers",
         headers={"Authorization": f"Bearer {access_token}"}
     )
 
@@ -302,7 +310,7 @@ async def test_get_company_not_found(db_session, test_user, async_client):
 
     non_existent_id = uuid4()
     response = await async_client.get(
-        f"/api/companies/{non_existent_id}?type=importers",
+        f"/api/v1/companies/{non_existent_id}?type=importers",
         headers={"Authorization": f"Bearer {access_token}"}
     )
 
@@ -312,14 +320,22 @@ async def test_get_company_not_found(db_session, test_user, async_client):
 @pytest.mark.asyncio
 async def test_get_company_wrong_organization(db_session, test_user, async_client):
     """Test getting company from different organization returns 403."""
+    # Create another organization for isolation testing
+    from src.models.organization import Organization
+    other_org = Organization(
+        id=uuid4(),
+        name="Other Organization"
+    )
+    db_session.add(other_org)
+    await db_session.flush()
+
     # Create importer in different organization
-    other_org_id = uuid4()
     importer = Importer(
         id=uuid4(),
         tax_code="1234567890",
         name="Other Org Company",
         name_normalized="other org company",
-        organization_id=other_org_id,  # Different org
+        organization_id=other_org.id,  # Different org
         declaration_count=5,
         is_verified=True,
         confidence_score=0.95,
@@ -334,7 +350,7 @@ async def test_get_company_wrong_organization(db_session, test_user, async_clien
     access_token = create_access_token(data={"sub": str(test_user.id)})
 
     response = await async_client.get(
-        f"/api/companies/{importer.id}?type=importers",
+        f"/api/v1/companies/{importer.id}?type=importers",
         headers={"Authorization": f"Bearer {access_token}"}
     )
 
@@ -360,7 +376,7 @@ async def test_create_importer_success(db_session, test_user, async_client):
     }
 
     response = await async_client.post(
-        "/api/companies/?type=importers",
+        "/api/v1/companies/?type=importers",
         json={"importer_data": importer_data},
         headers={"Authorization": f"Bearer {access_token}"}
     )
@@ -388,7 +404,7 @@ async def test_create_exporter_success(db_session, test_user, async_client):
     }
 
     response = await async_client.post(
-        "/api/companies/?type=exporters",
+        "/api/v1/companies/?type=exporters",
         json={"exporter_data": exporter_data},
         headers={"Authorization": f"Bearer {access_token}"}
     )
@@ -433,7 +449,7 @@ async def test_update_importer_success(db_session, test_user, test_organization,
     }
 
     response = await async_client.patch(
-        f"/api/companies/{importer.id}?type=importers",
+        f"/api/v1/companies/{importer.id}?type=importers",
         json={"importer_data": update_data},
         headers={"Authorization": f"Bearer {access_token}"}
     )
@@ -452,7 +468,7 @@ async def test_update_company_not_found(db_session, test_user, async_client):
 
     non_existent_id = uuid4()
     response = await async_client.patch(
-        f"/api/companies/{non_existent_id}?type=importers",
+        f"/api/v1/companies/{non_existent_id}?type=importers",
         json={"importer_data": {"name": "Test"}},
         headers={"Authorization": f"Bearer {access_token}"}
     )
@@ -489,7 +505,7 @@ async def test_delete_company_soft_delete(db_session, test_user, test_organizati
     access_token = create_access_token(data={"sub": str(test_user.id)})
 
     response = await async_client.delete(
-        f"/api/companies/{importer.id}?type=importers",
+        f"/api/v1/companies/{importer.id}?type=importers",
         headers={"Authorization": f"Bearer {access_token}"}
     )
 
@@ -540,7 +556,7 @@ async def test_get_duplicates_finds_similar_names(db_session, test_user, test_or
     access_token = create_access_token(data={"sub": str(test_user.id)})
 
     response = await async_client.get(
-        "/api/companies/duplicates/?type=importers",
+        "/api/v1/companies/duplicates/?type=importers",
         headers={"Authorization": f"Bearer {access_token}"}
     )
 
@@ -586,7 +602,7 @@ async def test_get_duplicates_no_matches(db_session, test_user, test_organizatio
     access_token = create_access_token(data={"sub": str(test_user.id)})
 
     response = await async_client.get(
-        "/api/companies/duplicates/?type=importers",
+        "/api/v1/companies/duplicates/?type=importers",
         headers={"Authorization": f"Bearer {access_token}"}
     )
 
@@ -640,7 +656,7 @@ async def test_merge_companies_success(db_session, test_user, test_organization,
     }
 
     response = await async_client.post(
-        "/api/companies/merge/?type=importers",
+        "/api/v1/companies/merge/?type=importers",
         json=merge_request,
         headers={"Authorization": f"Bearer {access_token}"}
     )
@@ -668,7 +684,7 @@ async def test_merge_companies_same_id_fails(db_session, test_user, async_client
     }
 
     response = await async_client.post(
-        "/api/companies/merge/?type=importers",
+        "/api/v1/companies/merge/?type=importers",
         json=merge_request,
         headers={"Authorization": f"Bearer {access_token}"}
     )
@@ -688,7 +704,7 @@ async def test_merge_companies_not_found(db_session, test_user, async_client):
     }
 
     response = await async_client.post(
-        "/api/companies/merge/?type=importers",
+        "/api/v1/companies/merge/?type=importers",
         json=merge_request,
         headers={"Authorization": f"Bearer {access_token}"}
     )

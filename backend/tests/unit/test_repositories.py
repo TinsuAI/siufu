@@ -305,19 +305,23 @@ class TestUserRepository:
         assert found is None
 
     async def test_create_user_with_defaults(self, db_session: AsyncSession):
-        """Test UserRepository.create_user with default role."""
+        """Test UserRepository.create with default role."""
         # Arrange
+        from src.schemas.auth import RegisterRequest
         org = Organization(name="Test Org")
         db_session.add(org)
         await db_session.flush()
 
         repo = UserRepository(db_session)
-
-        # Act
-        user = await repo.create_user(
+        user_data = RegisterRequest(
             email="newuser@example.com",
             password="plaintext_password",
-            full_name="New User",
+            full_name="New User"
+        )
+
+        # Act
+        user = await repo.create(
+            user_data=user_data,
             organization_id=org.id
         )
 
@@ -325,27 +329,35 @@ class TestUserRepository:
         assert user.id is not None
         assert user.email == "newuser@example.com"
         assert user.full_name == "New User"
-        assert user.hashed_password.startswith("hashed_")  # Placeholder hashing
+        assert user.hashed_password is not None  # Password should be hashed
         assert user.role == UserRole.processor  # Default
         assert user.is_active is True
 
     async def test_create_user_with_admin_role(self, db_session: AsyncSession):
-        """Test creating user with admin role."""
+        """Test creating user and then updating role to admin."""
         # Arrange
+        from src.schemas.auth import RegisterRequest
         org = Organization(name="Test Org")
         db_session.add(org)
         await db_session.flush()
 
         repo = UserRepository(db_session)
-
-        # Act
-        admin = await repo.create_user(
+        user_data = RegisterRequest(
             email="admin@example.com",
             password="admin_password",
-            full_name="Admin User",
-            organization_id=org.id,
-            role="admin"
+            full_name="Admin User"
         )
+
+        # Act - create user with default role
+        admin = await repo.create(
+            user_data=user_data,
+            organization_id=org.id
+        )
+
+        # Update role to admin
+        admin.role = UserRole.admin
+        await db_session.commit()
+        await db_session.refresh(admin)
 
         # Assert
         assert admin.role == UserRole.admin

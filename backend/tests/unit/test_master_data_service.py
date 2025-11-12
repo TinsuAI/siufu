@@ -354,14 +354,22 @@ async def test_match_importer_ignores_deleted(db_session, test_organization):
 @pytest.mark.asyncio
 async def test_match_importer_organization_isolation(db_session, test_organization):
     """Test that match_importer respects organization_id filtering."""
+    # Create another organization
+    from src.models.organization import Organization
+    other_org = Organization(
+        id=UUID("00000000-0000-0000-0000-000000000099"),
+        name="Other Organization"
+    )
+    db_session.add(other_org)
+    await db_session.flush()
+
     # Create importer in different organization
-    other_org_id = UUID("00000000-0000-0000-0000-000000000099")
     importer = Importer(
         id=uuid4(),
         tax_code="7777777777",
         name="Other Org Company",
         name_normalized="other org company",
-        organization_id=other_org_id,  # Different org
+        organization_id=other_org.id,  # Different org
         declaration_count=5,
         is_verified=True,
         confidence_score=0.95,
@@ -626,14 +634,22 @@ async def test_match_exporter_ignores_deleted(db_session, test_organization):
 @pytest.mark.asyncio
 async def test_match_exporter_organization_isolation(db_session, test_organization):
     """Test that match_exporter respects organization_id filtering."""
+    # Create another organization
+    from src.models.organization import Organization
+    other_org = Organization(
+        id=UUID("00000000-0000-0000-0000-000000000099"),
+        name="Other Organization"
+    )
+    db_session.add(other_org)
+    await db_session.flush()
+
     # Create exporter in different organization
-    other_org_id = UUID("00000000-0000-0000-0000-000000000099")
     exporter = Exporter(
         id=uuid4(),
         name="Other Org Exporter",
         name_normalized="other org exporter",
         country_code="KR",
-        organization_id=other_org_id,  # Different org
+        organization_id=other_org.id,  # Different org
         declaration_count=5,
         is_verified=True,
         confidence_score=0.95,

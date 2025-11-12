@@ -25,14 +25,16 @@ class ExcelGenerationService:
     Each product occupies ~42 rows starting at row 160.
     """
 
-    def __init__(self, template_path: Optional[str] = None):
+    def __init__(self, template_path: Optional[str] = None, export_base_dir: Optional[str] = None):
         """
         Initialize the Excel generation service.
 
         Args:
             template_path: Path to CD.xlsx template. Defaults to resources/sample/2/CD.xlsx
+            export_base_dir: Base directory for exports. Defaults to ./data/exports
         """
         self.template_path = template_path or "resources/sample/2/CD.xlsx"
+        self.export_base_dir = export_base_dir or "./data/exports"
         self._validate_template_exists()
 
     def _validate_template_exists(self) -> None:
@@ -324,7 +326,7 @@ class ExcelGenerationService:
         Raises:
             OSError: If directory creation fails
         """
-        export_dir = Path("./data/exports") / str(declaration_id)
+        export_dir = Path(self.export_base_dir) / str(declaration_id)
 
         try:
             export_dir.mkdir(parents=True, exist_ok=True)
@@ -350,7 +352,7 @@ class ExcelGenerationService:
         Returns:
             bool: True if file was deleted, False if file didn't exist
         """
-        export_file = Path("./data/exports") / str(declaration_id) / "CD.xlsx"
+        export_file = Path(self.export_base_dir) / str(declaration_id) / "CD.xlsx"
 
         if export_file.exists():
             export_file.unlink()
