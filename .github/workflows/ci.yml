@@ -217,10 +217,8 @@ jobs:
       - name: Setup SSH key
         run: |
           mkdir -p ~/.ssh
-          # Write SSH key (GitHub Secrets preserve newlines in multi-line secrets)
-          cat > ~/.ssh/deploy_key <<'EOF'
-          ${{ secrets.SSH_PRIVATE_KEY }}
-          EOF
+          # Decode base64-encoded SSH key
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" | base64 -d > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
           # Add known hosts to avoid host verification prompt
           ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
