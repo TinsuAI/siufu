@@ -1,5 +1,3 @@
-version: '3.8'
-
 # Production Docker Compose Configuration
 # This file is optimized for production deployments with:
 # - No source code volume mounts (uses built images)

@@ -346,21 +346,34 @@ jobs:
       - name: Pull latest images and deploy
         run: |
           ssh -i ~/.ssh/deploy_key ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'ENDSSH'
+            set -e  # Exit on error
             cd ${{ env.DEPLOYMENT_PATH }}
 
             # Log deployment start
             echo "[$(date)] Starting deployment - Commit: ${{ github.sha }}" >> deployment.log
 
             # Pull latest base images to ensure we have updates
-            docker compose -f docker-compose.prod.yml pull postgres redis
+            echo "[$(date)] Pulling base images..." >> deployment.log
+            if docker compose -f docker-compose.prod.yml pull postgres redis 2>&1 | tee -a deployment.log; then
+              echo "[$(date)] Base images pulled successfully" >> deployment.log
+            else
+              echo "[$(date)] Failed to pull base images" >> deployment.log
+              exit 1
+            fi
 
             # Bring down existing containers
             echo "[$(date)] Stopping existing containers..." >> deployment.log
-            docker compose -f docker-compose.prod.yml down
+            docker compose -f docker-compose.prod.yml down 2>&1 | tee -a deployment.log
 
             # Build and start all services with latest code (production configuration)
             echo "[$(date)] Building and starting services with production config..." >> deployment.log
-            docker compose -f docker-compose.prod.yml up -d --build
+            if docker compose -f docker-compose.prod.yml up -d --build 2>&1 | tee -a deployment.log; then
+              echo "[$(date)] Services started successfully" >> deployment.log
+            else
+              echo "[$(date)] Failed to start services" >> deployment.log
+              docker compose -f docker-compose.prod.yml logs >> deployment.log
+              exit 1
+            fi
 
             # Wait for services to be healthy
             echo "[$(date)] Waiting for services to become healthy..." >> deployment.log
