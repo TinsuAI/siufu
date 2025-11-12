@@ -346,13 +346,15 @@ jobs:
       - name: Pull latest images and deploy
         run: |
           ssh -i ~/.ssh/deploy_key ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'ENDSSH'
-            set -e  # Exit on error
+            set -ex  # Exit on error and print commands
             cd ${{ env.DEPLOYMENT_PATH }}
 
             # Log deployment start
             echo "[$(date)] Starting deployment - Commit: ${{ github.sha }}" >> deployment.log
+            echo ">>> Starting deployment process"
 
             # Pull latest base images to ensure we have updates
+            echo ">>> Pulling base images..."
             echo "[$(date)] Pulling base images..." >> deployment.log
             if docker compose -f docker-compose.prod.yml pull postgres redis 2>&1 | tee -a deployment.log; then
               echo "[$(date)] Base images pulled successfully" >> deployment.log
@@ -362,10 +364,12 @@ jobs:
             fi
 
             # Bring down existing containers
+            echo ">>> Stopping existing containers..."
             echo "[$(date)] Stopping existing containers..." >> deployment.log
             docker compose -f docker-compose.prod.yml down 2>&1 | tee -a deployment.log
 
             # Build and start all services with latest code (production configuration)
+            echo ">>> Building and starting services..."
             echo "[$(date)] Building and starting services with production config..." >> deployment.log
             if docker compose -f docker-compose.prod.yml up -d --build 2>&1 | tee -a deployment.log; then
               echo "[$(date)] Services started successfully" >> deployment.log
@@ -380,6 +384,28 @@ jobs:
             sleep 15
 
             echo "[$(date)] Deployment completed" >> deployment.log
+          ENDSSH
+
+      - name: Show deployment log on failure
+        if: failure()
+        run: |
+          echo "=== Deployment failed, showing deployment.log ==="
+          ssh -i ~/.ssh/deploy_key ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'ENDSSH'
+            cd ${{ env.DEPLOYMENT_PATH }}
+            if [ -f deployment.log ]; then
+              echo "=== Last 100 lines of deployment.log ==="
+              tail -n 100 deployment.log
+            else
+              echo "deployment.log not found"
+            fi
+
+            echo ""
+            echo "=== Docker Compose Status ==="
+            docker compose -f docker-compose.prod.yml ps || echo "Could not get docker compose status"
+
+            echo ""
+            echo "=== Recent Docker Logs ==="
+            docker compose -f docker-compose.prod.yml logs --tail=50 || echo "Could not get docker logs"
           ENDSSH
 
       - name: Run database migrations
