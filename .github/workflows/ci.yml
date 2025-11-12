@@ -220,16 +220,35 @@ jobs:
           # Decode base64-encoded SSH key
           echo "${{ secrets.SSH_PRIVATE_KEY }}" | base64 -d > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
-          # Add known hosts to avoid host verification prompt
-          ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
+
+          # Debug: Show what we got (first and last lines only, no sensitive content)
+          echo "=== DEBUG: Key file first line ==="
+          head -n 1 ~/.ssh/deploy_key
+          echo "=== DEBUG: Key file last line ==="
+          tail -n 1 ~/.ssh/deploy_key
+          echo "=== DEBUG: Line count ==="
+          wc -l ~/.ssh/deploy_key
+
           # Verify the key file was created correctly
           if ! grep -q "BEGIN.*PRIVATE KEY" ~/.ssh/deploy_key; then
             echo "ERROR: SSH private key file does not contain a valid key header"
-            echo "First line of key file:"
-            head -n 1 ~/.ssh/deploy_key
+            echo "Full file content (this will help debug):"
+            cat ~/.ssh/deploy_key
             exit 1
           fi
+
+          # Check if file contains public key line (it shouldn't)
+          if grep -q "^ssh-ed25519\|^ssh-rsa" ~/.ssh/deploy_key; then
+            echo "ERROR: Private key file contains public key line. It should ONLY contain the private key."
+            echo "Lines containing public key:"
+            grep "^ssh-ed25519\|^ssh-rsa" ~/.ssh/deploy_key
+            exit 1
+          fi
+
           echo "SSH key file created successfully"
+
+          # Add known hosts to avoid host verification prompt
+          ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
 
       - name: Test SSH connection
         run: |
