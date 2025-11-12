@@ -308,6 +308,22 @@ jobs:
           EOF
           ENDSSH
 
+      - name: Ensure rsync is installed on remote server
+        run: |
+          ssh -i ~/.ssh/deploy_key ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'ENDSSH'
+            # Check if rsync is installed
+            if ! command -v rsync &> /dev/null; then
+              echo "rsync not found, installing..."
+              # Update package list and install rsync
+              sudo apt-get update -qq
+              sudo apt-get install -y rsync
+              echo "rsync installed successfully"
+            else
+              echo "rsync is already installed"
+              rsync --version | head -n 1
+            fi
+          ENDSSH
+
       - name: Sync application files to server
         run: |
           # Use rsync to transfer files efficiently, excluding unnecessary directories
