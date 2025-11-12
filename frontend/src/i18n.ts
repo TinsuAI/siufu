@@ -6,7 +6,7 @@ export const locales = ['en', 'vi'] as const
 export type Locale = (typeof locales)[number]
 
 // Default locale
-export const defaultLocale: Locale = 'en'
+export const defaultLocale: Locale = 'vi'
 
 export default getRequestConfig(async ({ requestLocale }) => {
   // Get the locale from the request
