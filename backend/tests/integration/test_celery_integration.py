@@ -50,6 +50,15 @@ class TestCeleryIntegration:
         """Test basic task execution with health check task"""
         from src.core.celery_app import health_check
 
+        # Check if workers are available first
+        try:
+            inspect = celery_app.control.inspect()
+            stats = inspect.stats()
+            if stats is None:
+                pytest.skip("No Celery workers running. Start worker with: celery -A src.core.celery_app worker")
+        except Exception as e:
+            pytest.skip(f"Cannot connect to Celery broker: {e}")
+
         # Submit health check task
         result = health_check.delay()
 
@@ -164,6 +173,15 @@ class TestCeleryMonitoring:
         task execution is being logged properly.
         """
         from src.core.celery_app import health_check
+
+        # Check if workers are available first
+        try:
+            inspect = celery_app.control.inspect()
+            stats = inspect.stats()
+            if stats is None:
+                pytest.skip("No Celery workers running. Start worker with: celery -A src.core.celery_app worker")
+        except Exception as e:
+            pytest.skip(f"Cannot connect to Celery broker: {e}")
 
         # Run health check task
         result = health_check.delay()
