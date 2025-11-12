@@ -40,9 +40,9 @@ Use this checklist to ensure all steps are completed for successful deployment.
 - [ ] Logged into Cloudflare dashboard
 - [ ] Domain `tinsu.ai` selected
 - [ ] A record created: `siufu` → Server IP (Proxied - orange cloud)
-- [ ] A record created: `api.siufu` → Server IP (Proxied - orange cloud)
+- [ ] A record created: `siufu-api` → Server IP (Proxied - orange cloud)
 - [ ] DNS propagation verified: `nslookup siufu.tinsu.ai`
-- [ ] DNS propagation verified: `nslookup api.siufu.tinsu.ai`
+- [ ] DNS propagation verified: `nslookup siufu-api.tinsu.ai`
 
 ### SSL Configuration
 
@@ -67,17 +67,17 @@ Use this checklist to ensure all steps are completed for successful deployment.
 - [ ] SSL directory created: `sudo mkdir -p /etc/nginx/ssl`
 - [ ] Frontend certificate uploaded: `/etc/nginx/ssl/siufu.tinsu.ai.pem`
 - [ ] Frontend private key uploaded: `/etc/nginx/ssl/siufu.tinsu.ai.key`
-- [ ] Backend API certificate uploaded: `/etc/nginx/ssl/api.siufu.tinsu.ai.pem`
-- [ ] Backend API private key uploaded: `/etc/nginx/ssl/api.siufu.tinsu.ai.key`
+- [ ] Backend API certificate uploaded: `/etc/nginx/ssl/siufu-api.tinsu.ai.pem`
+- [ ] Backend API private key uploaded: `/etc/nginx/ssl/siufu-api.tinsu.ai.key`
 - [ ] Permissions set: `sudo chmod 600 /etc/nginx/ssl/*.key && sudo chmod 644 /etc/nginx/ssl/*.pem`
 
 ### Nginx Configuration
 
 - [ ] Frontend config created: `/etc/nginx/sites-available/siufu.tinsu.ai`
-- [ ] Backend API config created: `/etc/nginx/sites-available/api.siufu.tinsu.ai`
+- [ ] Backend API config created: `/etc/nginx/sites-available/siufu-api.tinsu.ai`
 - [ ] Configurations pasted from docs/DEPLOYMENT.md
 - [ ] Frontend symlink created: `sudo ln -s /etc/nginx/sites-available/siufu.tinsu.ai /etc/nginx/sites-enabled/`
-- [ ] Backend API symlink created: `sudo ln -s /etc/nginx/sites-available/api.siufu.tinsu.ai /etc/nginx/sites-enabled/`
+- [ ] Backend API symlink created: `sudo ln -s /etc/nginx/sites-available/siufu-api.tinsu.ai /etc/nginx/sites-enabled/`
 - [ ] Default site removed: `sudo rm /etc/nginx/sites-enabled/default`
 - [ ] Configuration tested: `sudo nginx -t`
 - [ ] Nginx reloaded: `sudo systemctl reload nginx`
@@ -184,9 +184,9 @@ Choose one:
 
 ### API Access
 
-- [ ] API docs accessible: https://api.siufu.tinsu.ai/docs
-- [ ] ReDoc accessible: https://api.siufu.tinsu.ai/redoc
-- [ ] Health endpoint: https://api.siufu.tinsu.ai/health
+- [ ] API docs accessible: https://siufu-api.tinsu.ai/docs
+- [ ] ReDoc accessible: https://siufu-api.tinsu.ai/redoc
+- [ ] Health endpoint: https://siufu-api.tinsu.ai/health
       Expected response: `{"status": "healthy"}` or similar
 
 ### Server Verification

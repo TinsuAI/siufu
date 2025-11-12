@@ -139,8 +139,8 @@ Watch deployment in GitHub Actions tab.
 Once deployment completes:
 
 1. **Check website**: https://siufu.tinsu.ai
-2. **Check API docs**: https://api.siufu.tinsu.ai/docs
-3. **Check health**: https://api.siufu.tinsu.ai/health
+2. **Check API docs**: https://siufu-api.tinsu.ai/docs
+3. **Check health**: https://siufu-api.tinsu.ai/health
 
 On server:
 

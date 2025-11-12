@@ -7,7 +7,7 @@ The application is deployed using Docker Compose with separate configurations fo
 ### Production Domains
 
 - **Frontend**: https://siufu.tinsu.ai
-- **Backend API**: https://api.siufu.tinsu.ai
+- **Backend API**: https://siufu-api.tinsu.ai
 - **Infrastructure**: Ubuntu server with Docker, Nginx, Cloudflare SSL
 
 ### Architecture Diagram
@@ -19,7 +19,7 @@ The application is deployed using Docker Compose with separate configurations fo
                                          |
                     +--------------------+--------------------+
                     |                                         |
-          https://siufu.tinsu.ai              https://api.siufu.tinsu.ai
+          https://siufu.tinsu.ai              https://siufu-api.tinsu.ai
                     |                                         |
                     |                                         |
               [Nginx Server]                            [Nginx Server]
@@ -183,7 +183,7 @@ server {
 }
 ```
 
-### Backend Server Block (api.siufu.tinsu.ai)
+### Backend Server Block (siufu-api.tinsu.ai)
 
 ```nginx
 # Upstream definition
@@ -195,11 +195,11 @@ upstream backend_upstream {
 # HTTPS server
 server {
     listen 443 ssl http2;
-    server_name api.siufu.tinsu.ai;
+    server_name siufu-api.tinsu.ai;
 
     # SSL certificates
-    ssl_certificate /etc/nginx/ssl/api.siufu.tinsu.ai.pem;
-    ssl_certificate_key /etc/nginx/ssl/api.siufu.tinsu.ai.key;
+    ssl_certificate /etc/nginx/ssl/siufu-api.tinsu.ai.pem;
+    ssl_certificate_key /etc/nginx/ssl/siufu-api.tinsu.ai.key;
 
     # Max upload size
     client_max_body_size 50M;
@@ -228,7 +228,7 @@ server {
 
 ### CORS Configuration
 ```
-CORS_ORIGINS=https://siufu.tinsu.ai,https://api.siufu.tinsu.ai,http://tinxudev.airplane-manta.ts.net:8779
+CORS_ORIGINS=https://siufu.tinsu.ai,https://siufu-api.tinsu.ai,http://tinxudev.airplane-manta.ts.net:8779
 ```
 
 ### Cloudflare Protection
@@ -249,8 +249,8 @@ CORS_ORIGINS=https://siufu.tinsu.ai,https://api.siufu.tinsu.ai,http://tinxudev.a
 
 ### Health Endpoints
 
-- Backend Health: https://api.siufu.tinsu.ai/health
-- Backend Docs: https://api.siufu.tinsu.ai/docs
+- Backend Health: https://siufu-api.tinsu.ai/health
+- Backend Docs: https://siufu-api.tinsu.ai/docs
 - Frontend: https://siufu.tinsu.ai/
 
 ### Logging

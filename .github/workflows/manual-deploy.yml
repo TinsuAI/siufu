@@ -27,7 +27,7 @@ jobs:
     environment:
       name: production
       url: https://siufu.tinsu.ai
-      # API URL: https://api.siufu.tinsu.ai
+      # API URL: https://siufu-api.tinsu.ai
 
     steps:
       - name: Debug workflow trigger
@@ -89,7 +89,7 @@ jobs:
           ACCESS_TOKEN_EXPIRE_HOURS=8
 
           # CORS Configuration
-          CORS_ORIGINS=https://siufu.tinsu.ai,https://api.siufu.tinsu.ai,http://tinxudev.airplane-manta.ts.net:8779
+          CORS_ORIGINS=https://siufu.tinsu.ai,https://siufu-api.tinsu.ai,http://tinxudev.airplane-manta.ts.net:8779
 
           # External API Keys
           OPENROUTER_API_KEY=${{ secrets.OPENROUTER_API_KEY }}
@@ -101,7 +101,7 @@ jobs:
           SENTRY_DSN=${{ secrets.SENTRY_DSN }}
 
           # Frontend Configuration (uses dedicated API subdomain)
-          NEXT_PUBLIC_API_URL=https://api.siufu.tinsu.ai
+          NEXT_PUBLIC_API_URL=https://siufu-api.tinsu.ai
           EOF
           ENDSSH
 

@@ -23,7 +23,7 @@ These changes follow DevOps best practices and improve security, maintainability
 
 ### New Architecture
 - **Frontend domain**: https://siufu.tinsu.ai
-- **Backend API domain**: https://api.siufu.tinsu.ai
+- **Backend API domain**: https://siufu-api.tinsu.ai
 - Separate Nginx server blocks for each domain
 - Independent SSL certificates (or wildcard certificate)
 
@@ -42,7 +42,7 @@ These changes follow DevOps best practices and improve security, maintainability
 #### 1. Nginx Configuration (docs/DEPLOYMENT.md)
 - Created two separate server blocks:
   - `/etc/nginx/sites-available/siufu.tinsu.ai` (frontend)
-  - `/etc/nginx/sites-available/api.siufu.tinsu.ai` (backend)
+  - `/etc/nginx/sites-available/siufu-api.tinsu.ai` (backend)
 - Each has dedicated:
   - SSL certificates
   - Upstream definitions
@@ -58,8 +58,8 @@ NEXT_PUBLIC_API_URL=https://siufu.tinsu.ai/api
 CORS_ORIGINS=https://siufu.tinsu.ai,http://tinxudev.airplane-manta.ts.net:8779
 
 # New
-NEXT_PUBLIC_API_URL=https://api.siufu.tinsu.ai
-CORS_ORIGINS=https://siufu.tinsu.ai,https://api.siufu.tinsu.ai,http://tinxudev.airplane-manta.ts.net:8779
+NEXT_PUBLIC_API_URL=https://siufu-api.tinsu.ai
+CORS_ORIGINS=https://siufu.tinsu.ai,https://siufu-api.tinsu.ai,http://tinxudev.airplane-manta.ts.net:8779
 ```
 
 #### 3. Deployment Workflow (.github/workflows/deploy.yml)
@@ -247,7 +247,7 @@ All workflow steps now use `-f docker-compose.prod.yml` flag.
 
 #### Step 1: Add API Domain DNS Record
 1. Go to Cloudflare dashboard
-2. Add A record: `api.siufu` → Your server IP
+2. Add A record: `siufu-api` → Your server IP
 3. Enable proxy (orange cloud)
 4. Wait for DNS propagation
 
@@ -257,8 +257,8 @@ All workflow steps now use `-f docker-compose.prod.yml` flag.
 cd /etc/nginx/ssl
 
 # Option A: Use wildcard certificate (symlink)
-sudo ln -s siufu.tinsu.ai.pem api.siufu.tinsu.ai.pem
-sudo ln -s siufu.tinsu.ai.key api.siufu.tinsu.ai.key
+sudo ln -s siufu.tinsu.ai.pem siufu-api.tinsu.ai.pem
+sudo ln -s siufu.tinsu.ai.key siufu-api.tinsu.ai.key
 
 # Option B: Create separate certificate in Cloudflare
 # Upload new certificate files
@@ -267,10 +267,10 @@ sudo ln -s siufu.tinsu.ai.key api.siufu.tinsu.ai.key
 #### Step 3: Add API Nginx Configuration
 ```bash
 # On server
-sudo nano /etc/nginx/sites-available/api.siufu.tinsu.ai
+sudo nano /etc/nginx/sites-available/siufu-api.tinsu.ai
 # Paste configuration from docs/DEPLOYMENT.md
 
-sudo ln -s /etc/nginx/sites-available/api.siufu.tinsu.ai /etc/nginx/sites-enabled/
+sudo ln -s /etc/nginx/sites-available/siufu-api.tinsu.ai /etc/nginx/sites-enabled/
 sudo nginx -t
 sudo systemctl reload nginx
 ```
@@ -282,8 +282,8 @@ cd ~/logai-production
 nano .env
 
 # Update these lines:
-NEXT_PUBLIC_API_URL=https://api.siufu.tinsu.ai
-CORS_ORIGINS=https://siufu.tinsu.ai,https://api.siufu.tinsu.ai,http://tinxudev.airplane-manta.ts.net:8779
+NEXT_PUBLIC_API_URL=https://siufu-api.tinsu.ai
+CORS_ORIGINS=https://siufu.tinsu.ai,https://siufu-api.tinsu.ai,http://tinxudev.airplane-manta.ts.net:8779
 ```
 
 #### Step 5: Deploy with Production Compose
@@ -307,8 +307,8 @@ docker compose -f docker-compose.prod.yml ps
 
 #### Step 6: Verify Both Domains
 - Frontend: https://siufu.tinsu.ai
-- API Health: https://api.siufu.tinsu.ai/health
-- API Docs: https://api.siufu.tinsu.ai/docs
+- API Health: https://siufu-api.tinsu.ai/health
+- API Docs: https://siufu-api.tinsu.ai/docs
 
 ---
 
@@ -375,8 +375,8 @@ docker compose -f docker-compose.prod.yml ps
 
 ### Post-Deployment Testing
 - [ ] Frontend loads: https://siufu.tinsu.ai
-- [ ] API health responds: https://api.siufu.tinsu.ai/health
-- [ ] API docs load: https://api.siufu.tinsu.ai/docs
+- [ ] API health responds: https://siufu-api.tinsu.ai/health
+- [ ] API docs load: https://siufu-api.tinsu.ai/docs
 - [ ] CORS works (frontend can call API)
 - [ ] File uploads work
 - [ ] User authentication works
@@ -418,7 +418,7 @@ docker compose -f docker-compose.prod.yml up -d --build
 ### Rollback Nginx
 ```bash
 # Remove API nginx config
-sudo rm /etc/nginx/sites-enabled/api.siufu.tinsu.ai
+sudo rm /etc/nginx/sites-enabled/siufu-api.tinsu.ai
 
 # Restore old single-domain config
 # (Keep backup of old config before making changes)
@@ -489,8 +489,8 @@ docker inspect siufu-backend | grep -A 5 LogConfig
 
 ### Application Monitoring
 - Frontend: https://siufu.tinsu.ai
-- API Health: https://api.siufu.tinsu.ai/health
-- API Docs: https://api.siufu.tinsu.ai/docs
+- API Health: https://siufu-api.tinsu.ai/health
+- API Docs: https://siufu-api.tinsu.ai/docs
 
 ### Nginx Monitoring
 ```bash

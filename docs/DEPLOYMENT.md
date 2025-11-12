@@ -25,15 +25,15 @@ The application is deployed using Docker Compose on an Ubuntu server with the fo
 - **Worker**: Celery worker for background tasks
 - **Nginx**: Reverse proxy handling SSL termination and routing
 - **Frontend Domain**: https://siufu.tinsu.ai (SSL via Cloudflare)
-- **Backend API Domain**: https://api.siufu.tinsu.ai (SSL via Cloudflare)
+- **Backend API Domain**: https://siufu-api.tinsu.ai (SSL via Cloudflare)
 
 ### Service Mapping
 
 | Service | Internal Port | Public Domain |
 |---------|--------------|---------------|
 | Frontend | 8779 | https://siufu.tinsu.ai |
-| Backend API | 8780 | https://api.siufu.tinsu.ai |
-| Backend Docs | 8780 | https://api.siufu.tinsu.ai/docs, https://api.siufu.tinsu.ai/redoc |
+| Backend API | 8780 | https://siufu-api.tinsu.ai |
+| Backend Docs | 8780 | https://siufu-api.tinsu.ai/docs, https://siufu-api.tinsu.ai/redoc |
 
 ## Prerequisites
 
@@ -185,7 +185,7 @@ sudo ufw status
 
 The application uses TWO separate domains:
 - **Frontend**: https://siufu.tinsu.ai
-- **Backend API**: https://api.siufu.tinsu.ai
+- **Backend API**: https://siufu-api.tinsu.ai
 
 This separation provides:
 - Better security through domain isolation
@@ -306,12 +306,12 @@ server {
 }
 ```
 
-#### 1.2 Backend API Configuration (api.siufu.tinsu.ai)
+#### 1.2 Backend API Configuration (siufu-api.tinsu.ai)
 
 Create the backend API configuration file:
 
 ```bash
-sudo nano /etc/nginx/sites-available/api.siufu.tinsu.ai
+sudo nano /etc/nginx/sites-available/siufu-api.tinsu.ai
 ```
 
 Add the following configuration:
@@ -327,7 +327,7 @@ upstream backend_upstream {
 server {
     listen 80;
     listen [::]:80;
-    server_name api.siufu.tinsu.ai;
+    server_name siufu-api.tinsu.ai;
 
     # Allow Cloudflare SSL verification
     location /.well-known/acme-challenge/ {
@@ -344,7 +344,7 @@ server {
 server {
     listen 443 ssl http2;
     listen [::]:443 ssl http2;
-    server_name api.siufu.tinsu.ai;
+    server_name siufu-api.tinsu.ai;
 
     # SSL Configuration (Cloudflare Origin Certificate)
     ssl_certificate /etc/nginx/ssl/siufu.tinsu.ai.pem;
@@ -430,7 +430,7 @@ You can use a single wildcard certificate for both domains:
    - Choose "Generate private key and CSR with Cloudflare"
    - Add hostnames:
      - `siufu.tinsu.ai`
-     - `api.siufu.tinsu.ai`
+     - `siufu-api.tinsu.ai`
      - Or use wildcard: `*.tinsu.ai` and `tinsu.ai`
    - Select validity period (15 years recommended)
    - Click **Create**
@@ -449,10 +449,10 @@ sudo nano /etc/nginx/ssl/siufu.tinsu.ai.key
 # Paste the Private Key
 
 # Install Backend API Certificate (can use same cert if wildcard)
-sudo nano /etc/nginx/ssl/api.siufu.tinsu.ai.pem
+sudo nano /etc/nginx/ssl/siufu-api.tinsu.ai.pem
 # Paste the Origin Certificate
 
-sudo nano /etc/nginx/ssl/api.siufu.tinsu.ai.key
+sudo nano /etc/nginx/ssl/siufu-api.tinsu.ai.key
 # Paste the Private Key
 
 # Set proper permissions
@@ -463,8 +463,8 @@ sudo chmod 644 /etc/nginx/ssl/*.pem
 **Note**: If using a wildcard certificate, you can symlink the API certificates:
 
 ```bash
-sudo ln -s /etc/nginx/ssl/siufu.tinsu.ai.pem /etc/nginx/ssl/api.siufu.tinsu.ai.pem
-sudo ln -s /etc/nginx/ssl/siufu.tinsu.ai.key /etc/nginx/ssl/api.siufu.tinsu.ai.key
+sudo ln -s /etc/nginx/ssl/siufu.tinsu.ai.pem /etc/nginx/ssl/siufu-api.tinsu.ai.pem
+sudo ln -s /etc/nginx/ssl/siufu.tinsu.ai.key /etc/nginx/ssl/siufu-api.tinsu.ai.key
 ```
 
 ### 3. Enable Both Sites
@@ -472,7 +472,7 @@ sudo ln -s /etc/nginx/ssl/siufu.tinsu.ai.key /etc/nginx/ssl/api.siufu.tinsu.ai.k
 ```bash
 # Create symlinks to enable both sites
 sudo ln -s /etc/nginx/sites-available/siufu.tinsu.ai /etc/nginx/sites-enabled/
-sudo ln -s /etc/nginx/sites-available/api.siufu.tinsu.ai /etc/nginx/sites-enabled/
+sudo ln -s /etc/nginx/sites-available/siufu-api.tinsu.ai /etc/nginx/sites-enabled/
 
 # Remove default site (optional)
 sudo rm /etc/nginx/sites-enabled/default
@@ -493,7 +493,7 @@ In your Cloudflare dashboard for `tinsu.ai`:
 
 1. **DNS Settings:**
    - Add A record: `siufu` → Your server IP address (Enable proxy - orange cloud)
-   - Add A record: `api.siufu` → Your server IP address (Enable proxy - orange cloud)
+   - Add A record: `siufu-api` → Your server IP address (Enable proxy - orange cloud)
 
 2. **SSL/TLS Settings:**
    - SSL/TLS encryption mode: **Full (strict)**
@@ -842,8 +842,8 @@ docker compose exec backend alembic history
 
 ### Health Endpoints
 
-- **Backend Health**: https://api.siufu.tinsu.ai/health
-- **Backend API Documentation**: https://api.siufu.tinsu.ai/docs
+- **Backend Health**: https://siufu-api.tinsu.ai/health
+- **Backend API Documentation**: https://siufu-api.tinsu.ai/docs
 - **Frontend**: https://siufu.tinsu.ai/
 
 ### Container Monitoring
