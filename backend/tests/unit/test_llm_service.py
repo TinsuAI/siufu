@@ -286,13 +286,117 @@ async def test_calculate_overall_confidence():
 
 
 @pytest.mark.asyncio
-async def test_extract_from_multiple_documents(mock_openrouter_response_success):
-    """Test extraction from multiple documents"""
+async def test_extract_from_multiple_documents():
+    """Test extraction from multiple documents (Vietnamese Declaration format)"""
     from src.schemas.ocr import OCRResult
+    from src.schemas.vietnamese_declaration import VietnameseDeclarationData
+
+    # Create a minimal Vietnamese declaration mock response
+    vietnamese_mock = {
+        "id": "gen-vn-test",
+        "model": "openai/gpt-5",
+        "choices": [{
+            "message": {
+                "role": "assistant",
+                "content": """{
+                    "declaration_header": {
+                        "declaration_number": null,
+                        "declaration_type_code": "A11 2 [4]",
+                        "customs_office_code": "HQHOALAC",
+                        "processing_division_code": "00",
+                        "registration_date": null,
+                        "representative_hs_code": null
+                    },
+                    "importer": {
+                        "tax_code": "0123456789",
+                        "name": "Test Company",
+                        "postal_code": null,
+                        "address": null,
+                        "phone": null
+                    },
+                    "exporter": {
+                        "name": "Test Exporter",
+                        "address_line1": null,
+                        "address_line2": null,
+                        "address_line3": null,
+                        "country_code": "CN"
+                    },
+                    "shipping_transport": {
+                        "bill_of_lading_number": "BOL-123",
+                        "warehouse_code": null,
+                        "warehouse_name": null,
+                        "port_of_discharge_code": null,
+                        "port_of_discharge_name": null,
+                        "port_of_loading_code": null,
+                        "port_of_loading_name": null,
+                        "transport_mode_code": null,
+                        "vessel_name": null,
+                        "arrival_date": null
+                    },
+                    "package_container": {
+                        "total_packages": 100,
+                        "package_unit": "PK",
+                        "package_marks": null,
+                        "gross_weight_kg": 1000,
+                        "gross_weight_unit": "KGM",
+                        "container_count": 1
+                    },
+                    "invoice": {
+                        "invoice_number": "INV-123",
+                        "invoice_date": null,
+                        "payment_method_code": null,
+                        "invoice_total": 10000,
+                        "invoice_currency": "USD",
+                        "invoice_incoterm": "FOB",
+                        "total_taxable_value_vnd": null,
+                        "exchange_rate": null
+                    },
+                    "certificate_of_origin": {
+                        "co_form_type": null,
+                        "co_number": null,
+                        "co_date": null
+                    },
+                    "products": [],
+                    "import_duty": {
+                        "rate": 0.0,
+                        "rate_type": "C",
+                        "amount": 0.0,
+                        "exemption_amount": 0.0
+                    },
+                    "vat": {
+                        "name": "Thuế GTGT",
+                        "rate_code": null,
+                        "rate": 10.0,
+                        "taxable_value_vnd": null,
+                        "amount": 0.0,
+                        "exemption_amount": 0.0
+                    },
+                    "tax_summary": {
+                        "total_tax_amount_vnd": 0.0,
+                        "tax_payment_deadline_code": null,
+                        "taxpayer_type": null,
+                        "tax_classification": null
+                    },
+                    "metadata": {
+                        "total_pages": 1,
+                        "total_line_items": 0
+                    },
+                    "confidence_scores": {},
+                    "overall_confidence": 0.85
+                }"""
+            },
+            "finish_reason": "stop"
+        }],
+        "usage": {
+            "prompt_tokens": 1200,
+            "completion_tokens": 800,
+            "total_tokens": 2000
+        }
+    }
 
     with patch('src.services.llm_service.OpenRouterClient') as MockClient:
         mock_client = AsyncMock()
-        mock_client.chat_completion.return_value = mock_openrouter_response_success
+        mock_client.chat_completion.return_value = vietnamese_mock
         MockClient.return_value = mock_client
 
         service = LLMService()
@@ -322,9 +426,10 @@ async def test_extract_from_multiple_documents(mock_openrouter_response_success)
             ocr_bol=ocr_bol
         )
 
-        assert isinstance(result, ExtractedData)
+        # Assert returns Vietnamese Declaration Data (77 fields format)
+        assert isinstance(result, VietnameseDeclarationData)
         # Verify both documents were included in prompt
         call_args = mock_client.chat_completion.call_args
         prompt_content = call_args.kwargs['messages'][1]['content']
-        assert "COMMERCIAL INVOICE" in prompt_content or "Invoice text" in prompt_content
-        assert "BILL OF LADING" in prompt_content or "BOL text" in prompt_content
+        assert "Invoice text" in prompt_content or "COMMERCIAL INVOICE" in prompt_content
+        assert "BOL text" in prompt_content or "BILL OF LADING" in prompt_content

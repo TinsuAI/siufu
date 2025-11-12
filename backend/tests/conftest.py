@@ -290,15 +290,26 @@ async def test_organization(db_session: AsyncSession):
     """
     from uuid import UUID
 
+    from sqlalchemy import select
+
     from src.models.organization import Organization
 
-    org = Organization(
-        id=UUID("00000000-0000-0000-0000-000000000001"),
-        name="Test Organization"
+    org_id = UUID("00000000-0000-0000-0000-000000000001")
+
+    # Check if organization already exists
+    result = await db_session.execute(
+        select(Organization).where(Organization.id == org_id)
     )
-    db_session.add(org)
-    await db_session.commit()
-    await db_session.refresh(org)
+    org = result.scalar_one_or_none()
+
+    if org is None:
+        org = Organization(
+            id=org_id,
+            name="Test Organization"
+        )
+        db_session.add(org)
+        await db_session.flush()
+
     return org
 
 
@@ -310,24 +321,142 @@ async def test_user(db_session: AsyncSession, test_organization):
     Returns a User instance with:
     - Fixed UUID: 00000000-0000-0000-0000-000000000002
     - Email: test@example.com
-    - Password: test123 (hashed)
+    - Password: test12345 (hashed)
     - Role: processor
     """
     from uuid import UUID
 
+    from sqlalchemy import select
+
     from src.core.security import pwd_context
     from src.models.user import User, UserRole
 
-    user = User(
-        id=UUID("00000000-0000-0000-0000-000000000002"),
-        email="test@example.com",
-        hashed_password=pwd_context.hash("test123"),
-        full_name="Test User",
-        role=UserRole.processor,
-        is_active=True,
-        organization_id=test_organization.id
+    user_id = UUID("00000000-0000-0000-0000-000000000002")
+
+    # Check if user already exists
+    result = await db_session.execute(
+        select(User).where(User.id == user_id)
     )
-    db_session.add(user)
-    await db_session.commit()
-    await db_session.refresh(user)
+    user = result.scalar_one_or_none()
+
+    if user is None:
+        user = User(
+            id=user_id,
+            email="test@example.com",
+            hashed_password=pwd_context.hash("test12345"),
+            full_name="Test User",
+            role=UserRole.processor,
+            is_active=True,
+            organization_id=test_organization.id
+        )
+        db_session.add(user)
+        await db_session.flush()
+
     return user
+
+
+# E2E Test Fixtures for External API Mocking
+@pytest.fixture
+def mock_google_doc_ai(monkeypatch):
+    """Mock Google Document AI service for E2E tests."""
+    from src.schemas.ocr import KeyValuePair, OCRResult
+
+    async def mock_process_document(*args, **kwargs):
+        """Mock OCR processing that returns a basic OCR result."""
+        file_path = kwargs.get('file_path', '')
+        file_name = str(file_path).split('/')[-1] if file_path else 'test.pdf'
+
+        # Return a basic OCR result
+        return OCRResult(
+            text=f"Mock OCR text from {file_name}",
+            key_value_pairs=[
+                KeyValuePair(key="invoice_number", value="TEST-001", confidence=0.95)
+            ],
+            tables=[],
+            confidence_scores={"invoice_number": 0.95},
+            page_count=1,
+            file_name=file_name,
+            processing_time_ms=100
+        )
+
+    # Patch the OCR service
+    monkeypatch.setattr('src.services.ocr_service.OCRService.process_document_ocr', mock_process_document)
+    return mock_process_document
+
+
+@pytest.fixture
+def mock_openrouter_vietnamese_extraction(monkeypatch):
+    """Mock OpenRouter Vietnamese extraction for E2E tests."""
+    from src.schemas.vietnamese_declaration import (
+        VAT,
+        CertificateOfOrigin,
+        DeclarationHeader,
+        Exporter,
+        ImportDuty,
+        Importer,
+        Invoice,
+        Metadata,
+        PackageContainer,
+        ShippingTransport,
+        TaxSummary,
+        VietnameseDeclarationData,
+    )
+
+    async def mock_extract_from_multiple_documents(*args, **kwargs):
+        """Mock LLM extraction that returns Vietnamese declaration data."""
+        return VietnameseDeclarationData(
+            declaration_header=DeclarationHeader(
+                declaration_type_code="A11 2 [4]",
+                customs_office_code="HQHOALAC",
+                processing_division_code="00"
+            ),
+            importer=Importer(
+                tax_code="0123456789",
+                name="Test Company Ltd",
+                address="123 Test Street, Hanoi, Vietnam"
+            ),
+            exporter=Exporter(
+                name="Test Exporter Co",
+                country_code="CN"
+            ),
+            shipping_transport=ShippingTransport(
+                bill_of_lading_number="BOL-TEST-001"
+            ),
+            package_container=PackageContainer(
+                total_packages=100.0,
+                package_unit="PK",
+                gross_weight_kg=1000.0,
+                gross_weight_unit="KGM"
+            ),
+            invoice=Invoice(
+                invoice_number="INV-TEST-001",
+                invoice_total=10000.0,
+                invoice_currency="USD",
+                invoice_incoterm="FOB"
+            ),
+            certificate_of_origin=CertificateOfOrigin(),
+            products=[],
+            import_duty=ImportDuty(
+                rate=0.0,
+                rate_type="C",
+                amount=0.0
+            ),
+            vat=VAT(
+                name="Thuế GTGT",
+                rate=10.0,
+                amount=0.0
+            ),
+            tax_summary=TaxSummary(
+                total_tax_amount_vnd=0.0
+            ),
+            metadata=Metadata(
+                total_pages=1,
+                total_line_items=0
+            ),
+            confidence_scores={},
+            overall_confidence=0.85
+        )
+
+    # Patch the LLM service
+    monkeypatch.setattr('src.services.llm_service.LLMService.extract_from_multiple_documents', mock_extract_from_multiple_documents)
+    return mock_extract_from_multiple_documents

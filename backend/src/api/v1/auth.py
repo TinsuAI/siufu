@@ -63,7 +63,7 @@ async def register(
             name="Demo Organization"
         )
         db.add(organization)
-        await db.commit()
+        await db.flush()
         await db.refresh(organization)
 
     # Create new user

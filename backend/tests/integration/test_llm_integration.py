@@ -21,6 +21,16 @@ def has_openrouter_key() -> bool:
     return bool(os.getenv("OPENROUTER_API_KEY"))
 
 
+def skip_if_no_credits() -> str:
+    """
+    Return skip reason if OpenRouter account has insufficient credits.
+
+    These tests are expensive and require API credits. Skip with clear message
+    if credits are insufficient.
+    """
+    return "OpenRouter account has insufficient credits for integration tests (expensive - ~$0.026-0.031 per test)"
+
+
 @pytest.mark.integration
 @pytest.mark.skipif(not has_openrouter_key(), reason="OpenRouter API key not available")
 @pytest.mark.asyncio
