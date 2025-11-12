@@ -1,7 +1,7 @@
 """Add importers and exporters master data tables
 
 Revision ID: 2e5400006f94
-Revises: b94429c02903
+Revises: f5a72c9e8b3d
 Create Date: 2025-11-07 09:35:34.951616
 
 """
@@ -13,7 +13,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = '2e5400006f94'
-down_revision: Union[str, None] = 'b94429c02903'
+down_revision: Union[str, None] = 'f5a72c9e8b3d'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
