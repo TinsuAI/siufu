@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # PostgreSQL 18.0 Database
   postgres:
@@ -7,7 +5,7 @@ services:
     container_name: siufu-postgres
     environment:
       POSTGRES_DB: customs_db
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme123}
     volumes:
       - postgres-data:/var/lib/postgresql/data
     ports:
@@ -46,10 +44,8 @@ services:
     container_name: siufu-backend
     ports:
       - "8780:8000"
-    env_file:
-      - .env
     environment:
-      DATABASE_URL: postgresql+asyncpg://postgres:${POSTGRES_PASSWORD}@postgres:5432/customs_db
+      DATABASE_URL: postgresql+asyncpg://postgres:${POSTGRES_PASSWORD:-changeme123}@postgres:5432/customs_db
       REDIS_URL: redis://redis:6379/0
       CELERY_BROKER_URL: redis://redis:6379/0
     volumes:
@@ -73,10 +69,8 @@ services:
       dockerfile: Dockerfile
     container_name: siufu-celery-worker
     command: celery -A src.core.celery_app worker --loglevel=info
-    env_file:
-      - .env
     environment:
-      DATABASE_URL: postgresql+asyncpg://postgres:${POSTGRES_PASSWORD}@postgres:5432/customs_db
+      DATABASE_URL: postgresql+asyncpg://postgres:${POSTGRES_PASSWORD:-changeme123}@postgres:5432/customs_db
       CELERY_BROKER_URL: redis://redis:6379/0
       REDIS_URL: redis://redis:6379/0
     volumes:
@@ -106,12 +100,12 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8780}
     container_name: siufu-frontend
     ports:
       - "8779:3000"
     environment:
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8780}
     depends_on:
       - backend
     restart: unless-stopped
