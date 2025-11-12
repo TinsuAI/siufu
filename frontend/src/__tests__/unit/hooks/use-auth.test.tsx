@@ -31,7 +31,9 @@ describe('useAuth hooks', () => {
     id: 'user-123',
     email: 'test@example.com',
     full_name: 'Test User',
+    role: 'processor',
     is_active: true,
+    organization_id: 'org-123',
     created_at: '2024-01-01T00:00:00Z',
     updated_at: '2024-01-01T00:00:00Z',
   }
@@ -77,6 +79,7 @@ describe('useAuth hooks', () => {
       const mockLoginResponse = {
         user: mockUser,
         access_token: 'mock-token',
+        token_type: 'bearer' as const,
       }
 
       vi.mocked(api.login).mockResolvedValue(mockLoginResponse)

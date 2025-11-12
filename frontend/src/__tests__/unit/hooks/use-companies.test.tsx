@@ -62,13 +62,15 @@ describe('useCompanies hooks', () => {
   describe('useCompanies', () => {
     it('should fetch companies list successfully', async () => {
       const mockResponse: CompanyListResponse = {
-        companies: [
+        items: [
           {
             id: 'company-1',
             name: 'Test Company',
-            type: 'importers',
+            tax_code: '123456',
             declaration_count: 5,
-            last_seen: '2024-01-01T00:00:00Z',
+            is_verified: true,
+            last_seen_declaration_id: 'decl-1',
+            updated_at: '2024-01-01T00:00:00Z',
           },
         ],
         total: 1,
@@ -105,12 +107,15 @@ describe('useCompanies hooks', () => {
       const mockCompany: CompanyDetail = {
         id: 'company-1',
         name: 'Test Company',
-        type: 'importers',
         tax_code: '123456',
+        name_normalized: 'test company',
+        organization_id: 'org-123',
         declaration_count: 5,
-        last_seen: '2024-01-01T00:00:00Z',
-        declarations: [],
-      }
+        is_verified: true,
+        confidence_score: 0.95,
+        created_at: '2024-01-01T00:00:00Z',
+        updated_at: '2024-01-01T00:00:00Z',
+      } as CompanyDetail
 
       vi.mocked(api.getCompany).mockResolvedValue(mockCompany)
 
@@ -142,12 +147,15 @@ describe('useCompanies hooks', () => {
       const mockCompany: CompanyDetail = {
         id: 'company-new',
         name: 'New Company',
-        type: 'importers',
         tax_code: '789012',
+        name_normalized: 'new company',
+        organization_id: 'org-123',
         declaration_count: 0,
-        last_seen: '2024-01-01T00:00:00Z',
-        declarations: [],
-      }
+        is_verified: false,
+        confidence_score: 0.0,
+        created_at: '2024-01-01T00:00:00Z',
+        updated_at: '2024-01-01T00:00:00Z',
+      } as CompanyDetail
 
       vi.mocked(api.createCompany).mockResolvedValue(mockCompany)
 
@@ -176,12 +184,15 @@ describe('useCompanies hooks', () => {
       const mockCompany: CompanyDetail = {
         id: 'company-1',
         name: 'Updated Company',
-        type: 'importers',
         tax_code: '123456',
+        name_normalized: 'updated company',
+        organization_id: 'org-123',
         declaration_count: 5,
-        last_seen: '2024-01-01T00:00:00Z',
-        declarations: [],
-      }
+        is_verified: true,
+        confidence_score: 0.95,
+        created_at: '2024-01-01T00:00:00Z',
+        updated_at: '2024-01-01T00:00:00Z',
+      } as CompanyDetail
 
       vi.mocked(api.updateCompany).mockResolvedValue(mockCompany)
 
@@ -228,14 +239,21 @@ describe('useCompanies hooks', () => {
           company1: {
             id: 'comp-1',
             name: 'Company A',
-            type: 'importers' as const,
+            tax_code: '111111',
+            declaration_count: 3,
+            is_verified: true,
+            updated_at: '2024-01-01T00:00:00Z',
           },
           company2: {
             id: 'comp-2',
             name: 'Company A Inc',
-            type: 'importers' as const,
+            tax_code: '222222',
+            declaration_count: 2,
+            is_verified: false,
+            updated_at: '2024-01-01T00:00:00Z',
           },
-          similarity_score: 0.95,
+          similarity: 0.95,
+          reason: 'Similar names',
         },
       ]
 
@@ -257,12 +275,15 @@ describe('useCompanies hooks', () => {
       const mockMergedCompany: CompanyDetail = {
         id: 'company-1',
         name: 'Merged Company',
-        type: 'importers',
         tax_code: '123456',
+        name_normalized: 'merged company',
+        organization_id: 'org-123',
         declaration_count: 10,
-        last_seen: '2024-01-01T00:00:00Z',
-        declarations: [],
-      }
+        is_verified: true,
+        confidence_score: 0.98,
+        created_at: '2024-01-01T00:00:00Z',
+        updated_at: '2024-01-01T00:00:00Z',
+      } as CompanyDetail
 
       vi.mocked(api.mergeCompanies).mockResolvedValue(mockMergedCompany)
 

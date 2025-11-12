@@ -24,23 +24,49 @@ describe('useDeclaration hook', () => {
 
   const mockDeclaration: Declaration = {
     id: 'declaration-123',
-    status: 'READY_FOR_REVIEW',
+    status: DeclarationStatus.READY_FOR_REVIEW,
     created_at: '2024-01-01T00:00:00Z',
     updated_at: '2024-01-01T00:00:00Z',
     processing_progress: 1.0,
+    processing_error: null,
+    extracted_data: null,
     draft_data: {
-      header: {
+      declaration_header: {
         declaration_number: 'D-001',
-        office_code: 'HCM',
+        customs_office_code: 'HCM',
       },
       products: [],
     },
-    uploaded_files: {
-      arrival_notice: 'AN.pdf',
-      bill_of_lading: 'BOL.pdf',
-      certificate_of_origin: ['CO.pdf'],
-      invoice: 'INVOICE.pdf',
-    },
+    uploaded_files: [
+      {
+        filename: 'AN.pdf',
+        file_type: 'AN',
+        upload_timestamp: '2024-01-01T00:00:00Z',
+      },
+      {
+        filename: 'BOL.pdf',
+        file_type: 'BOL',
+        upload_timestamp: '2024-01-01T00:00:00Z',
+      },
+      {
+        filename: 'CO.pdf',
+        file_type: 'CO',
+        upload_timestamp: '2024-01-01T00:00:00Z',
+      },
+      {
+        filename: 'INVOICE.pdf',
+        file_type: 'INVOICE',
+        upload_timestamp: '2024-01-01T00:00:00Z',
+      },
+    ],
+    validation_warnings: [],
+    confidence_scores: {},
+    source_metadata: null,
+    importer_id: null,
+    exporter_id: null,
+    importer_summary: null,
+    exporter_summary: null,
+    user_id: 'user-123',
   }
 
   beforeEach(() => {
@@ -102,7 +128,7 @@ describe('useDeclaration hook', () => {
     it('should poll when status is PROCESSING', async () => {
       const processingDeclaration: Declaration = {
         ...mockDeclaration,
-        status: 'PROCESSING',
+        status: DeclarationStatus.PROCESSING,
         processing_progress: 0.5,
       }
 
