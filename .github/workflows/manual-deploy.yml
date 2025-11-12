@@ -189,12 +189,28 @@ jobs:
               sleep 5
             done
 
-            # Check all containers are running
-            if [ $(docker compose -f docker-compose.prod.yml ps -q | wc -l) -eq 5 ]; then
-              echo "[$(date)] All 5 containers are running" >> deployment.log
+            # Check all containers are running (using proper filter for running state)
+            # Count only containers with State=running
+            RUNNING_COUNT=$(docker compose -f docker-compose.prod.yml ps --filter "status=running" --format "{{.Name}}" | wc -l)
+            EXPECTED_COUNT=5
+
+            echo "[$(date)] Container status check: ${RUNNING_COUNT}/${EXPECTED_COUNT} containers running" >> deployment.log
+
+            if [ "$RUNNING_COUNT" -eq "$EXPECTED_COUNT" ]; then
+              echo "[$(date)] All ${EXPECTED_COUNT} containers are running successfully" >> deployment.log
             else
-              echo "[$(date)] Some containers failed to start!" >> deployment.log
+              echo "[$(date)] ERROR: Only ${RUNNING_COUNT}/${EXPECTED_COUNT} containers are running!" >> deployment.log
+              echo "[$(date)] Container status details:" >> deployment.log
               docker compose -f docker-compose.prod.yml ps >> deployment.log
+
+              # Show which specific containers are not running
+              echo "[$(date)] Expected containers: postgres, redis, backend, celery-worker, frontend" >> deployment.log
+              echo "[$(date)] Running containers:" >> deployment.log
+              docker compose -f docker-compose.prod.yml ps --filter "status=running" --format "  - {{.Name}} ({{.Status}})" >> deployment.log
+
+              echo "[$(date)] Non-running containers:" >> deployment.log
+              docker compose -f docker-compose.prod.yml ps --format "  - {{.Name}} ({{.Status}}) [{{.State}}]" | grep -v "running" >> deployment.log || echo "  (none found - this may indicate a different issue)" >> deployment.log
+
               exit 1
             fi
           ENDSSH
