@@ -303,8 +303,8 @@ jobs:
           # Monitoring
           SENTRY_DSN=${{ secrets.SENTRY_DSN }}
 
-          # Frontend Configuration (uses dedicated API subdomain)
-          NEXT_PUBLIC_API_URL=https://siufu-api.tinsu.ai
+          # Frontend Configuration (uses dedicated API subdomain with /api/v1 prefix)
+          NEXT_PUBLIC_API_URL=https://siufu-api.tinsu.ai/api/v1
           EOF
           ENDSSH
 
@@ -469,6 +469,57 @@ jobs:
               docker compose -f docker-compose.prod.yml ps --format "  - {{.Name}} ({{.Status}}) [{{.State}}]" | grep -v "running" >> deployment.log || echo "  (none found - this may indicate a different issue)" >> deployment.log
 
               exit 1
+            fi
+          ENDSSH
+
+      - name: External Domain Health Check
+        if: always()
+        run: |
+          ssh -i ~/.ssh/deploy_key ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'ENDSSH'
+            cd ${{ env.DEPLOYMENT_PATH }}
+
+            echo "[$(date)] Running external domain health checks..." >> deployment.log
+
+            # Test external API domain with SSL
+            EXTERNAL_API_URL="https://siufu-api.tinsu.ai/health"
+            echo "[$(date)] Testing external API endpoint: ${EXTERNAL_API_URL}" >> deployment.log
+
+            # Try to curl the external domain (allow up to 10 seconds)
+            if curl -f -k -m 10 --silent --show-error "${EXTERNAL_API_URL}" > /dev/null 2>&1; then
+              echo "[$(date)] SUCCESS: External API domain is accessible at ${EXTERNAL_API_URL}" >> deployment.log
+              echo "External API health check: PASSED"
+            else
+              echo "[$(date)] WARNING: External API domain health check FAILED" >> deployment.log
+              echo "[$(date)] External API URL: ${EXTERNAL_API_URL}" >> deployment.log
+              echo "[$(date)] This could indicate:" >> deployment.log
+              echo "[$(date)]   1. DNS not propagated yet for siufu-api.tinsu.ai" >> deployment.log
+              echo "[$(date)]   2. Nginx not configured for siufu-api.tinsu.ai domain" >> deployment.log
+              echo "[$(date)]   3. SSL certificate issue" >> deployment.log
+              echo "[$(date)]   4. Cloudflare proxy not configured" >> deployment.log
+              echo "[$(date)] IMPORTANT: Backend containers are running, but external access may not work" >> deployment.log
+              echo "[$(date)] ACTION REQUIRED: Verify Nginx configuration on production server" >> deployment.log
+
+              # Try to get more details
+              echo "[$(date)] Attempting to get more details..." >> deployment.log
+              curl -v -k -m 10 "${EXTERNAL_API_URL}" 2>&1 | head -n 20 >> deployment.log || true
+
+              # This is a warning, not a fatal error - deployment succeeded but external access needs setup
+              echo "WARNING: External domain health check failed - see deployment.log for details"
+              echo "Internal containers are healthy, but Nginx/DNS may need configuration"
+            fi
+
+            # Test external frontend domain
+            EXTERNAL_FRONTEND_URL="https://siufu.tinsu.ai"
+            echo "[$(date)] Testing external frontend endpoint: ${EXTERNAL_FRONTEND_URL}" >> deployment.log
+
+            if curl -f -k -m 10 --silent --show-error "${EXTERNAL_FRONTEND_URL}" > /dev/null 2>&1; then
+              echo "[$(date)] SUCCESS: External frontend domain is accessible at ${EXTERNAL_FRONTEND_URL}" >> deployment.log
+              echo "External frontend health check: PASSED"
+            else
+              echo "[$(date)] WARNING: External frontend domain health check FAILED" >> deployment.log
+              echo "[$(date)] External frontend URL: ${EXTERNAL_FRONTEND_URL}" >> deployment.log
+              echo "[$(date)] Verify Nginx configuration for siufu.tinsu.ai domain" >> deployment.log
+              echo "WARNING: External frontend check failed - verify Nginx configuration"
             fi
           ENDSSH
 

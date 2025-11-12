@@ -100,8 +100,8 @@ jobs:
           # Monitoring
           SENTRY_DSN=${{ secrets.SENTRY_DSN }}
 
-          # Frontend Configuration (uses dedicated API subdomain)
-          NEXT_PUBLIC_API_URL=https://siufu-api.tinsu.ai
+          # Frontend Configuration (uses dedicated API subdomain with /api/v1 prefix)
+          NEXT_PUBLIC_API_URL=https://siufu-api.tinsu.ai/api/v1
           EOF
           ENDSSH
 
