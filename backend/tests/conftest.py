@@ -2,7 +2,6 @@
 
 import asyncio
 import os
-import sys
 from typing import AsyncGenerator
 from unittest.mock import AsyncMock, MagicMock, patch
 

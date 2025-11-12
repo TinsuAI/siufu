@@ -89,6 +89,10 @@ class TestDeclarationProcessor:
         mock_exists.return_value = True
 
         mock_db = AsyncMock()
+        # Configure db.execute() to return a result with scalar_one_or_none() returning []
+        mock_result = Mock()
+        mock_result.scalar_one_or_none.return_value = []
+        mock_db.execute.return_value = mock_result
         mock_session.return_value.__aenter__.return_value = mock_db
 
         mock_repo = Mock()
@@ -114,7 +118,7 @@ class TestDeclarationProcessor:
             assert result["declaration_id"] == str(mock_declaration.id)
 
             # Verify status updates were called
-            assert mock_repo.update_status_and_progress.await_count == 3  # OCR, LLM, READY_FOR_REVIEW
+            assert mock_repo.update_status_and_progress.await_count == 4  # OCR, LLM, VALIDATING, READY_FOR_REVIEW
 
     @patch('src.workers.declaration_processor.AsyncSessionLocal')
     @pytest.mark.asyncio
@@ -125,6 +129,10 @@ class TestDeclarationProcessor:
     ):
         """Test 2: Verify progress updates at each stage"""
         mock_db = AsyncMock()
+        # Configure db.execute() to return a result with scalar_one_or_none() returning []
+        mock_result = Mock()
+        mock_result.scalar_one_or_none.return_value = []
+        mock_db.execute.return_value = mock_result
         mock_session.return_value.__aenter__.return_value = mock_db
 
         progress_updates = []
@@ -171,11 +179,12 @@ class TestDeclarationProcessor:
 
             await _process_declaration_async(str(mock_declaration.id))
 
-            # Verify progress sequence
-            assert len(progress_updates) == 3
+            # Verify progress sequence (includes validation step)
+            assert len(progress_updates) == 4
             assert progress_updates[0] == (DeclarationStatus.PROCESSING, 0.2)
             assert progress_updates[1] == (DeclarationStatus.PROCESSING, 0.4)
-            assert progress_updates[2] == (DeclarationStatus.READY_FOR_REVIEW, 1.0)
+            assert progress_updates[2] == (DeclarationStatus.VALIDATING, 0.7)
+            assert progress_updates[3] == (DeclarationStatus.READY_FOR_REVIEW, 1.0)
 
     @pytest.mark.asyncio
     async def test_process_declaration_task_handles_ocr_failure(self):
@@ -239,6 +248,10 @@ class TestDeclarationProcessor:
         mock_exists.return_value = True
 
         mock_db = AsyncMock()
+        # Configure db.execute() to return a result with scalar_one_or_none() returning []
+        mock_result = Mock()
+        mock_result.scalar_one_or_none.return_value = []
+        mock_db.execute.return_value = mock_result
         mock_session.return_value.__aenter__.return_value = mock_db
 
         mock_repo = Mock()

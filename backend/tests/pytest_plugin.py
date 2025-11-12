@@ -1,7 +1,6 @@
 """Pytest plugin to mock external dependencies before module imports."""
 
-import sys
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 
 def pytest_configure(config):
@@ -24,6 +23,5 @@ def pytest_configure(config):
     celery_patcher.start()
 
     # Also mock Redis connection
-    mock_redis_class = MagicMock()
     redis_patcher = patch('redis.asyncio.from_url', MagicMock())
     redis_patcher.start()

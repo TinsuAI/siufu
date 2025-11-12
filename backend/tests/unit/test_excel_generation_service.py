@@ -598,13 +598,10 @@ class TestExcelGeneration:
         Test 9: Verify error handling when template file not found
         Error handling: Template file missing
         """
-        # Create service with invalid template path
-        invalid_service = ExcelGenerationService(template_path="nonexistent/template.xlsx")
-
         # Should raise FileNotFoundError during initialization
         with pytest.raises(FileNotFoundError, match="Excel template not found"):
-            # Re-trigger validation
-            invalid_service._validate_template_exists()
+            # Create service with invalid template path - this should raise immediately
+            invalid_service = ExcelGenerationService(template_path="nonexistent/template.xlsx")
 
     def test_export_directory_creation(
         self, excel_service, sample_declaration_id, sample_draft_data, tmp_path, monkeypatch

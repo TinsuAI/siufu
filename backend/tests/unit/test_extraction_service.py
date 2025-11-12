@@ -240,7 +240,7 @@ class TestExtractionService:
                     bbox=[0.1, 0.2, 0.3, 0.05]
                 ),
                 KeyValuePair(
-                    key="total",
+                    key="invoice_total",
                     value="$22,500.00",
                     confidence=0.92,
                     page=1,

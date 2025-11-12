@@ -1,6 +1,8 @@
 """
 Application configuration
 """
+import os
+
 from pydantic_settings import BaseSettings
 
 
@@ -32,7 +34,8 @@ class Settings(BaseSettings):
     SENTRY_DSN: str = ""
 
     class Config:
-        env_file = ".env"
+        # Use .env.test if ENVIRONMENT=test, otherwise .env
+        env_file = ".env.test" if os.getenv("ENVIRONMENT") == "test" else ".env"
         case_sensitive = True
 
     @property

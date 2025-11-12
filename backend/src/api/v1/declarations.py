@@ -627,7 +627,7 @@ async def approve_declaration(
         HTTPException 401: If not authenticated
     """
     # Authenticate user
-    await get_current_user(request, db)
+    current_user = await get_current_user(request, db)
 
     # Get declaration
     repo = DeclarationRepository(db)

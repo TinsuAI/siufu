@@ -87,6 +87,7 @@ describe('useDeclaration hook', () => {
   afterEach(() => {
     queryClient.clear()
     vi.clearAllMocks()
+    vi.restoreAllMocks()
   })
 
   const wrapper = ({
@@ -293,12 +294,39 @@ describe('useDeclaration hook', () => {
 
       await waitFor(() => expect(result.current.declaration).toBeDefined())
 
+      // Mock DOM methods for file download AFTER renderHook to avoid interfering with React
+      const mockAnchor = {
+        click: vi.fn(),
+        href: '',
+        download: '',
+      }
+      const originalCreateElement = document.createElement.bind(document)
+      const createElementSpy = vi
+        .spyOn(document, 'createElement')
+        .mockImplementation((tagName: string) => {
+          if (tagName === 'a') {
+            return mockAnchor as any
+          }
+          return originalCreateElement(tagName)
+        })
+      vi.spyOn(document.body, 'appendChild').mockImplementation(
+        () => mockAnchor as any
+      )
+      vi.spyOn(document.body, 'removeChild').mockImplementation(
+        () => mockAnchor as any
+      )
+      vi.spyOn(window.URL, 'createObjectURL').mockReturnValue('blob:mock-url')
+      vi.spyOn(window.URL, 'revokeObjectURL').mockImplementation(() => {})
+
       // Export declaration
       result.current.exportDeclarationToExcel()
 
       await waitFor(() => expect(result.current.isExportSuccess).toBe(true))
 
       expect(api.exportDeclaration).toHaveBeenCalledWith('declaration-123')
+      expect(mockAnchor.click).toHaveBeenCalled()
+
+      createElementSpy.mockRestore()
     })
 
     it('should handle export error', async () => {

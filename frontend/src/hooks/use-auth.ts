@@ -2,9 +2,14 @@
  * Authentication hooks using TanStack Query and Zustand
  */
 
+import { useEffect } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
-import { login as loginApi, logout as logoutApi, getCurrentUser } from '@/lib/api'
+import {
+  login as loginApi,
+  logout as logoutApi,
+  getCurrentUser,
+} from '@/lib/api'
 import { useAuthStore } from '@/stores/auth-store'
 import { User } from '@/types/auth'
 
@@ -83,12 +88,14 @@ export function useCurrentUser() {
   })
 
   // Handle side effects based on query state
-  if (query.isSuccess && query.data) {
-    setUser(query.data)
-  } else if (query.isError) {
-    // User is not authenticated or session expired
-    clearUser()
-  }
+  useEffect(() => {
+    if (query.isSuccess && query.data) {
+      setUser(query.data)
+    } else if (query.isError) {
+      // User is not authenticated or session expired
+      clearUser()
+    }
+  }, [query.isSuccess, query.isError, query.data, setUser, clearUser])
 
   return query
 }
