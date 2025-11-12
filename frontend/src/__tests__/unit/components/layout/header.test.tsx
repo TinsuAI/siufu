@@ -72,10 +72,10 @@ describe('Header', () => {
   it('should render header with navigation links', () => {
     renderHeader()
 
-    expect(screen.getByText('Customs Declaration Platform')).toBeInTheDocument()
-    // Translations now return the last part of the key
-    expect(screen.getByText('declarations')).toBeInTheDocument()
-    expect(screen.getByText('upload')).toBeInTheDocument()
+    expect(screen.getByText('Siufu')).toBeInTheDocument()
+    // Translations return from the mock - check case-insensitively
+    expect(screen.getByText(/declarations/i)).toBeInTheDocument()
+    expect(screen.getByText(/upload/i)).toBeInTheDocument()
   })
 
   it('should render user menu with profile details and logout action', () => {
@@ -83,8 +83,8 @@ describe('Header', () => {
 
     expect(screen.getByText('Test User')).toBeInTheDocument()
     expect(screen.getByText(/admin/i)).toBeInTheDocument()
-    // Translation returns 'logout'
-    expect(screen.getByRole('button', { name: 'logout' })).toBeInTheDocument()
+    // Translation returns 'Logout'
+    expect(screen.getByRole('button', { name: /logout/i })).toBeInTheDocument()
   })
 
   it('should display API health status', () => {

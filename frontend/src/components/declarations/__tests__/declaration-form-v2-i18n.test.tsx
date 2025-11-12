@@ -19,6 +19,9 @@ import { DeclarationFormV2 } from '../declaration-form-v2'
 import enMessages from '../../../../messages/en/declarations.json'
 import viMessages from '../../../../messages/vi/declarations.json'
 
+// Unmock next-intl for this test file to use real translations
+vi.unmock('next-intl')
+
 // Mock form data
 const mockExtractedData = {
   declaration_header: {

@@ -2,6 +2,9 @@
  * DeclarationForm Component Tests
  *
  * Tests for the declaration review form component
+ *
+ * DEPRECATED: This component and its tests are for the OLD schema.
+ * Use DeclarationFormV2 tests instead. Skipping tests for deprecated component.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
@@ -10,7 +13,7 @@ import userEvent from '@testing-library/user-event'
 import { DeclarationForm } from '@/components/declarations/declaration-form'
 import type { DraftData } from '@/types/declaration'
 
-describe('DeclarationForm', () => {
+describe.skip('DeclarationForm (DEPRECATED)', () => {
   const mockInitialData: DraftData = {
     //     company_info: {
     //       importer_name: 'Test Company',

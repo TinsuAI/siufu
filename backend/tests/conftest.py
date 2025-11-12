@@ -1,12 +1,20 @@
 """Pytest configuration and shared fixtures."""
 
 import asyncio
+import os
+import sys
 from typing import AsyncGenerator
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 import pytest_asyncio
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool
+
+# Set test database URL BEFORE importing any src modules
+# This ensures src.core.config loads the test database URL
+TEST_DATABASE_URL = "postgresql+asyncpg://postgres:test_password_123@postgres:5432/customs_db_test"
+os.environ["DATABASE_URL"] = TEST_DATABASE_URL
 
 # Import Base from models
 from src.models.base import Base
@@ -37,10 +45,7 @@ from tests.fixtures.openrouter import (
     sample_ocr_result as _sample_ocr_result,
 )
 
-# Database configuration for tests
-# Use same Postgres instance but different database for tests
-# When running inside Docker, use service name 'postgres' instead of localhost
-TEST_DATABASE_URL = "postgresql+asyncpg://postgres:test_password_123@postgres:5432/customs_db_test"
+# TEST_DATABASE_URL is set at the top of the file before any imports
 
 
 @pytest.fixture(scope="session")
@@ -205,24 +210,77 @@ def mock_openrouter_client_auth_error(monkeypatch):
 
 # HTTP Client fixture for API testing
 @pytest_asyncio.fixture(scope="function")
-async def async_client():
+async def async_client(db_session: AsyncSession):
     """
     Create async HTTP client for testing FastAPI endpoints.
 
     Uses httpx.AsyncClient with FastAPI app. This fixture ensures proper
     cleanup of HTTP connections and async resources.
+
+    Overrides app dependencies to use test database session.
     """
+    from contextlib import asynccontextmanager
+
+    from fastapi import FastAPI
     from httpx import ASGITransport, AsyncClient
 
-    from src.main import app
+    from src.core.database import get_db
 
-    transport = ASGITransport(app=app)
-    client = AsyncClient(transport=transport, base_url="http://test")
+    # Mock Celery app before importing routers
+    mock_celery = MagicMock()
+    mock_celery.send_task = MagicMock()
+    mock_celery.conf.update = MagicMock()
 
-    try:
-        yield client
-    finally:
-        await client.aclose()
+    # Mock Redis before importing routers
+    mock_redis = AsyncMock()
+    mock_redis.ping = AsyncMock(return_value=True)
+    mock_redis.get = AsyncMock(return_value=None)
+    mock_redis.setex = AsyncMock()
+
+    async def mock_get_redis():
+        return mock_redis
+
+    # Create a test lifespan that does nothing (skip database connection test)
+    @asynccontextmanager
+    async def test_lifespan(app: FastAPI):
+        """Test lifespan - skip startup/shutdown events"""
+        yield
+
+    # Create a fresh app instance for testing with test lifespan
+    test_app = FastAPI(
+        title="Test API",
+        lifespan=test_lifespan
+    )
+
+    # Mock external dependencies before importing routers
+    with patch('src.core.celery_app.celery_app', mock_celery), \
+         patch('src.core.redis.get_redis', mock_get_redis):
+
+        # Import and copy routes from main app
+        from src.api.v1 import api_router
+        test_app.include_router(api_router, prefix="/api/v1")
+
+        # Add a simple root endpoint
+        @test_app.get("/")
+        async def root():
+            return {"message": "Test API"}
+
+        # Override database dependency to use test session
+        async def override_get_db():
+            yield db_session
+
+        test_app.dependency_overrides[get_db] = override_get_db
+
+        # Create client
+        transport = ASGITransport(app=test_app)
+        client = AsyncClient(transport=transport, base_url="http://test")
+
+        try:
+            yield client
+        finally:
+            # Clean up
+            test_app.dependency_overrides.clear()
+            await client.aclose()
 
 
 @pytest_asyncio.fixture(scope="function")

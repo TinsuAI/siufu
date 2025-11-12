@@ -74,8 +74,9 @@ describe('UploadPage Integration Tests - 4-File Upload Flow', () => {
     // Check all 4 file drop zones are rendered (Good List and EXIM Tariff removed)
     expect(screen.getByText(/Arrival Notice.*AN\.pdf/i)).toBeInTheDocument()
     expect(screen.getByText(/Bill of Lading.*BOL\.pdf/i)).toBeInTheDocument()
+    // CO uses translated label, not file pattern
     expect(
-      screen.getByText(/Certificate of Origin.*CO\.pdf/i)
+      screen.getByText(/Certificate of Origin.*Multiple files supported/i)
     ).toBeInTheDocument()
     expect(screen.getByText(/Invoice.*INVOICE/i)).toBeInTheDocument()
 
