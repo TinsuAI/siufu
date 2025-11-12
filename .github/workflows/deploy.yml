@@ -38,6 +38,12 @@ jobs:
       # API URL: https://api.siufu.tinsu.ai
 
     steps:
+      - name: Debug workflow trigger
+        run: |
+          echo "Event name: ${{ github.event_name }}"
+          echo "Workflow run conclusion: ${{ github.event.workflow_run.conclusion }}"
+          echo "Force deploy: ${{ github.event.inputs.force_deploy }}"
+
       - name: Checkout code
         uses: actions/checkout@v4
 
