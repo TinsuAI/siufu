@@ -9,7 +9,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { use } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter } from '@/navigation'
 import { useTranslations } from 'next-intl'
 import {
   DeclarationFormV2,

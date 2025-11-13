@@ -23,7 +23,7 @@ import {
   Eye,
   EyeOff,
 } from 'lucide-react'
-import { useRouter } from 'next/navigation'
+import { useRouter } from '@/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Collapsible,

@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter } from '@/navigation'
 import { Loader2, AlertCircle, FileUp } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { FileDropZone } from '@/components/upload/file-dropzone'

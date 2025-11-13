@@ -4,7 +4,7 @@
 
 import { useEffect } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useRouter } from 'next/navigation'
+import { useRouter } from '@/navigation'
 import {
   login as loginApi,
   logout as logoutApi,
