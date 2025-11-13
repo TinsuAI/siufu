@@ -71,6 +71,66 @@ jobs:
           echo "${{ secrets.GCP_SA_KEY_JSON }}" | base64 -w 0 | ssh -i ~/.ssh/deploy_key ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
             "base64 -d > ${{ env.DEPLOYMENT_PATH }}/secrets/gcp-sa-key.json && chmod 644 ${{ env.DEPLOYMENT_PATH }}/secrets/gcp-sa-key.json"
 
+      - name: Validate GCP Service Account Key
+        run: |
+          ssh -i ~/.ssh/deploy_key ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'ENDSSH'
+            echo "Validating GCP credentials JSON..."
+
+            # Run Python validation
+            python3 << 'PYEOF'
+          import json
+          import sys
+
+          try:
+              with open('${{ env.DEPLOYMENT_PATH }}/secrets/gcp-sa-key.json', 'r') as f:
+                  creds = json.load(f)
+
+              # Validate required fields
+              required_fields = ['type', 'project_id', 'private_key_id', 'private_key',
+                                'client_email', 'client_id', 'auth_uri', 'token_uri']
+
+              missing_fields = [field for field in required_fields if field not in creds]
+
+              if missing_fields:
+                  print(f"✗ Missing required fields: {', '.join(missing_fields)}")
+                  sys.exit(1)
+
+              # Validate field types and formats
+              if creds.get('type') != 'service_account':
+                  print(f"✗ Invalid type: {creds.get('type')} (expected 'service_account')")
+                  sys.exit(1)
+
+              if not creds.get('private_key', '').startswith('-----BEGIN PRIVATE KEY-----'):
+                  print("✗ Invalid private_key format (should start with '-----BEGIN PRIVATE KEY-----')")
+                  sys.exit(1)
+
+              if '\\n' not in creds.get('private_key', ''):
+                  print("✗ Invalid private_key format (missing escaped newlines)")
+                  sys.exit(1)
+
+              if not creds.get('client_email', '').endswith('.iam.gserviceaccount.com'):
+                  print(f"✗ Invalid client_email format: {creds.get('client_email')}")
+                  sys.exit(1)
+
+              # Success
+              print("✓ GCP credentials JSON is valid")
+              print(f"  Project ID: {creds['project_id']}")
+              print(f"  Service Account: {creds['client_email']}")
+              print(f"  Private Key: {len(creds['private_key'])} characters")
+
+          except json.JSONDecodeError as e:
+              print(f"✗ Invalid JSON format: {e}")
+              print("This usually means the secret was corrupted during transfer.")
+              sys.exit(1)
+          except FileNotFoundError:
+              print("✗ GCP credentials file not found")
+              sys.exit(1)
+          except Exception as e:
+              print(f"✗ Validation error: {e}")
+              sys.exit(1)
+          PYEOF
+          ENDSSH
+
       - name: Create production .env file
         run: |
           ssh -i ~/.ssh/deploy_key ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'ENDSSH'
