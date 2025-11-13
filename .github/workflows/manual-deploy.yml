@@ -65,93 +65,11 @@ jobs:
             fi
           ENDSSH
 
-      - name: Validate GitHub Secret Format
-        run: |
-          echo "=== Pre-flight: Validating GitHub Secret Format ==="
+      # NOTE: GCP credentials are manually placed on the production server
+      # Run: bash scripts/upload-gcp-to-prod.sh (from your local machine)
+      # This skips GitHub secrets which have issues with JSON formatting
 
-          # Validate that the GitHub secret is proper JSON
-          python3 << 'PYEOF'
-          import json
-          import sys
-          import os
-
-          secret = """${{ secrets.GCP_SA_KEY_JSON }}"""
-
-          try:
-              # Try to parse as JSON
-              creds = json.loads(secret)
-
-              # Check for required fields
-              required_fields = ['type', 'project_id', 'private_key', 'client_email']
-              missing = [f for f in required_fields if f not in creds]
-
-              if missing:
-                  print(f"✗ GitHub secret is missing required fields: {', '.join(missing)}")
-                  sys.exit(1)
-
-              # Validate it's proper JSON with quotes
-              if creds.get('type') != 'service_account':
-                  print(f"✗ Invalid type in GitHub secret: {creds.get('type')}")
-                  sys.exit(1)
-
-              print("✓ GitHub secret GCP_SA_KEY_JSON is valid JSON")
-              print(f"  Project ID: {creds['project_id']}")
-              print(f"  Service Account: {creds['client_email']}")
-
-          except json.JSONDecodeError as e:
-              print(f"✗ CRITICAL: GitHub secret GCP_SA_KEY_JSON is NOT valid JSON!")
-              print(f"  Error: {e}")
-              print()
-              print("First 200 characters of the secret:")
-              print(secret[:200])
-              print()
-              print("=== HOW TO FIX ===")
-              print("1. Go to: https://github.com/${{ github.repository }}/settings/secrets/actions")
-              print("2. Edit the secret: GCP_SA_KEY_JSON")
-              print("3. The secret MUST be valid JSON with double quotes around all keys and values")
-              print("4. Example of CORRECT format:")
-              print('   {')
-              print('     "type": "service_account",')
-              print('     "project_id": "your-project",')
-              print('     "private_key": "-----BEGIN PRIVATE KEY-----\\n...",')
-              print('     ...')
-              print('   }')
-              print()
-              print("5. WRONG format (missing quotes):")
-              print('   {')
-              print('     type: service_account,   ← NO QUOTES = WRONG!')
-              print('     ...')
-              print('   }')
-              sys.exit(1)
-          PYEOF
-
-      - name: Upload GCP Service Account Key
-        run: |
-          echo "=== Uploading GCP Secret to Production ==="
-
-          # Check if secret exists and get its length
-          SECRET_LENGTH=$(echo "${{ secrets.GCP_SA_KEY_JSON }}" | wc -c)
-          echo "GitHub secret length: $SECRET_LENGTH characters"
-
-          # Encode to base64 and show details
-          ENCODED=$(echo "${{ secrets.GCP_SA_KEY_JSON }}" | base64 -w 0)
-          ENCODED_LENGTH=${#ENCODED}
-          echo "Base64 encoded length: $ENCODED_LENGTH characters"
-          echo "First 80 chars of base64:"
-          echo "$ENCODED" | head -c 80
-          echo ""
-          echo "Last 80 chars of base64:"
-          echo "$ENCODED" | tail -c 80
-          echo ""
-
-          # Transfer and decode
-          echo "Transferring to production server..."
-          echo "$ENCODED" | ssh -i ~/.ssh/deploy_key ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
-            "base64 -d > ${{ env.DEPLOYMENT_PATH }}/secrets/gcp-sa-key.json && chmod 644 ${{ env.DEPLOYMENT_PATH }}/secrets/gcp-sa-key.json"
-
-          echo "✓ Transfer complete"
-
-      - name: Validate GCP Service Account Key
+      - name: Verify GCP Service Account Key Exists
         run: |
           ssh -i ~/.ssh/deploy_key ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'ENDSSH'
             echo "=== Validating GCP credentials JSON ==="
@@ -163,19 +81,8 @@ jobs:
             echo "File permissions: $(ls -l $FILE_PATH | awk '{print $1, $3, $4}')"
             echo ""
 
-            # Show first 200 characters of the file
-            echo "First 200 chars of transferred file:"
-            head -c 200 "$FILE_PATH"
-            echo ""
-            echo ""
-
-            # Show first 5 lines
-            echo "First 5 lines of file:"
-            head -5 "$FILE_PATH"
-            echo ""
-
-            # Try to validate with Python and show detailed error
-            echo "Running Python validation..."
+            # Validate with Python
+            echo "Validating JSON format..."
             python3 << 'PYEOF'
           import json
           import sys
@@ -203,8 +110,9 @@ jobs:
                   print("✗ Invalid private_key format (should start with '-----BEGIN PRIVATE KEY-----')")
                   sys.exit(1)
 
-              if '\\n' not in creds.get('private_key', ''):
-                  print("✗ Invalid private_key format (missing escaped newlines)")
+              # Check for newlines in private key (after JSON parsing, \n becomes actual newline)
+              if '\n' not in creds.get('private_key', ''):
+                  print("✗ Invalid private_key format (missing newlines)")
                   sys.exit(1)
 
               if not creds.get('client_email', '').endswith('.iam.gserviceaccount.com'):
@@ -230,6 +138,11 @@ jobs:
               sys.exit(1)
           except FileNotFoundError:
               print("✗ GCP credentials file not found at: ${{ env.DEPLOYMENT_PATH }}/secrets/gcp-sa-key.json")
+              print()
+              print("=== HOW TO FIX ===")
+              print("The file must be manually placed on the production server.")
+              print("Run this from your local machine:")
+              print("  bash scripts/upload-gcp-to-prod.sh")
               sys.exit(1)
           except Exception as e:
               print(f"✗ Validation error: {e}")
