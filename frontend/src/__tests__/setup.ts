@@ -4,9 +4,28 @@
  * This file configures the test environment for all tests.
  */
 
+import React from 'react'
 import '@testing-library/jest-dom'
 import { cleanup } from '@testing-library/react'
 import { afterEach, vi } from 'vitest'
+
+// Mock @/navigation (localized Next.js navigation)
+vi.mock('@/navigation', () => ({
+  useRouter: () => ({
+    push: vi.fn(),
+    replace: vi.fn(),
+    back: vi.fn(),
+    forward: vi.fn(),
+    refresh: vi.fn(),
+    prefetch: vi.fn(),
+  }),
+  usePathname: () => '/en',
+  redirect: vi.fn(),
+  Link: (props: { children: React.ReactNode; href: string }) => {
+    const { children, href, ...rest } = props
+    return React.createElement('a', { href, ...rest }, children)
+  },
+}))
 
 // Mock next-intl globally with comprehensive translations
 vi.mock('next-intl', async (importOriginal) => {
