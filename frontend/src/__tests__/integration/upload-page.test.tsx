@@ -9,7 +9,7 @@ import * as api from '@/lib/api'
 
 // Mock Next.js navigation
 const mockPush = vi.fn()
-vi.mock('next/navigation', () => ({
+vi.mock('@/navigation', () => ({
   useRouter: () => ({
     push: mockPush,
   }),

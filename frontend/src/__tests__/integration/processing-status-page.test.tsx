@@ -14,10 +14,13 @@ import * as api from '@/lib/api'
 const mockPush = vi.fn()
 const mockParams = { id: 'test-declaration-id' }
 
-vi.mock('next/navigation', () => ({
+vi.mock('@/navigation', () => ({
   useRouter: () => ({
     push: mockPush,
   }),
+}))
+
+vi.mock('next/navigation', () => ({
   useParams: () => mockParams,
 }))
 

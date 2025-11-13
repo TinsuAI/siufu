@@ -6,7 +6,7 @@ import React from 'react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { useRouter } from 'next/navigation'
+import { useRouter } from '@/navigation'
 import { useLogin, useLogout, useCurrentUser, useAuth } from '@/hooks/use-auth'
 import { useAuthStore } from '@/stores/auth-store'
 import * as api from '@/lib/api'
@@ -19,8 +19,8 @@ vi.mock('@/lib/api', () => ({
   getCurrentUser: vi.fn(),
 }))
 
-// Mock next/navigation
-vi.mock('next/navigation', () => ({
+// Mock @/navigation (localized router)
+vi.mock('@/navigation', () => ({
   useRouter: vi.fn(),
 }))
 

@@ -15,8 +15,10 @@ import type { ImporterDetail, ExporterDetail } from '@/types/company'
 // Mock Next.js navigation
 const mockPush = vi.fn()
 const mockSearchParams = new URLSearchParams()
-vi.mock('next/navigation', () => ({
+vi.mock('@/navigation', () => ({
   useRouter: () => ({ push: mockPush }),
+}))
+vi.mock('next/navigation', () => ({
   useSearchParams: () => mockSearchParams,
 }))
 
