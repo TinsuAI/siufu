@@ -232,18 +232,73 @@ jobs:
             fi
           ENDSSH
 
+      - name: Validate GitHub Secret Format
+        run: |
+          echo "=== Pre-flight: Validating GitHub Secret Format ==="
+
+          # Validate that the GitHub secret is proper JSON
+          python3 << 'PYEOF'
+          import json
+          import sys
+          import os
+
+          secret = """${{ secrets.GCP_SA_KEY_JSON }}"""
+
+          try:
+              # Try to parse as JSON
+              creds = json.loads(secret)
+
+              # Check for required fields
+              required_fields = ['type', 'project_id', 'private_key', 'client_email']
+              missing = [f for f in required_fields if f not in creds]
+
+              if missing:
+                  print(f"✗ GitHub secret is missing required fields: {', '.join(missing)}")
+                  sys.exit(1)
+
+              # Validate it's proper JSON with quotes
+              if creds.get('type') != 'service_account':
+                  print(f"✗ Invalid type in GitHub secret: {creds.get('type')}")
+                  sys.exit(1)
+
+              print("✓ GitHub secret GCP_SA_KEY_JSON is valid JSON")
+              print(f"  Project ID: {creds['project_id']}")
+              print(f"  Service Account: {creds['client_email']}")
+
+          except json.JSONDecodeError as e:
+              print(f"✗ CRITICAL: GitHub secret GCP_SA_KEY_JSON is NOT valid JSON!")
+              print(f"  Error: {e}")
+              print()
+              print("First 200 characters of the secret:")
+              print(secret[:200])
+              print()
+              print("=== HOW TO FIX ===")
+              print("1. Go to: https://github.com/${{ github.repository }}/settings/secrets/actions")
+              print("2. Edit the secret: GCP_SA_KEY_JSON")
+              print("3. The secret MUST be valid JSON with double quotes around all keys and values")
+              print("4. Example of CORRECT format:")
+              print('   {')
+              print('     "type": "service_account",')
+              print('     "project_id": "your-project",')
+              print('     "private_key": "-----BEGIN PRIVATE KEY-----\\n...",')
+              print('     ...')
+              print('   }')
+              print()
+              print("5. WRONG format (missing quotes):")
+              print('   {')
+              print('     type: service_account,   ← NO QUOTES = WRONG!')
+              print('     ...')
+              print('   }')
+              sys.exit(1)
+          PYEOF
+
       - name: Upload GCP Service Account Key
         run: |
-          echo "=== Debugging GCP Secret Transfer ==="
+          echo "=== Uploading GCP Secret to Production ==="
 
           # Check if secret exists and get its length
           SECRET_LENGTH=$(echo "${{ secrets.GCP_SA_KEY_JSON }}" | wc -c)
           echo "GitHub secret length: $SECRET_LENGTH characters"
-
-          # Show first 100 characters of the secret (for debugging)
-          echo "First 100 chars of secret:"
-          echo "${{ secrets.GCP_SA_KEY_JSON }}" | head -c 100
-          echo ""
 
           # Encode to base64 and show details
           ENCODED=$(echo "${{ secrets.GCP_SA_KEY_JSON }}" | base64 -w 0)
