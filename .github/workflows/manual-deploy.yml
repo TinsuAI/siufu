@@ -67,16 +67,60 @@ jobs:
 
       - name: Upload GCP Service Account Key
         run: |
-          # Use base64 encoding to safely transfer JSON without shell interpretation
-          echo "${{ secrets.GCP_SA_KEY_JSON }}" | base64 -w 0 | ssh -i ~/.ssh/deploy_key ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
+          echo "=== Debugging GCP Secret Transfer ==="
+
+          # Check if secret exists and get its length
+          SECRET_LENGTH=$(echo "${{ secrets.GCP_SA_KEY_JSON }}" | wc -c)
+          echo "GitHub secret length: $SECRET_LENGTH characters"
+
+          # Show first 100 characters of the secret (for debugging)
+          echo "First 100 chars of secret:"
+          echo "${{ secrets.GCP_SA_KEY_JSON }}" | head -c 100
+          echo ""
+
+          # Encode to base64 and show details
+          ENCODED=$(echo "${{ secrets.GCP_SA_KEY_JSON }}" | base64 -w 0)
+          ENCODED_LENGTH=${#ENCODED}
+          echo "Base64 encoded length: $ENCODED_LENGTH characters"
+          echo "First 80 chars of base64:"
+          echo "$ENCODED" | head -c 80
+          echo ""
+          echo "Last 80 chars of base64:"
+          echo "$ENCODED" | tail -c 80
+          echo ""
+
+          # Transfer and decode
+          echo "Transferring to production server..."
+          echo "$ENCODED" | ssh -i ~/.ssh/deploy_key ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
             "base64 -d > ${{ env.DEPLOYMENT_PATH }}/secrets/gcp-sa-key.json && chmod 644 ${{ env.DEPLOYMENT_PATH }}/secrets/gcp-sa-key.json"
+
+          echo "✓ Transfer complete"
 
       - name: Validate GCP Service Account Key
         run: |
           ssh -i ~/.ssh/deploy_key ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'ENDSSH'
-            echo "Validating GCP credentials JSON..."
+            echo "=== Validating GCP credentials JSON ==="
 
-            # Run Python validation
+            # Show file details
+            FILE_PATH="${{ env.DEPLOYMENT_PATH }}/secrets/gcp-sa-key.json"
+            echo "File path: $FILE_PATH"
+            echo "File size: $(wc -c < $FILE_PATH) bytes"
+            echo "File permissions: $(ls -l $FILE_PATH | awk '{print $1, $3, $4}')"
+            echo ""
+
+            # Show first 200 characters of the file
+            echo "First 200 chars of transferred file:"
+            head -c 200 "$FILE_PATH"
+            echo ""
+            echo ""
+
+            # Show first 5 lines
+            echo "First 5 lines of file:"
+            head -5 "$FILE_PATH"
+            echo ""
+
+            # Try to validate with Python and show detailed error
+            echo "Running Python validation..."
             python3 << 'PYEOF'
           import json
           import sys
@@ -121,12 +165,21 @@ jobs:
           except json.JSONDecodeError as e:
               print(f"✗ Invalid JSON format: {e}")
               print("This usually means the secret was corrupted during transfer.")
+              print("\nShowing raw file content (first 500 chars):")
+              with open('${{ env.DEPLOYMENT_PATH }}/secrets/gcp-sa-key.json', 'r') as f:
+                  content = f.read(500)
+                  print(repr(content))
+              print("\n=== Debugging Info ===")
+              print("If you see missing quotes or 'n' instead of '\\n', the GitHub secret is malformed.")
+              print("The secret should be valid JSON with double quotes around all keys and values.")
               sys.exit(1)
           except FileNotFoundError:
-              print("✗ GCP credentials file not found")
+              print("✗ GCP credentials file not found at: ${{ env.DEPLOYMENT_PATH }}/secrets/gcp-sa-key.json")
               sys.exit(1)
           except Exception as e:
               print(f"✗ Validation error: {e}")
+              import traceback
+              traceback.print_exc()
               sys.exit(1)
           PYEOF
           ENDSSH
