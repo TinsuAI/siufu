@@ -1,7 +1,12 @@
 import { redirect } from 'next/navigation'
+import { type Locale } from '@/i18n'
 
-export default function Home() {
-  // TODO: Story 3.2 - Check auth status and redirect accordingly
-  // For now, redirect to login page
-  redirect('/login')
+export default async function Home({
+  params,
+}: {
+  params: Promise<{ locale: Locale }>
+}) {
+  const { locale } = await params
+  // Redirect to login page with proper locale
+  redirect(`/${locale}/login`)
 }

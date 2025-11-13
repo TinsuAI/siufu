@@ -46,18 +46,19 @@ export async function middleware(request: NextRequest) {
   // Determine the current locale for redirects
   const currentLocale = isValidLocale ? pathnameLocale : defaultLocale
 
-  // Check if the route is protected and redirect if unauthenticated
-  if (
-    protectedRoutes.some((route) => pathnameWithoutLocale.startsWith(route)) &&
-    !accessToken
-  ) {
+  const isProtectedRoute = protectedRoutes.some((route) =>
+    pathnameWithoutLocale.startsWith(route)
+  )
+  const isLoginPage = pathnameWithoutLocale === '/login'
+
+  // If accessing a protected route without a token, redirect to login
+  if (isProtectedRoute && !accessToken) {
     const loginUrl = new URL(`/${currentLocale}/login`, request.url)
     return NextResponse.redirect(loginUrl)
   }
 
-  // If accessing login page with a valid token, redirect to declarations
-  if (pathnameWithoutLocale === '/login' && accessToken) {
-    // Verify the token is valid by calling the backend
+  // If accessing login page with a token, verify it and redirect to declarations if valid
+  if (isLoginPage && accessToken) {
     try {
       const apiUrl =
         process.env.NEXT_PUBLIC_API_URL || 'http://backend:8000/api/v1'
@@ -65,6 +66,8 @@ export async function middleware(request: NextRequest) {
         headers: {
           Cookie: `access_token=${accessToken}`,
         },
+        // Add timeout to avoid hanging
+        signal: AbortSignal.timeout(3000),
       })
 
       // If token is valid, redirect to declarations
@@ -74,11 +77,25 @@ export async function middleware(request: NextRequest) {
           request.url
         )
         return NextResponse.redirect(declarationsUrl)
+      } else {
+        // Token is invalid - clear it and allow access to login page
+        const response = intlResponse || NextResponse.next()
+        response.cookies.delete('access_token')
+        return response
       }
     } catch (error) {
-      // If verification fails, allow access to login page
+      // If verification fails (network error, timeout, etc.), clear invalid token
       void error // Suppress unused variable warning
+      const response = intlResponse || NextResponse.next()
+      response.cookies.delete('access_token')
+      return response
     }
+  }
+
+  // If accessing a protected route with a token, let it through
+  // (the client-side will handle token validation)
+  if (isProtectedRoute && accessToken) {
+    return intlResponse
   }
 
   return intlResponse
