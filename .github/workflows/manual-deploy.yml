@@ -67,8 +67,9 @@ jobs:
 
       - name: Upload GCP Service Account Key
         run: |
-          echo "${{ secrets.GCP_SA_KEY_JSON }}" | ssh -i ~/.ssh/deploy_key ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
-            "cat > ${{ env.DEPLOYMENT_PATH }}/secrets/gcp-sa-key.json && chmod 644 ${{ env.DEPLOYMENT_PATH }}/secrets/gcp-sa-key.json"
+          # Use base64 encoding to safely transfer JSON without shell interpretation
+          echo "${{ secrets.GCP_SA_KEY_JSON }}" | base64 -w 0 | ssh -i ~/.ssh/deploy_key ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
+            "base64 -d > ${{ env.DEPLOYMENT_PATH }}/secrets/gcp-sa-key.json && chmod 644 ${{ env.DEPLOYMENT_PATH }}/secrets/gcp-sa-key.json"
 
       - name: Create production .env file
         run: |
