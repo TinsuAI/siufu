@@ -83,13 +83,14 @@ async def register(
     # Set httpOnly cookie
     # In production, domain=.tinsu.ai allows cookie to work across subdomains
     # (siufu.tinsu.ai and siufu-api.tinsu.ai)
+    is_production = "tinsu.ai" in settings.CORS_ORIGINS
     response.set_cookie(
         key="access_token",
         value=access_token,
         httponly=True,
-        secure=True,  # Required for HTTPS in production
+        secure=is_production,  # True for HTTPS in production, False for HTTP in dev/test
         samesite="lax",  # Changed from "strict" to allow cross-subdomain navigation
-        domain=".tinsu.ai" if "tinsu.ai" in settings.CORS_ORIGINS else None,
+        domain=".tinsu.ai" if is_production else None,
         max_age=settings.ACCESS_TOKEN_EXPIRE_HOURS * 3600  # Convert hours to seconds
     )
 
@@ -162,13 +163,14 @@ async def login(
     # Set httpOnly cookie
     # In production, domain=.tinsu.ai allows cookie to work across subdomains
     # (siufu.tinsu.ai and siufu-api.tinsu.ai)
+    is_production = "tinsu.ai" in settings.CORS_ORIGINS
     response.set_cookie(
         key="access_token",
         value=access_token,
         httponly=True,
-        secure=True,  # Required for HTTPS in production
+        secure=is_production,  # True for HTTPS in production, False for HTTP in dev/test
         samesite="lax",  # Changed from "strict" to allow cross-subdomain navigation
-        domain=".tinsu.ai" if "tinsu.ai" in settings.CORS_ORIGINS else None,
+        domain=".tinsu.ai" if is_production else None,
         max_age=settings.ACCESS_TOKEN_EXPIRE_HOURS * 3600  # Convert hours to seconds
     )
 
@@ -199,13 +201,14 @@ async def logout(response: Response):
     Clears the authentication cookie to invalidate the session.
     """
     # Clear the access_token cookie by setting max_age to 0
+    is_production = "tinsu.ai" in settings.CORS_ORIGINS
     response.set_cookie(
         key="access_token",
         value="",
         httponly=True,
-        secure=True,  # Required for HTTPS in production
+        secure=is_production,  # True for HTTPS in production, False for HTTP in dev/test
         samesite="lax",
-        domain=".tinsu.ai" if "tinsu.ai" in settings.CORS_ORIGINS else None,
+        domain=".tinsu.ai" if is_production else None,
         max_age=0
     )
 

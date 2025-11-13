@@ -31,8 +31,8 @@ describe('i18n-utils', () => {
     })
 
     it('should return default locale for invalid locale', () => {
-      expect(getLocaleFromPathname('/invalid/page')).toBe('en')
-      expect(getLocaleFromPathname('/dashboard')).toBe('en')
+      expect(getLocaleFromPathname('/invalid/page')).toBe('vi')
+      expect(getLocaleFromPathname('/dashboard')).toBe('vi')
     })
 
     it('should handle root paths', () => {

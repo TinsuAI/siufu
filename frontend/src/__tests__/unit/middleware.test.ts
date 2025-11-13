@@ -62,7 +62,7 @@ describe('middleware', () => {
       const response = await middleware(request)
 
       expect(response.status).toBe(307) // Redirect status
-      expect(response.headers.get('location')).toContain('/en/login')
+      expect(response.headers.get('location')).toContain('/vi/login')
     })
 
     it('should extract locale correctly from pathname', async () => {
@@ -125,7 +125,7 @@ describe('middleware', () => {
       const response = await middleware(request)
 
       expect(response.status).toBe(307)
-      expect(response.headers.get('location')).toContain('/en/')
+      expect(response.headers.get('location')).toContain('/vi/')
     })
   })
 
