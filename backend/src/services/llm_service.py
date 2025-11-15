@@ -2,10 +2,12 @@
 LLM Service for intelligent data extraction from OCR results
 """
 import json
+import logging
 import re
 from typing import Any, Dict
 
 import sentry_sdk
+from json_repair import repair_json
 
 from ..core.openrouter import OpenRouterClient
 from ..schemas.extraction import ExtractedData
@@ -205,6 +207,7 @@ class LLMService:
         1. Plain JSON
         2. JSON wrapped in markdown code blocks
         3. JSON with extra text before/after
+        4. Malformed JSON (using json_repair)
 
         Args:
             response_text: Raw LLM response text
@@ -215,6 +218,8 @@ class LLMService:
         Raises:
             ValueError: If JSON cannot be extracted
         """
+        logger = logging.getLogger(__name__)
+
         # Try parsing as-is
         try:
             return json.loads(response_text)
@@ -229,26 +234,76 @@ class LLMService:
             try:
                 return json.loads(match.group(1))
             except json.JSONDecodeError:
-                pass
+                # Try repairing the JSON from code block
+                try:
+                    repaired = repair_json(match.group(1))
+                    logger.warning(
+                        f"Successfully repaired malformed JSON from code block. "
+                        f"Original length: {len(match.group(1))}, "
+                        f"Repaired length: {len(repaired)}"
+                    )
+                    return json.loads(repaired)
+                except Exception:
+                    pass
 
         # Try extracting JSON object (find first { to last })
         json_pattern = r'\{.*\}'
         match = re.search(json_pattern, response_text, re.DOTALL)
         if match:
+            extracted_json = match.group(0)
             try:
-                return json.loads(match.group(0))
+                return json.loads(extracted_json)
             except json.JSONDecodeError as e:
                 # Log JSON decode error with context
-                import logging
-                logger = logging.getLogger(__name__)
                 logger.error(
                     f"JSON decode error: {str(e)}. "
                     f"Response length: {len(response_text)}, "
-                    f"Extracted JSON length: {len(match.group(0))}, "
+                    f"Extracted JSON length: {len(extracted_json)}, "
                     f"First 500 chars: {response_text[:500]}, "
                     f"Last 500 chars: {response_text[-500:]}"
                 )
-                pass
+
+                # Try repairing the malformed JSON
+                try:
+                    repaired = repair_json(extracted_json)
+                    logger.warning(
+                        f"Successfully repaired malformed JSON. "
+                        f"Original length: {len(extracted_json)}, "
+                        f"Repaired length: {len(repaired)}"
+                    )
+
+                    # Send repaired JSON to Sentry for monitoring
+                    sentry_sdk.add_breadcrumb(
+                        category="llm",
+                        message="Repaired malformed JSON from LLM response",
+                        level="warning",
+                        data={
+                            "original_error": str(e),
+                            "original_length": len(extracted_json),
+                            "repaired_length": len(repaired)
+                        }
+                    )
+
+                    return json.loads(repaired)
+                except Exception as repair_error:
+                    # If repair also fails, log the full malformed JSON
+                    logger.error(
+                        f"Failed to repair JSON: {str(repair_error)}. "
+                        f"Full malformed JSON saved to Sentry."
+                    )
+
+                    # Send full malformed JSON to Sentry for debugging
+                    sentry_sdk.add_breadcrumb(
+                        category="llm",
+                        message="JSON repair failed",
+                        level="error",
+                        data={
+                            "parse_error": str(e),
+                            "repair_error": str(repair_error),
+                            "malformed_json": extracted_json[:5000]  # First 5000 chars
+                        }
+                    )
+                    pass
 
         # Log raw response for debugging
         sentry_sdk.add_breadcrumb(
