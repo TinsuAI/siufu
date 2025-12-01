@@ -205,95 +205,6 @@ jobs:
             fi
           ENDSSH
 
-      # NOTE: GCP credentials are manually placed on the production server
-      # Run: bash scripts/upload-gcp-to-prod.sh (from your local machine)
-      # This skips GitHub secrets which have issues with JSON formatting
-
-      - name: Verify GCP Service Account Key Exists
-        env:
-          SSHPASS: ${{ secrets.SSH_PASSWORD }}
-        run: |
-          sshpass -e ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'ENDSSH'
-            echo "=== Validating GCP credentials JSON ==="
-
-            # Show file details
-            FILE_PATH="${{ env.DEPLOYMENT_PATH }}/secrets/gcp-sa-key.json"
-            echo "File path: $FILE_PATH"
-            echo "File size: $(wc -c < $FILE_PATH) bytes"
-            echo "File permissions: $(ls -l $FILE_PATH | awk '{print $1, $3, $4}')"
-            echo ""
-
-            # Validate with Python
-            echo "Validating JSON format..."
-            python3 << 'PYEOF'
-          import json
-          import sys
-
-          try:
-              with open('${{ env.DEPLOYMENT_PATH }}/secrets/gcp-sa-key.json', 'r') as f:
-                  creds = json.load(f)
-
-              # Validate required fields
-              required_fields = ['type', 'project_id', 'private_key_id', 'private_key',
-                                'client_email', 'client_id', 'auth_uri', 'token_uri']
-
-              missing_fields = [field for field in required_fields if field not in creds]
-
-              if missing_fields:
-                  print(f"✗ Missing required fields: {', '.join(missing_fields)}")
-                  sys.exit(1)
-
-              # Validate field types and formats
-              if creds.get('type') != 'service_account':
-                  print(f"✗ Invalid type: {creds.get('type')} (expected 'service_account')")
-                  sys.exit(1)
-
-              if not creds.get('private_key', '').startswith('-----BEGIN PRIVATE KEY-----'):
-                  print("✗ Invalid private_key format (should start with '-----BEGIN PRIVATE KEY-----')")
-                  sys.exit(1)
-
-              # Check for newlines in private key (after JSON parsing, \n becomes actual newline)
-              if '\n' not in creds.get('private_key', ''):
-                  print("✗ Invalid private_key format (missing newlines)")
-                  sys.exit(1)
-
-              if not creds.get('client_email', '').endswith('.iam.gserviceaccount.com'):
-                  print(f"✗ Invalid client_email format: {creds.get('client_email')}")
-                  sys.exit(1)
-
-              # Success
-              print("✓ GCP credentials JSON is valid")
-              print(f"  Project ID: {creds['project_id']}")
-              print(f"  Service Account: {creds['client_email']}")
-              print(f"  Private Key: {len(creds['private_key'])} characters")
-
-          except json.JSONDecodeError as e:
-              print(f"✗ Invalid JSON format: {e}")
-              print("This usually means the secret was corrupted during transfer.")
-              print("\nShowing raw file content (first 500 chars):")
-              with open('${{ env.DEPLOYMENT_PATH }}/secrets/gcp-sa-key.json', 'r') as f:
-                  content = f.read(500)
-                  print(repr(content))
-              print("\n=== Debugging Info ===")
-              print("If you see missing quotes or 'n' instead of '\\n', the GitHub secret is malformed.")
-              print("The secret should be valid JSON with double quotes around all keys and values.")
-              sys.exit(1)
-          except FileNotFoundError:
-              print("✗ GCP credentials file not found at: ${{ env.DEPLOYMENT_PATH }}/secrets/gcp-sa-key.json")
-              print()
-              print("=== HOW TO FIX ===")
-              print("The file must be manually placed on the production server.")
-              print("Run this from your local machine:")
-              print("  bash scripts/upload-gcp-to-prod.sh")
-              sys.exit(1)
-          except Exception as e:
-              print(f"✗ Validation error: {e}")
-              import traceback
-              traceback.print_exc()
-              sys.exit(1)
-          PYEOF
-          ENDSSH
-
       - name: Create production .env file
         env:
           SSHPASS: ${{ secrets.SSH_PASSWORD }}
@@ -319,9 +230,6 @@ jobs:
 
           # External API Keys
           OPENROUTER_API_KEY=${{ secrets.OPENROUTER_API_KEY }}
-          GOOGLE_CLOUD_PROJECT_ID=${{ secrets.GOOGLE_CLOUD_PROJECT_ID }}
-          GOOGLE_CLOUD_LOCATION=${{ secrets.GOOGLE_CLOUD_LOCATION }}
-          GOOGLE_CLOUD_PROCESSOR_ID=${{ secrets.GOOGLE_CLOUD_PROCESSOR_ID }}
 
           # Monitoring
           SENTRY_DSN=${{ secrets.SENTRY_DSN }}
