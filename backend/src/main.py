@@ -19,7 +19,6 @@ from src.core.errors import (
     generic_exception_handler,
     validation_exception_handler,
 )
-
 from src.core.rate_limit import limiter
 
 

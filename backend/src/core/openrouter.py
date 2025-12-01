@@ -4,7 +4,7 @@ OpenRouter API Client for GPT-5 LLM Integration
 Supports both text-only and multimodal (vision) requests.
 """
 import json
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List
 
 import httpx
 import sentry_sdk

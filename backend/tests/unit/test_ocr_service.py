@@ -1,14 +1,13 @@
 """
 Unit tests for OCR service using Gemini Vision via OpenRouter
 """
-import base64
 import json
 from unittest.mock import AsyncMock, MagicMock, mock_open, patch
 
 import pytest
 
 from src.core.errors import VisionOCRException
-from src.schemas.ocr import KeyValuePair, OCRResult, Table
+from src.schemas.ocr import OCRResult
 from src.services.ocr_service import OCRService, process_document_ocr_sync
 
 
@@ -434,7 +433,7 @@ async def test_custom_model_override(mock_openrouter_client, mock_redis, mock_pd
         with patch('os.path.exists', return_value=True):
             # Act
             service = OCRService(model="openai/gpt-4o")
-            result = await service.process_document_ocr('/fake/path/AN.pdf')
+            await service.process_document_ocr('/fake/path/AN.pdf')
             await service.close()
 
     # Assert - check that custom model was used

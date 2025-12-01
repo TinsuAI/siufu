@@ -8,11 +8,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.config import settings
 from src.core.database import get_db
+from src.core.rate_limit import limiter
 from src.core.security import (
     create_access_token,
     verify_password,
 )
-from src.core.rate_limit import limiter
 from src.repositories.user_repository import UserRepository
 from src.schemas.auth import LoginRequest, LoginResponse, RegisterRequest
 from src.schemas.auth import User as UserSchema
