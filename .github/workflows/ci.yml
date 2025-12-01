@@ -178,49 +178,22 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup SSH key
+      - name: Install sshpass
         run: |
-          mkdir -p ~/.ssh
-          # Decode base64-encoded SSH key
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" | base64 -d > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
-
-          # Debug: Show what we got (first and last lines only, no sensitive content)
-          echo "=== DEBUG: Key file first line ==="
-          head -n 1 ~/.ssh/deploy_key
-          echo "=== DEBUG: Key file last line ==="
-          tail -n 1 ~/.ssh/deploy_key
-          echo "=== DEBUG: Line count ==="
-          wc -l ~/.ssh/deploy_key
-
-          # Verify the key file was created correctly
-          if ! grep -q "BEGIN.*PRIVATE KEY" ~/.ssh/deploy_key; then
-            echo "ERROR: SSH private key file does not contain a valid key header"
-            echo "Full file content (this will help debug):"
-            cat ~/.ssh/deploy_key
-            exit 1
-          fi
-
-          # Check if file contains public key line (it shouldn't)
-          if grep -q "^ssh-ed25519\|^ssh-rsa" ~/.ssh/deploy_key; then
-            echo "ERROR: Private key file contains public key line. It should ONLY contain the private key."
-            echo "Lines containing public key:"
-            grep "^ssh-ed25519\|^ssh-rsa" ~/.ssh/deploy_key
-            exit 1
-          fi
-
-          echo "SSH key file created successfully"
-
-          # Add known hosts to avoid host verification prompt
-          ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
+          sudo apt-get update
+          sudo apt-get install -y sshpass
 
       - name: Test SSH connection
+        env:
+          SSHPASS: ${{ secrets.SSH_PASSWORD }}
         run: |
-          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "echo 'SSH connection successful'"
+          sshpass -e ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "echo 'SSH connection successful'"
 
       - name: Create deployment directory structure
+        env:
+          SSHPASS: ${{ secrets.SSH_PASSWORD }}
         run: |
-          ssh -i ~/.ssh/deploy_key ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'ENDSSH'
+          sshpass -e ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'ENDSSH'
             # Create main deployment directory
             mkdir -p ${{ env.DEPLOYMENT_PATH }}
             mkdir -p ${{ env.DEPLOYMENT_PATH }}/secrets
@@ -237,8 +210,10 @@ jobs:
       # This skips GitHub secrets which have issues with JSON formatting
 
       - name: Verify GCP Service Account Key Exists
+        env:
+          SSHPASS: ${{ secrets.SSH_PASSWORD }}
         run: |
-          ssh -i ~/.ssh/deploy_key ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'ENDSSH'
+          sshpass -e ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'ENDSSH'
             echo "=== Validating GCP credentials JSON ==="
 
             # Show file details
@@ -320,8 +295,10 @@ jobs:
           ENDSSH
 
       - name: Create production .env file
+        env:
+          SSHPASS: ${{ secrets.SSH_PASSWORD }}
         run: |
-          ssh -i ~/.ssh/deploy_key ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'ENDSSH'
+          sshpass -e ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'ENDSSH'
             cat > ${{ env.DEPLOYMENT_PATH }}/.env << 'EOF'
           # Database Configuration
           POSTGRES_DB=customs_db
@@ -355,8 +332,10 @@ jobs:
           ENDSSH
 
       - name: Ensure rsync is installed on remote server
+        env:
+          SSHPASS: ${{ secrets.SSH_PASSWORD }}
         run: |
-          ssh -i ~/.ssh/deploy_key ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'ENDSSH'
+          sshpass -e ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'ENDSSH'
             # Check if rsync is installed
             if ! command -v rsync &> /dev/null; then
               echo "rsync not found, installing..."
@@ -371,6 +350,8 @@ jobs:
           ENDSSH
 
       - name: Sync application files to server
+        env:
+          SSHPASS: ${{ secrets.SSH_PASSWORD }}
         run: |
           # Use rsync to transfer files efficiently, excluding unnecessary directories
           rsync -avz --delete \
@@ -386,12 +367,14 @@ jobs:
             --exclude='backend/htmlcov' \
             --exclude='.env' \
             --exclude='secrets' \
-            -e "ssh -i ~/.ssh/deploy_key" \
+            -e "sshpass -e ssh -o StrictHostKeyChecking=no" \
             ./ ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ env.DEPLOYMENT_PATH }}/
 
       - name: Pull latest images and deploy
+        env:
+          SSHPASS: ${{ secrets.SSH_PASSWORD }}
         run: |
-          ssh -i ~/.ssh/deploy_key ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'ENDSSH'
+          sshpass -e ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'ENDSSH'
             set -ex  # Exit on error and print commands
             cd ${{ env.DEPLOYMENT_PATH }}
 
@@ -434,9 +417,11 @@ jobs:
 
       - name: Show deployment log on failure
         if: failure()
+        env:
+          SSHPASS: ${{ secrets.SSH_PASSWORD }}
         run: |
           echo "=== Deployment failed, showing deployment.log ==="
-          ssh -i ~/.ssh/deploy_key ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'ENDSSH'
+          sshpass -e ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'ENDSSH'
             cd ${{ env.DEPLOYMENT_PATH }}
             if [ -f deployment.log ]; then
               echo "=== Last 100 lines of deployment.log ==="
@@ -455,8 +440,10 @@ jobs:
           ENDSSH
 
       - name: Run database migrations
+        env:
+          SSHPASS: ${{ secrets.SSH_PASSWORD }}
         run: |
-          ssh -i ~/.ssh/deploy_key ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'ENDSSH'
+          sshpass -e ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'ENDSSH'
             cd ${{ env.DEPLOYMENT_PATH }}
 
             echo "[$(date)] Running database migrations..." >> deployment.log
@@ -471,8 +458,10 @@ jobs:
           ENDSSH
 
       - name: Health check
+        env:
+          SSHPASS: ${{ secrets.SSH_PASSWORD }}
         run: |
-          ssh -i ~/.ssh/deploy_key ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'ENDSSH'
+          sshpass -e ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'ENDSSH'
             cd ${{ env.DEPLOYMENT_PATH }}
 
             echo "[$(date)] Running health checks..." >> deployment.log
@@ -520,8 +509,10 @@ jobs:
 
       - name: External Domain Health Check
         if: always()
+        env:
+          SSHPASS: ${{ secrets.SSH_PASSWORD }}
         run: |
-          ssh -i ~/.ssh/deploy_key ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'ENDSSH'
+          sshpass -e ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'ENDSSH'
             cd ${{ env.DEPLOYMENT_PATH }}
 
             echo "[$(date)] Running external domain health checks..." >> deployment.log
@@ -571,8 +562,10 @@ jobs:
 
       - name: Show deployment status
         if: always()
+        env:
+          SSHPASS: ${{ secrets.SSH_PASSWORD }}
         run: |
-          ssh -i ~/.ssh/deploy_key ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'ENDSSH'
+          sshpass -e ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'ENDSSH'
             cd ${{ env.DEPLOYMENT_PATH }}
 
             echo "=== Container Status ==="
@@ -589,8 +582,10 @@ jobs:
 
       - name: Cleanup on failure
         if: failure()
+        env:
+          SSHPASS: ${{ secrets.SSH_PASSWORD }}
         run: |
-          ssh -i ~/.ssh/deploy_key ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'ENDSSH'
+          sshpass -e ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'ENDSSH'
             cd ${{ env.DEPLOYMENT_PATH }}
 
             echo "[$(date)] Deployment failed, checking for previous backup..." >> deployment.log
@@ -602,11 +597,6 @@ jobs:
             # Show logs for debugging
             docker compose -f docker-compose.prod.yml logs --tail=50 >> deployment.log
           ENDSSH
-
-      - name: Cleanup SSH key
-        if: always()
-        run: |
-          rm -f ~/.ssh/deploy_key
 
       - name: Deployment Success Notification
         if: success()
