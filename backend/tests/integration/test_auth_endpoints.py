@@ -21,7 +21,7 @@ class TestRegisterEndpoint:
             "/api/v1/auth/register",
             json={
                 "email": unique_email,
-                "password": "newpassword123",
+                "password": "NewPassword123!",  # Must have uppercase, lowercase, number, special char
                 "full_name": "New User"
             }
         )
@@ -42,7 +42,7 @@ class TestRegisterEndpoint:
             "/api/v1/auth/register",
             json={
                 "email": test_user.email,
-                "password": "password123",
+                "password": "Password123!",  # Must have uppercase, lowercase, number, special char
                 "full_name": "Duplicate User"
             }
         )
@@ -89,7 +89,7 @@ class TestLoginEndpoint:
             "/api/v1/auth/login",
             json={
                 "email": test_user.email,
-                "password": "test12345"
+                "password": "Test12345!"
             }
         )
 
@@ -141,7 +141,7 @@ class TestLoginEndpoint:
             "/api/v1/auth/login",
             json={
                 "email": test_user.email,
-                "password": "test12345"
+                "password": "Test12345!"
             }
         )
 
@@ -174,7 +174,7 @@ class TestGetCurrentUserEndpoint:
             "/api/v1/auth/login",
             json={
                 "email": test_user.email,
-                "password": "test12345"
+                "password": "Test12345!"
             }
         )
         assert login_response.status_code == 200
@@ -234,7 +234,7 @@ class TestProtectedEndpoints:
             "/api/v1/auth/login",
             json={
                 "email": test_user.email,
-                "password": "test12345"
+                "password": "Test12345!"
             }
         )
         assert login_response.status_code == 200

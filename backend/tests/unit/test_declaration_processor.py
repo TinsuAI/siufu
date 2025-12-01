@@ -70,7 +70,7 @@ class TestDeclarationProcessor:
     """Test suite for declaration processing task"""
 
     @patch('src.workers.declaration_processor.AsyncSessionLocal')
-    @patch('src.workers.declaration_processor.OCRService')
+    @patch('src.workers.declaration_processor.process_document_ocr_sync')
     @patch('src.workers.declaration_processor.LLMService')
     @patch('src.workers.declaration_processor.os.path.exists')
     @pytest.mark.asyncio
@@ -78,7 +78,7 @@ class TestDeclarationProcessor:
         self,
         mock_exists,
         mock_llm_service,
-        mock_ocr_service,
+        mock_process_ocr,
         mock_session,
         mock_declaration,
         mock_ocr_result,
@@ -100,10 +100,8 @@ class TestDeclarationProcessor:
         mock_repo.update_status_and_progress = AsyncMock(return_value=mock_declaration)
 
         with patch('src.workers.declaration_processor.DeclarationRepository', return_value=mock_repo):
-            # Mock OCR service
-            ocr_instance = Mock()
-            ocr_instance.process_document_ocr = Mock(return_value=mock_ocr_result)
-            mock_ocr_service.return_value = ocr_instance
+            # Mock OCR sync function
+            mock_process_ocr.return_value = mock_ocr_result
 
             # Mock LLM service
             llm_instance = Mock()
@@ -146,13 +144,12 @@ class TestDeclarationProcessor:
         mock_repo.update_status_and_progress = AsyncMock(side_effect=capture_progress)
 
         with patch('src.workers.declaration_processor.DeclarationRepository', return_value=mock_repo), \
-             patch('src.workers.declaration_processor.OCRService') as mock_ocr, \
+             patch('src.workers.declaration_processor.process_document_ocr_sync') as mock_ocr, \
              patch('src.workers.declaration_processor.LLMService') as mock_llm, \
              patch('src.workers.declaration_processor.os.path.exists', return_value=True):
 
-            # Mock services
-            ocr_instance = Mock()
-            ocr_instance.process_document_ocr = Mock(return_value=OCRResult(
+            # Mock OCR sync function
+            mock_ocr.return_value = OCRResult(
                 text="test",
                 key_value_pairs=[],
                 tables=[],
@@ -160,8 +157,7 @@ class TestDeclarationProcessor:
                 page_count=1,
                 file_name="test.pdf",
                 processing_time_ms=500
-            ))
-            mock_ocr.return_value = ocr_instance
+            )
 
             llm_instance = Mock()
             from src.schemas.extraction import CompanyDetails, ShipmentDates
@@ -230,7 +226,7 @@ class TestDeclarationProcessor:
             )
 
     @patch('src.workers.declaration_processor.AsyncSessionLocal')
-    @patch('src.workers.declaration_processor.OCRService')
+    @patch('src.workers.declaration_processor.process_document_ocr_sync')
     @patch('src.workers.declaration_processor.LLMService')
     @patch('src.workers.declaration_processor.os.path.exists')
     @pytest.mark.asyncio
@@ -238,7 +234,7 @@ class TestDeclarationProcessor:
         self,
         mock_exists,
         mock_llm_service,
-        mock_ocr_service,
+        mock_process_ocr,
         mock_session,
         mock_declaration,
         mock_ocr_result,
@@ -259,9 +255,8 @@ class TestDeclarationProcessor:
         mock_repo.update_status_and_progress = AsyncMock(return_value=mock_declaration)
 
         with patch('src.workers.declaration_processor.DeclarationRepository', return_value=mock_repo):
-            ocr_instance = Mock()
-            ocr_instance.process_document_ocr = Mock(return_value=mock_ocr_result)
-            mock_ocr_service.return_value = ocr_instance
+            # Mock OCR sync function
+            mock_process_ocr.return_value = mock_ocr_result
 
             llm_instance = Mock()
             llm_instance.extract_from_multiple_documents = AsyncMock(return_value=mock_extracted_data)

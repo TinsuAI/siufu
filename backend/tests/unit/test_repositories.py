@@ -215,6 +215,9 @@ class TestBaseRepository:
         # Arrange
         repo = BaseRepository(Organization, db_session)
 
+        # Get initial count (may have pre-existing organizations from other tests)
+        initial_count = await repo.count()
+
         # Create 3 organizations
         for i in range(3):
             org = Organization(name=f"Org {i}")
@@ -224,8 +227,8 @@ class TestBaseRepository:
         # Act
         count = await repo.count()
 
-        # Assert
-        assert count == 3
+        # Assert - should have 3 more than initial
+        assert count == initial_count + 3
 
     async def test_count_with_filters(self, db_session: AsyncSession):
         """Test repository count method with filters."""
@@ -233,6 +236,12 @@ class TestBaseRepository:
         org = Organization(name="Test Org")
         db_session.add(org)
         await db_session.flush()
+
+        repo = BaseRepository(User, db_session)
+
+        # Get initial counts (may have pre-existing users from other tests)
+        initial_active_count = await repo.count(filters={"is_active": True})
+        initial_inactive_count = await repo.count(filters={"is_active": False})
 
         # Create active and inactive users
         active_user = User(
@@ -252,15 +261,13 @@ class TestBaseRepository:
         db_session.add_all([active_user, inactive_user])
         await db_session.flush()
 
-        repo = BaseRepository(User, db_session)
-
         # Act
         active_count = await repo.count(filters={"is_active": True})
         inactive_count = await repo.count(filters={"is_active": False})
 
-        # Assert
-        assert active_count == 1
-        assert inactive_count == 1
+        # Assert - should have 1 more than initial for each
+        assert active_count == initial_active_count + 1
+        assert inactive_count == initial_inactive_count + 1
 
 
 @pytest.mark.unit
@@ -315,7 +322,7 @@ class TestUserRepository:
         repo = UserRepository(db_session)
         user_data = RegisterRequest(
             email="newuser@example.com",
-            password="plaintext_password",
+            password="PlainText123!",  # Must have uppercase, lowercase, number, special char
             full_name="New User"
         )
 
@@ -344,7 +351,7 @@ class TestUserRepository:
         repo = UserRepository(db_session)
         user_data = RegisterRequest(
             email="admin@example.com",
-            password="admin_password",
+            password="AdminPassword123!",  # Must have uppercase, lowercase, number, special char
             full_name="Admin User"
         )
 

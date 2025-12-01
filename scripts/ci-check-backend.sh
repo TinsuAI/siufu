@@ -115,9 +115,10 @@ else
     if [ -f ".env.test" ]; then
         export $(cat .env.test | grep -v '^#' | grep -v '^$' | xargs)
     else
-        export DATABASE_URL="postgresql+asyncpg://postgres:test_password_123@localhost:5432/customs_db_test"
-        export REDIS_URL="redis://localhost:6379/0"
-        export JWT_SECRET_KEY="test-jwt-secret-key-for-ci"
+        # Use Docker Compose exposed ports: PostgreSQL on 8881, Redis on 8882
+        export DATABASE_URL="postgresql+asyncpg://postgres:test_password_123@localhost:8881/customs_db"
+        export REDIS_URL="redis://localhost:8882/0"
+        export JWT_SECRET_KEY="test-jwt-secret-key-for-ci-minimum-32-characters-long"
     fi
 
     if pytest tests/ -m "not e2e and not llm" --cov=src --cov-report=term-missing -v --tb=short > /tmp/pytest-output.log 2>&1; then

@@ -5,6 +5,7 @@ Tests the full file upload workflow including API endpoints, database, and file 
 """
 import uuid
 from io import BytesIO
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -128,25 +129,35 @@ class TestFileUploadIntegration:
             "invoice": self.create_test_file("INVOICE.pdf", self.create_valid_pdf(1), "application/pdf")
         }
 
-        # Make upload request with auto_process=true
-        response = await async_client.post("/api/v1/declarations/upload?auto_process=true", files=files, headers=auth_headers)
+        # Mock the Celery task to return a proper string ID
+        mock_task_result = MagicMock()
+        mock_task_result.id = str(uuid.uuid4())  # Real string UUID, not MagicMock
 
-        # Verify response
-        assert response.status_code == 201
-        data = response.json()
+        with patch('src.workers.declaration_processor.process_declaration_task') as mock_task:
+            mock_task.delay.return_value = mock_task_result
 
-        assert data["status"] == "PROCESSING"
-        assert data["celery_task_id"] is not None
-        assert data["message"] == "Declaration uploaded successfully. Processing started."
+            # Make upload request with auto_process=true
+            response = await async_client.post("/api/v1/declarations/upload?auto_process=true", files=files, headers=auth_headers)
 
-        declaration_id = uuid.UUID(data["declaration_id"])
+            # Verify response
+            assert response.status_code == 201
+            data = response.json()
 
-        # Verify database record has task ID
-        repo = DeclarationRepository(db_session)
-        declaration = await repo.get_by_id(declaration_id)
+            assert data["status"] == "PROCESSING"
+            assert data["celery_task_id"] is not None
+            assert data["message"] == "Declaration uploaded successfully. Processing started."
 
-        assert declaration.celery_task_id is not None
-        assert declaration.status == "PROCESSING"
+            declaration_id = uuid.UUID(data["declaration_id"])
+
+            # Verify database record has task ID
+            repo = DeclarationRepository(db_session)
+            declaration = await repo.get_by_id(declaration_id)
+
+            assert declaration.celery_task_id is not None
+            assert declaration.status == "PROCESSING"
+
+            # Verify task was called with correct declaration ID
+            mock_task.delay.assert_called_once_with(str(declaration_id))
 
         # Cleanup
         await storage_service.cleanup_declaration_files(declaration_id)

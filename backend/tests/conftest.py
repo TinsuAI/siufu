@@ -1,29 +1,91 @@
 """Pytest configuration and shared fixtures."""
 
-import asyncio
+# ============================================================================
+# CRITICAL: Set environment variables at module level, before ANY imports.
+# This ensures Celery skips Redis connection checks during test collection.
+# ============================================================================
 import os
+from unittest.mock import MagicMock, patch
+
+# Set ENVIRONMENT=test FIRST to skip Redis connection checks in Celery
+os.environ["ENVIRONMENT"] = "test"
+
+# Set test database URL and Redis URL BEFORE importing any src modules
+# This ensures src.core.config loads the test configuration
+# Use environment variables if set (for CI), otherwise use Docker Compose ports
+# Docker Compose exposes: PostgreSQL on 8881, Redis on 8882
+TEST_DATABASE_URL = os.environ.get(
+    "DATABASE_URL",
+    "postgresql+asyncpg://postgres:test_password_123@localhost:8881/customs_db"
+)
+TEST_REDIS_URL = os.environ.get(
+    "REDIS_URL",
+    "redis://localhost:8882/0"
+)
+TEST_JWT_SECRET_KEY = os.environ.get(
+    "JWT_SECRET_KEY",
+    "test-jwt-secret-key-for-testing-purposes-only-minimum-32-chars"
+)
+os.environ["DATABASE_URL"] = TEST_DATABASE_URL
+os.environ["REDIS_URL"] = TEST_REDIS_URL
+os.environ["CELERY_BROKER_URL"] = TEST_REDIS_URL
+os.environ["JWT_SECRET_KEY"] = TEST_JWT_SECRET_KEY
+
+
+def pytest_configure(config):
+    """
+    Hook called after command line options have been parsed.
+    This runs BEFORE any test collection, so we can mock modules
+    before they're imported by the test suite.
+    """
+    import uuid
+
+    # Mock the Celery class itself to prevent connection attempts
+    mock_celery_class = MagicMock()
+    mock_celery_instance = MagicMock()
+    mock_celery_instance.conf.update = MagicMock()
+    mock_celery_instance.autodiscover_tasks = MagicMock()
+    mock_celery_instance.connection = MagicMock()
+
+    # Mock task.delay() to return a proper AsyncResult-like object with string ID
+    mock_task_result = MagicMock()
+    mock_task_result.id = str(uuid.uuid4())  # Return a real string UUID, not MagicMock
+    mock_task_result.status = "PENDING"
+    mock_task_result.result = None
+
+    # Make send_task return the mock result
+    mock_celery_instance.send_task = MagicMock(return_value=mock_task_result)
+
+    # Mock control.inspect() to return None for stats() so Celery tests are skipped
+    mock_inspect = MagicMock()
+    mock_inspect.stats.return_value = None
+    mock_inspect.ping.return_value = None
+    mock_control = MagicMock()
+    mock_control.inspect.return_value = mock_inspect
+    mock_celery_instance.control = mock_control
+
+    mock_celery_class.return_value = mock_celery_instance
+
+    # Patch celery.Celery before it's imported
+    celery_patcher = patch('celery.Celery', mock_celery_class)
+    celery_patcher.start()
+
+    # Also mock Redis connection
+    redis_patcher = patch('redis.asyncio.from_url', MagicMock())
+    redis_patcher.start()
+
+
+# ============================================================================
+# Now we can safely import everything else
+# ============================================================================
+import asyncio
 from typing import AsyncGenerator
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock
 
 import pytest
 import pytest_asyncio
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool
-
-# Set test database URL and Redis URL BEFORE importing any src modules
-# This ensures src.core.config loads the test configuration
-# Use environment variables if set (for CI), otherwise use default test ports
-TEST_DATABASE_URL = os.environ.get(
-    "DATABASE_URL",
-    "postgresql+asyncpg://postgres:test_password_123@localhost:5432/customs_db_test"
-)
-TEST_REDIS_URL = os.environ.get(
-    "REDIS_URL",
-    "redis://localhost:6379/0"
-)
-os.environ["DATABASE_URL"] = TEST_DATABASE_URL
-os.environ["REDIS_URL"] = TEST_REDIS_URL
-os.environ["CELERY_BROKER_URL"] = TEST_REDIS_URL
 
 # Import Base from models
 from src.models.base import Base
@@ -328,7 +390,7 @@ async def test_user(db_session: AsyncSession, test_organization):
     Returns a User instance with:
     - Fixed UUID: 00000000-0000-0000-0000-000000000002
     - Email: test@example.com
-    - Password: test12345 (hashed)
+    - Password: Test12345! (hashed)
     - Role: processor
     """
     from uuid import UUID
@@ -350,7 +412,7 @@ async def test_user(db_session: AsyncSession, test_organization):
         user = User(
             id=user_id,
             email="test@example.com",
-            hashed_password=pwd_context.hash("test12345"),
+            hashed_password=pwd_context.hash("Test12345!"),
             full_name="Test User",
             role=UserRole.processor,
             is_active=True,

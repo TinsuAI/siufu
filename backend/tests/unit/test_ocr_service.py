@@ -194,13 +194,18 @@ async def test_process_document_ocr_includes_confidence_scores(mock_openrouter_c
     # Arrange
     mock_openrouter_client.multimodal_chat_completion.return_value = create_mock_openrouter_response(MOCK_OCR_RESPONSE_INVOICE)
 
-    file_content = b"fake pdf content"
+    file_content = b"fake image content"
+    # Mock PIL.Image.open since we're processing a .jpg file
+    mock_image = MagicMock()
+    mock_image.save = MagicMock(side_effect=lambda buf, format, optimize: buf.write(b"fake_png_data"))
+
     with patch('builtins.open', mock_open(read_data=file_content)):
         with patch('os.path.exists', return_value=True):
-            # Act
-            service = OCRService()
-            result = await service.process_document_ocr('/fake/path/INVOICE.jpg')
-            await service.close()
+            with patch('src.services.ocr_service.Image.open', return_value=mock_image):
+                # Act
+                service = OCRService()
+                result = await service.process_document_ocr('/fake/path/INVOICE.jpg')
+                await service.close()
 
     # Assert
     assert len(result.confidence_scores) > 0
