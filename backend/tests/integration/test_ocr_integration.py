@@ -1,9 +1,8 @@
 """
-Integration tests for OCR service with real Google Cloud Document AI
+Integration tests for OCR service with Gemini Vision via OpenRouter
 
 These tests require:
-- GCP service account key at /app/secrets/gcp-sa-key.json
-- GOOGLE_CLOUD_PROJECT_ID, GOOGLE_CLOUD_LOCATION, GOOGLE_CLOUD_PROCESSOR_ID in .env
+- OPENROUTER_API_KEY environment variable
 - Sample files in resources/sample/1/
 
 Skip these tests in CI to avoid API costs. Run manually before production.
@@ -12,12 +11,13 @@ import os
 
 import pytest
 
-from src.services.ocr_service import OCRService
+from src.core.config import settings
+from src.services.ocr_service import OCRService, process_document_ocr_sync
 
 
-def has_gcp_credentials() -> bool:
-    """Check if GCP credentials are available"""
-    return os.path.exists("/app/secrets/gcp-sa-key.json")
+def has_openrouter_key() -> bool:
+    """Check if OpenRouter API key is available"""
+    return bool(settings.OPENROUTER_API_KEY)
 
 
 @pytest.fixture
@@ -27,12 +27,12 @@ def ocr_service():
 
 
 @pytest.mark.integration
-@pytest.mark.skipif(not has_gcp_credentials(), reason="GCP credentials not available")
-def test_process_an_pdf(ocr_service):
+@pytest.mark.skipif(not has_openrouter_key(), reason="OpenRouter API key not available")
+def test_process_an_pdf():
     """
     Test processing AN.pdf (Arrival Notice)
 
-    Requires: GOOGLE_CLOUD_KEY secret configured
+    Requires: OPENROUTER_API_KEY configured
     """
     # Arrange
     file_path = "/app/resources/sample/1/AN.pdf"
@@ -42,7 +42,7 @@ def test_process_an_pdf(ocr_service):
         pytest.skip(f"Sample file not found: {file_path}")
 
     # Act
-    result = ocr_service.process_document_ocr(file_path)
+    result = process_document_ocr_sync(file_path)
 
     # Assert
     assert result is not None
@@ -60,12 +60,12 @@ def test_process_an_pdf(ocr_service):
 
 
 @pytest.mark.integration
-@pytest.mark.skipif(not has_gcp_credentials(), reason="GCP credentials not available")
-def test_process_bol_pdf(ocr_service):
+@pytest.mark.skipif(not has_openrouter_key(), reason="OpenRouter API key not available")
+def test_process_bol_pdf():
     """
     Test processing BOL.pdf (Bill of Lading)
 
-    Requires: GOOGLE_CLOUD_KEY secret configured
+    Requires: OPENROUTER_API_KEY configured
     """
     # Arrange
     file_path = "/app/resources/sample/1/BOL.pdf"
@@ -74,7 +74,7 @@ def test_process_bol_pdf(ocr_service):
         pytest.skip(f"Sample file not found: {file_path}")
 
     # Act
-    result = ocr_service.process_document_ocr(file_path)
+    result = process_document_ocr_sync(file_path)
 
     # Assert
     assert result is not None
@@ -86,12 +86,12 @@ def test_process_bol_pdf(ocr_service):
 
 
 @pytest.mark.integration
-@pytest.mark.skipif(not has_gcp_credentials(), reason="GCP credentials not available")
-def test_process_co_pdf(ocr_service):
+@pytest.mark.skipif(not has_openrouter_key(), reason="OpenRouter API key not available")
+def test_process_co_pdf():
     """
     Test processing CO.pdf (Certificate of Origin)
 
-    Requires: GOOGLE_CLOUD_KEY secret configured
+    Requires: OPENROUTER_API_KEY configured
     """
     # Arrange
     file_path = "/app/resources/sample/1/CO.pdf"
@@ -100,7 +100,7 @@ def test_process_co_pdf(ocr_service):
         pytest.skip(f"Sample file not found: {file_path}")
 
     # Act
-    result = ocr_service.process_document_ocr(file_path)
+    result = process_document_ocr_sync(file_path)
 
     # Assert
     assert result is not None
@@ -110,17 +110,16 @@ def test_process_co_pdf(ocr_service):
     assert result.file_name == "CO.pdf"
 
     # Certificate of Origin typically has tables
-    # (Note: This depends on Document AI's extraction capability)
     assert isinstance(result.tables, list)
 
 
 @pytest.mark.integration
-@pytest.mark.skipif(not has_gcp_credentials(), reason="GCP credentials not available")
-def test_process_invoice_jpg(ocr_service):
+@pytest.mark.skipif(not has_openrouter_key(), reason="OpenRouter API key not available")
+def test_process_invoice_jpg():
     """
     Test processing INVOICE.jpg (Commercial Invoice - image format)
 
-    Requires: GOOGLE_CLOUD_KEY secret configured
+    Requires: OPENROUTER_API_KEY configured
     """
     # Arrange
     file_path = "/app/resources/sample/1/INVOICE.jpg"
@@ -129,7 +128,7 @@ def test_process_invoice_jpg(ocr_service):
         pytest.skip(f"Sample file not found: {file_path}")
 
     # Act
-    result = ocr_service.process_document_ocr(file_path)
+    result = process_document_ocr_sync(file_path)
 
     # Assert
     assert result is not None
@@ -141,13 +140,13 @@ def test_process_invoice_jpg(ocr_service):
 
 
 @pytest.mark.integration
-@pytest.mark.skipif(not has_gcp_credentials(), reason="GCP credentials not available")
-def test_cache_hit_avoids_api_call(ocr_service):
+@pytest.mark.skipif(not has_openrouter_key(), reason="OpenRouter API key not available")
+def test_cache_hit_avoids_api_call():
     """
     Test that cache hit avoids API call
 
     Process same file twice, verify second call uses cache (check logs)
-    Requires: GOOGLE_CLOUD_KEY secret configured
+    Requires: OPENROUTER_API_KEY configured
     """
     # Arrange
     file_path = "/app/resources/sample/1/AN.pdf"
@@ -156,11 +155,11 @@ def test_cache_hit_avoids_api_call(ocr_service):
         pytest.skip(f"Sample file not found: {file_path}")
 
     # Act - First call (cache miss)
-    result1 = ocr_service.process_document_ocr(file_path)
+    result1 = process_document_ocr_sync(file_path)
     _ = result1.processing_time_ms  # Reserved for future performance testing
 
     # Act - Second call (cache hit)
-    result2 = ocr_service.process_document_ocr(file_path)
+    result2 = process_document_ocr_sync(file_path)
     processing_time_2 = result2.processing_time_ms
 
     # Assert
@@ -172,12 +171,12 @@ def test_cache_hit_avoids_api_call(ocr_service):
 
 
 @pytest.mark.integration
-@pytest.mark.skipif(not has_gcp_credentials(), reason="GCP credentials not available")
-def test_all_sample_files_process_successfully(ocr_service):
+@pytest.mark.skipif(not has_openrouter_key(), reason="OpenRouter API key not available")
+def test_all_sample_files_process_successfully():
     """
     Test that all sample files can be processed
 
-    Requires: GOOGLE_CLOUD_KEY secret configured
+    Requires: OPENROUTER_API_KEY configured
     """
     # Arrange
     sample_files = [
@@ -192,8 +191,31 @@ def test_all_sample_files_process_successfully(ocr_service):
         if not os.path.exists(file_path):
             pytest.skip(f"Sample file not found: {file_path}")
 
-        result = ocr_service.process_document_ocr(file_path)
+        result = process_document_ocr_sync(file_path)
 
         assert result is not None, f"Failed to process {file_path}"
         assert result.text, f"No text extracted from {file_path}"
         assert result.page_count > 0, f"Invalid page count for {file_path}"
+
+
+@pytest.mark.integration
+@pytest.mark.skipif(not has_openrouter_key(), reason="OpenRouter API key not available")
+def test_custom_model_override():
+    """
+    Test using a different vision model
+
+    Requires: OPENROUTER_API_KEY configured
+    """
+    # Arrange
+    file_path = "/app/resources/sample/1/AN.pdf"
+
+    if not os.path.exists(file_path):
+        pytest.skip(f"Sample file not found: {file_path}")
+
+    # Act - Use a different model (GPT-4o for comparison)
+    result = process_document_ocr_sync(file_path, model="openai/gpt-4o")
+
+    # Assert
+    assert result is not None
+    assert result.text, "OCR text should not be empty"
+    assert result.page_count > 0

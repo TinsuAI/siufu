@@ -12,6 +12,7 @@ from src.core.security import (
     create_access_token,
     verify_password,
 )
+from src.core.rate_limit import limiter
 from src.repositories.user_repository import UserRepository
 from src.schemas.auth import LoginRequest, LoginResponse, RegisterRequest
 from src.schemas.auth import User as UserSchema
@@ -20,7 +21,9 @@ router = APIRouter()
 
 
 @router.post("/register", response_model=LoginResponse, status_code=201)
+@limiter.limit("5/minute")
 async def register(
+    request: Request,
     user_data: RegisterRequest,
     response: Response,
     db: AsyncSession = Depends(get_db)
@@ -114,7 +117,9 @@ async def register(
 
 
 @router.post("/login", response_model=LoginResponse)
+@limiter.limit("5/minute")
 async def login(
+    request: Request,
     credentials: LoginRequest,
     response: Response,
     db: AsyncSession = Depends(get_db)

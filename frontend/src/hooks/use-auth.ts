@@ -17,7 +17,6 @@ import { User } from '@/types/auth'
  * Hook to login user
  */
 export function useLogin() {
-  const router = useRouter()
   const { setUser } = useAuthStore()
   const queryClient = useQueryClient()
 
@@ -31,8 +30,9 @@ export function useLogin() {
       // Cache the user data
       queryClient.setQueryData(['currentUser'], data.user)
 
-      // Redirect to declarations page
-      router.push('/declarations')
+      // Use hard redirect to ensure middleware runs with new cookie
+      // Client-side router.push() doesn't trigger middleware re-evaluation
+      window.location.href = '/declarations'
     },
     onError: (error) => {
       // Error is handled by the component displaying error message

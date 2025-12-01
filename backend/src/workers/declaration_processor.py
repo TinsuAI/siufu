@@ -32,7 +32,7 @@ from src.repositories.declaration_repository import DeclarationRepository
 from src.services import master_data_service
 from src.services.income_validation_service import IncomeValidationService
 from src.services.llm_service import LLMService
-from src.services.ocr_service import OCRService
+from src.services.ocr_service import process_document_ocr_sync
 
 logger = logging.getLogger(__name__)
 
@@ -386,9 +386,8 @@ async def _process_declaration_async(declaration_id: str) -> Dict[str, Any]:
         # Track OCR stage start time
         stage_start = time.time()
 
-        # Process all PDFs through OCR in parallel
+        # Process all PDFs through OCR in parallel using Gemini Vision via OpenRouter
         # Updated in Story 3.3.1: Handle multiple CO files (CO_1, CO_2, etc.)
-        ocr_service = OCRService()
         ocr_tasks = []
 
         # Process single-file documents
@@ -400,9 +399,9 @@ async def _process_declaration_async(declaration_id: str) -> Dict[str, Any]:
             if not file_path or not os.path.exists(file_path):
                 raise FileNotFoundError(f"File not found for {doc_type}: {file_path}")
 
-            # Create async task for OCR processing
+            # Create async task for OCR processing (using sync wrapper in executor)
             loop = asyncio.get_event_loop()
-            ocr_task = loop.run_in_executor(None, ocr_service.process_document_ocr, file_path)
+            ocr_task = loop.run_in_executor(None, process_document_ocr_sync, file_path)
             ocr_tasks.append((doc_type, ocr_task))
 
         # Process all CO files (CO_1, CO_2, ..., CO_N)
@@ -415,9 +414,9 @@ async def _process_declaration_async(declaration_id: str) -> Dict[str, Any]:
             if not file_path or not os.path.exists(file_path):
                 raise FileNotFoundError(f"File not found for {doc_type}: {file_path}")
 
-            # Create async task for OCR processing
+            # Create async task for OCR processing (using sync wrapper in executor)
             loop = asyncio.get_event_loop()
-            ocr_task = loop.run_in_executor(None, ocr_service.process_document_ocr, file_path)
+            ocr_task = loop.run_in_executor(None, process_document_ocr_sync, file_path)
             ocr_tasks.append((doc_type, ocr_task))
 
         # Wait for all OCR tasks to complete

@@ -30,10 +30,11 @@ RUN pip install --upgrade pip && \
 FROM base AS runner
 WORKDIR /app
 
-# Install runtime dependencies (libmagic)
+# Install runtime dependencies (libmagic for file type detection, poppler-utils for PDF to image conversion)
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     libmagic1 \
+    poppler-utils \
     && rm -rf /var/lib/apt/lists/*
 
 # Create non-root user

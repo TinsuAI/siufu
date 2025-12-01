@@ -4,6 +4,7 @@ import './globals.css'
 import '@/polyfills/promise-with-resolvers'
 import { QueryProvider } from '@/components/providers/query-provider'
 import { PDFProvider } from '@/components/providers/pdf-provider'
+import { AuthProvider } from '@/components/providers/auth-provider'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -22,7 +23,9 @@ export default function RootLayout({
     <html>
       <body className={inter.className}>
         <QueryProvider>
-          <PDFProvider>{children}</PDFProvider>
+          <AuthProvider>
+            <PDFProvider>{children}</PDFProvider>
+          </AuthProvider>
         </QueryProvider>
       </body>
     </html>

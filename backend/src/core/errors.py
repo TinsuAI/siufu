@@ -113,6 +113,18 @@ class OpenRouterException(CustomException):
         )
 
 
+class VisionOCRException(CustomException):
+    """Exception for Vision OCR API errors (Gemini via OpenRouter)"""
+    def __init__(self, detail: str, original_error: Optional[Exception] = None):
+        self.original_error = original_error
+        super().__init__(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=detail,
+            error_type="/errors/vision-ocr-error",
+            title="Vision OCR Error"
+        )
+
+
 async def custom_exception_handler(request: Request, exc: CustomException) -> JSONResponse:
     """Handler for custom application exceptions"""
     return JSONResponse(

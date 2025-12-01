@@ -1,8 +1,10 @@
 """
 OpenRouter API Client for GPT-5 LLM Integration
+
+Supports both text-only and multimodal (vision) requests.
 """
 import json
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Union
 
 import httpx
 import sentry_sdk
@@ -90,6 +92,54 @@ class OpenRouterClient:
         """
         return await self._call_openrouter_api_with_retry(messages, model, temperature, max_tokens)
 
+    async def multimodal_chat_completion(
+        self,
+        messages: List[Dict[str, Any]],
+        model: str = "google/gemini-3-pro-preview",
+        temperature: float = 0.1,
+        max_tokens: int = 8192
+    ) -> Dict[str, Any]:
+        """
+        Create a multimodal chat completion with image inputs using OpenRouter API
+
+        This method supports vision models that can process images alongside text.
+        Images should be provided as base64-encoded data URLs.
+
+        Args:
+            messages: List of message dicts with 'role' and 'content' keys.
+                Content can be a string or a list of content parts for multimodal input.
+                Example with images:
+                [
+                    {"role": "system", "content": "You are a document OCR expert."},
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": "Extract text from this document."},
+                            {
+                                "type": "image_url",
+                                "image_url": {
+                                    "url": "data:image/png;base64,iVBORw0KGgo...",
+                                    "detail": "high"
+                                }
+                            }
+                        ]
+                    }
+                ]
+            model: Vision-capable model identifier
+                (e.g., "google/gemini-3-pro-preview", "openai/gpt-4o", "anthropic/claude-sonnet-4-5-20250514")
+            temperature: Sampling temperature (0.0-2.0). Lower = more deterministic
+            max_tokens: Maximum tokens to generate
+
+        Returns:
+            API response dict (same structure as chat_completion)
+
+        Raises:
+            OpenRouterException: For API errors
+            httpx.HTTPStatusError: For 4xx/5xx responses
+            httpx.TimeoutException: If request exceeds timeout
+        """
+        return await self._call_openrouter_api_with_retry(messages, model, temperature, max_tokens)
+
     @retry(
         stop=stop_after_attempt(3),
         wait=wait_exponential(multiplier=2, min=2, max=10),
@@ -97,7 +147,7 @@ class OpenRouterClient:
     )
     async def _call_openrouter_api_with_retry(
         self,
-        messages: List[Dict[str, str]],
+        messages: List[Dict[str, Any]],
         model: str,
         temperature: float,
         max_tokens: int

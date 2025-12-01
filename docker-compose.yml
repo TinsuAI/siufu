@@ -9,9 +9,9 @@ services:
     volumes:
       - postgres-data:/var/lib/postgresql/data
     ports:
-      - "8781:5432"
+      - "8881:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -26,9 +26,9 @@ services:
     volumes:
       - redis-data:/data
     ports:
-      - "8782:6379"
+      - "8882:6379"
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: [ "CMD", "redis-cli", "ping" ]
       interval: 10s
       timeout: 3s
       retries: 5
@@ -43,11 +43,16 @@ services:
       dockerfile: Dockerfile
     container_name: siufu-backend
     ports:
-      - "8780:8000"
+      - "8880:8000"
+    command: >
+      sh -c "alembic upgrade head && uvicorn src.main:app --host 0.0.0.0 --port 8000"
     environment:
       DATABASE_URL: postgresql+asyncpg://postgres:${POSTGRES_PASSWORD:-changeme123}@postgres:5432/customs_db
       REDIS_URL: redis://redis:6379/0
       CELERY_BROKER_URL: redis://redis:6379/0
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000,http://localhost:8879}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
     volumes:
       - uploaded-files:/app/data/uploads
       - exports:/app/data/exports
@@ -73,6 +78,8 @@ services:
       DATABASE_URL: postgresql+asyncpg://postgres:${POSTGRES_PASSWORD:-changeme123}@postgres:5432/customs_db
       CELERY_BROKER_URL: redis://redis:6379/0
       REDIS_URL: redis://redis:6379/0
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
     volumes:
       - uploaded-files:/app/data/uploads
       - exports:/app/data/exports
@@ -85,7 +92,7 @@ services:
       backend:
         condition: service_started
     healthcheck:
-      test: ["CMD-SHELL", "celery -A src.core.celery_app inspect ping -d celery@$$HOSTNAME"]
+      test: [ "CMD-SHELL", "celery -A src.core.celery_app inspect ping -d celery@$$HOSTNAME" ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -100,12 +107,12 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8780}
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8880}
     container_name: siufu-frontend
     ports:
-      - "8779:3000"
+      - "8879:3000"
     environment:
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8780}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8880}
     depends_on:
       - backend
     restart: unless-stopped

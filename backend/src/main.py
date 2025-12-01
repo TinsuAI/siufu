@@ -3,10 +3,13 @@ FastAPI application entry point for Customs Declaration Automation Platform
 """
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, status
+from fastapi import FastAPI, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from src.core.config import settings
 from src.core.database import test_db_connection
@@ -16,6 +19,23 @@ from src.core.errors import (
     generic_exception_handler,
     validation_exception_handler,
 )
+
+from src.core.rate_limit import limiter
+
+
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    """Add security headers to all responses"""
+
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        # Add HSTS header in production only
+        if "tinsu.ai" in settings.CORS_ORIGINS:
+            response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+        return response
 
 
 @asynccontextmanager
@@ -60,15 +80,22 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# Security headers middleware
+app.add_middleware(SecurityHeadersMiddleware)
+
 # CORS middleware configuration - uses environment variable
 allowed_origins = settings.CORS_ORIGINS.split(",") if settings.CORS_ORIGINS else ["http://localhost:3000"]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    allow_headers=["Authorization", "Content-Type", "Accept", "Origin", "X-Requested-With"],
 )
+
+# Rate limiting
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # Exception handlers for RFC 7807 error responses
 app.add_exception_handler(CustomException, custom_exception_handler)
