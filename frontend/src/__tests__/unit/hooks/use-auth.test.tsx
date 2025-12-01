@@ -38,6 +38,9 @@ describe('useAuth hooks', () => {
     updated_at: '2024-01-01T00:00:00Z',
   }
 
+  // Store original window.location
+  const originalLocation = window.location
+
   beforeEach(() => {
     // Create a new QueryClient for each test
     queryClient = new QueryClient({
@@ -57,11 +60,22 @@ describe('useAuth hooks', () => {
       push: mockPush,
     } as unknown as ReturnType<typeof useRouter>)
 
+    // Mock window.location for hard redirects
+    Object.defineProperty(window, 'location', {
+      writable: true,
+      value: { ...originalLocation, href: '' },
+    })
+
     // Reset auth store
     useAuthStore.getState().clearUser()
   })
 
   afterEach(() => {
+    // Restore original window.location
+    Object.defineProperty(window, 'location', {
+      writable: true,
+      value: originalLocation,
+    })
     queryClient.clear()
     vi.clearAllMocks()
   })
@@ -97,8 +111,8 @@ describe('useAuth hooks', () => {
       // Verify auth store was updated
       expect(useAuthStore.getState().user).toEqual(mockUser)
 
-      // Verify redirect happened
-      expect(mockPush).toHaveBeenCalledWith('/declarations')
+      // Verify hard redirect happened (useLogin uses window.location.href for middleware re-evaluation)
+      expect(window.location.href).toBe('/declarations')
     })
 
     it('should handle login error', async () => {

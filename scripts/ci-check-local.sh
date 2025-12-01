@@ -84,7 +84,9 @@ cd "$PROJECT_ROOT/backend"
 
 # 5. Backend Linting (Ruff)
 echo "5️⃣  Running Ruff linter..."
-if ruff check src/ tests/; then
+if ! command -v ruff &> /dev/null; then
+    echo -e "${YELLOW}⚠ Ruff not installed. Skipping. Install with: pip install ruff${NC}"
+elif ruff check src/ tests/; then
     print_status 0 "Ruff linting passed"
 else
     print_status 1 "Ruff linting failed"
@@ -93,7 +95,9 @@ echo ""
 
 # 6. Type Checking (mypy) - warning only
 echo "6️⃣  Running mypy type checker (warning only)..."
-if mypy src/; then
+if ! command -v mypy &> /dev/null; then
+    echo -e "${YELLOW}⚠ Mypy not installed. Skipping. Install with: pip install mypy${NC}"
+elif mypy src/; then
     print_status 0 "Mypy type check passed"
 else
     echo -e "${YELLOW}⚠ Mypy type check has warnings (not failing CI)${NC}"
