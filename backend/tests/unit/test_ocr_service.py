@@ -10,7 +10,6 @@ from src.core.errors import VisionOCRException
 from src.schemas.ocr import OCRResult
 from src.services.ocr_service import OCRService, process_document_ocr_sync
 
-
 # Sample OCR response from Gemini
 MOCK_OCR_RESPONSE_AN = {
     "text": "ARRIVAL NOTICE\n\nVessel: MSC GEMMA\nVoyage: 123ABC\nETA: 2024-01-15\nPort of Loading: Shanghai\nPort of Discharge: Ho Chi Minh City\n\nContainer Details:\nMSCU1234567  40'HC  20,000 kg",
