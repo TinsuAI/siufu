@@ -29,7 +29,7 @@ mkdir -p "$BACKUP_DIR"
 
 # Perform backup
 echo "Starting backup..."
-docker-compose exec -T postgres pg_dump -U postgres -d customs_db > "$BACKUP_FILE"
+docker compose exec -T postgres pg_dump -U postgres -d customs_db > "$BACKUP_FILE"
 
 if [ $? -eq 0 ]; then
     # Get file size
